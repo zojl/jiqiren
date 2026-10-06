@@ -38,7 +38,6 @@ func (params Contest) Handle() {
         Id: profile.UserId,
     }
 
-    fmt.Printf("%+v", contest)
     var pointsSum int64 = 0
     
     contestType, _ := (repository.FindOneContestTypeById(contest.TypeId));

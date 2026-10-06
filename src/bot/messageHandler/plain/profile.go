@@ -23,8 +23,10 @@ var regulars = [...]string {
 		`\S{0,2}` +
 		`(?P<Fraction>Huǒqiáng|Aegis|V-hack|Phantoms|NetKings|NHS)` +
 		`\)`,
-	`💻: (?P<Level>\d+);`,
+	`💻: (?P<Level>\d+)`,
 	`💻Уровень: (?P<Level>\d+)`,
+	//`💻: \d+💎(?P<Prestige>\d?);`,
+	//`💎Престиж: (?P<Prestige>\d?)`,
 	`💡: (?P<Experience>\d+)`,
 	`💡Опыт: (?P<Experience>\d+)`,
 	`💵: (?P<Money>\d+)`,
@@ -279,10 +281,10 @@ func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParse
 	if (len(parsedProfile.Money) > 0) {
 		money, _ := strconv.ParseUint(parsedProfile.Money, 10, 64)
 		level, _ := strconv.ParseUint(parsedProfile.Level, 10, 64)
-		if (money >= level*100) {
+		if (money >= level*10) {
 			response.Messages = append(response.Messages, "‼️Очень много денег! Не забудьте слить деньги в акции перед битвой.")
-		} else if (money >= 100) {
-			response.Messages = append(response.Messages, "⚠️Рекомендуется слить деньги до значения меньше 100 перед битвой.")
+		} else if (money >= 10) {
+			response.Messages = append(response.Messages, "⚠️Рекомендуется слить деньги до значения меньше 10 перед битвой.")
 		}
 	}
 

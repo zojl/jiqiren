@@ -24,7 +24,7 @@ var profileIcons = [...]string {"💻", "💡", "💵", "📈", "💿", "📄", 
 func HandlePlain(messageObject events.MessageNewObject, vk *api.VK) {
 	if (len(messageObject.Message.FwdMessages) > 0) {
 		for _, message := range messageObject.Message.FwdMessages {
-			if (strconv.Itoa(message.FromID) == os.Getenv("HW_ID")) {
+			if strconv.Itoa(message.FromID) == os.Getenv("HW_ID") {
 				handleHwForward(message, &messageObject.Message, vk)
 			}
 		}
@@ -34,7 +34,6 @@ func HandlePlain(messageObject events.MessageNewObject, vk *api.VK) {
 func handleHwForward(message object.MessagesMessage, parentMessage *object.MessagesMessage, vk *api.VK) {
 	messageDate := time.Unix(int64(message.Date), 0)
 	senderId := parentMessage.FromID
-
 	if (isProfileMessage(message.Text)) {
 		if (os.Getenv("ENV") == "dev") {
 			log.Println("That's a profile message from " + strconv.Itoa(senderId))
