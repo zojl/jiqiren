@@ -3,18 +3,21 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/panel/auth"
 	"jiqiren/bot/panel/templates"
 
+	"github.com/SevereCloud/vksdk/v2/api"
 	"github.com/go-chi/chi/v5"
 )
 
 type managerView struct {
 	Id uint
 	VkId uint
+	Name string
 	AccountType string
 	SquadLabel string
 }
@@ -52,6 +55,12 @@ func ManagerList(w http.ResponseWriter, r *http.Request) {
 
 	squads, _ := repository.FindTeamsByFractionId(permissions.FractionId())
 
+	vkIds := make([]uint, 0, len(managers))
+	for _, manager := range managers {
+		vkIds = append(vkIds, manager.VkId)
+	}
+	names := fetchVkNames(vkIds)
+
 	views := make([]managerView, 0, len(managers))
 	for _, manager := range managers {
 		accountType := "—"
@@ -62,6 +71,7 @@ func ManagerList(w http.ResponseWriter, r *http.Request) {
 		views = append(views, managerView{
 			Id: manager.Id,
 			VkId: manager.VkId,
+			Name: names[manager.VkId],
 			AccountType: accountType,
 			SquadLabel: squadLabelById(squads, manager.SquadId),
 		})
@@ -264,6 +274,33 @@ func buildSquadOptions(squads []model.Team, selectedSquadId *uint) []squadOption
 	}
 
 	return options
+}
+
+// fetchVkNames looks up current first/last names for a batch of VK ids.
+// Never cached — called fresh on every manager list load. Failures (rate
+// limit, network) degrade gracefully to an empty name per id rather than
+// failing the whole page.
+func fetchVkNames(vkIds []uint) map[uint]string {
+	names := make(map[uint]string, len(vkIds))
+	if (len(vkIds) == 0 || vk == nil) {
+		return names
+	}
+
+	ids := make([]string, len(vkIds))
+	for i, vkId := range vkIds {
+		ids[i] = strconv.FormatUint(uint64(vkId), 10)
+	}
+
+	response, err := vk.UsersGet(api.Params{"user_ids": strings.Join(ids, ",")})
+	if (err != nil) {
+		return names
+	}
+
+	for _, user := range response {
+		names[uint(user.ID)] = strings.TrimSpace(user.FirstName + " " + user.LastName)
+	}
+
+	return names
 }
 
 func squadLabelById(squads []model.Team, id *uint) string {

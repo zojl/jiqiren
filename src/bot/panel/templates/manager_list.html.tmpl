@@ -1,10 +1,11 @@
 {{define "manager_list"}}
 <h1>менеджеры</h1>
 <table class="list">
-<tr><th>vk id</th><th>роль</th><th>отряд</th><th></th></tr>
+<tr><th>vk id</th><th>имя</th><th>роль</th><th>отряд</th><th></th></tr>
 {{range .Managers}}
 <tr>
   <td>{{.VkId}}</td>
+  <td>{{if .Name}}{{.Name}}{{else}}—{{end}}</td>
   <td>{{.AccountType}}</td>
   <td>{{.SquadLabel}}</td>
   <td>

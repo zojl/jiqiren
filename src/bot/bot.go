@@ -21,6 +21,7 @@ func main() {
     token := os.Getenv("TOKEN")
     prefix := os.Getenv("PREFIX")
     vk := api.NewVK(token)
+    panel.SetVK(vk)
 
     database.Init()
 

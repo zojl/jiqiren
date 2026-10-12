@@ -7,8 +7,13 @@ import (
 	"jiqiren/bot/panel/handlers"
 	"jiqiren/bot/panel/static"
 
+	"github.com/SevereCloud/vksdk/v2/api"
 	"github.com/go-chi/chi/v5"
 )
+
+func SetVK(client *api.VK) {
+	handlers.SetVK(client)
+}
 
 func NewRouter() chi.Router {
 	r := chi.NewRouter()
