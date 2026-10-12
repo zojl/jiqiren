@@ -62,7 +62,7 @@ func main() {
                 http.Redirect(w, r, "/panel", http.StatusFound)
             } else {
                 w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-                w.Write([]byte("Войдите через бота: команда /login в личных сообщениях."))
+                w.Write([]byte("Jīqìrén"))
             }
             return
         }
