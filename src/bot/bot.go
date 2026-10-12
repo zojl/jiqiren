@@ -50,25 +50,43 @@ func main() {
     mux := http.NewServeMux()
     mux.Handle("/panel/", http.StripPrefix("/panel", panel.NewRouter()))
 
-    callbackPath := os.Getenv("CALLBACK_URL")
-    mux.HandleFunc(callbackPath, func(w http.ResponseWriter, r *http.Request) {
-        if (r.Method == http.MethodGet) {
-            if code := r.URL.Query().Get("login"); code != "" {
-                auth.HandleLoginRedirect(w, r, code)
-                return
-            }
-
-            if (auth.HasValidSession(r)) {
-                http.Redirect(w, r, "/panel", http.StatusFound)
-            } else {
-                w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-                w.Write([]byte("Jīqìrén"))
-            }
+    // Login links are always "https://.../?login=CODE" (root path), regardless
+    // of where CALLBACK_URL points the VK webhook — the two must not be coupled.
+    rootGet := func(w http.ResponseWriter, r *http.Request) {
+        if code := r.URL.Query().Get("login"); code != "" {
+            auth.HandleLoginRedirect(w, r, code)
             return
         }
 
-        cb.HandleFunc(w, r)
-    })
+        if (auth.HasValidSession(r)) {
+            http.Redirect(w, r, "/panel", http.StatusFound)
+        } else {
+            w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+            w.Write([]byte("Jīqìrén"))
+        }
+    }
+
+    callbackPath := os.Getenv("CALLBACK_URL")
+    if (callbackPath == "/") {
+        mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+            if (r.Method == http.MethodGet) {
+                rootGet(w, r)
+                return
+            }
+
+            cb.HandleFunc(w, r)
+        })
+    } else {
+        mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+            if (r.Method != http.MethodGet) {
+                http.NotFound(w, r)
+                return
+            }
+
+            rootGet(w, r)
+        })
+        mux.HandleFunc(callbackPath, cb.HandleFunc)
+    }
 
     log.Println("Starting Web Server")
     if err := http.ListenAndServe(":" + os.Getenv("CALLBACK_PORT"), mux); err != nil {
