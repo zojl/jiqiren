@@ -57,9 +57,10 @@ func CreateManager(manager *model.Manager) error {
 	return db.Create(manager).Error
 }
 
-func UpdateManagerRole(manager *model.Manager) error {
+func UpdateManager(manager *model.Manager) error {
 	db := database.GetDb()
-	return db.Model(manager).Select("AccountType", "SquadId").Updates(model.Manager{
+	return db.Model(manager).Select("VkId", "AccountType", "SquadId").Updates(model.Manager{
+		VkId: manager.VkId,
 		AccountType: manager.AccountType,
 		SquadId: manager.SquadId,
 	}).Error

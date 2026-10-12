@@ -1,0 +1,22 @@
+{{define "manager_form"}}
+<h1>редактировать менеджера</h1>
+<form method="post" action="{{.Action}}" class="form">
+  <label>vk id<input type="text" name="vk_id" value="{{.VkId}}" required></label>
+  <label>роль
+    <select name="account_type">
+      <option value="" {{if eq .AccountType ""}}selected{{end}}>—</option>
+      <option value="teamlead" {{if eq .AccountType "teamlead"}}selected{{end}}>teamlead</option>
+      <option value="deputy" {{if eq .AccountType "deputy"}}selected{{end}}>deputy</option>
+      <option value="squad_lead" {{if eq .AccountType "squad_lead"}}selected{{end}}>squad_lead</option>
+    </select>
+  </label>
+  <label>отряд
+    <select name="squad_id">
+      <option value="">—</option>
+      {{range .Squads}}<option value="{{.Id}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>{{end}}
+    </select>
+  </label>
+  <button type="submit">сохранить</button>
+</form>
+<a class="back" href="/panel/managers">← назад</a>
+{{end}}
