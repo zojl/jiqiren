@@ -12,6 +12,13 @@ import (
 func HandleLoginRedirect(w http.ResponseWriter, r *http.Request, code string) {
 	manager, err := repository.FindOneManagerByLoginCode(code)
 	if (err != nil) {
+		// A stale/already-used login link is not an error for someone who's
+		// already logged in — just let them through on their existing session.
+		if (HasValidSession(r)) {
+			http.Redirect(w, r, "/panel", http.StatusFound)
+			return
+		}
+
 		http.Error(w, "Invalid or expired code / 验证码无效或已过期", http.StatusUnauthorized)
 		return
 	}
