@@ -69,12 +69,16 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		CanManageSquads: permissions.CanManageSquads(),
 	}
 
-	if (data.CanViewBalance && fraction.TargetToken != "") {
-		budget, budgetErr := hackerwars.GetTeamBudget(fraction.TargetToken)
-		if (budgetErr != nil) {
-			data.BudgetError = budgetErr.Error()
+	if (data.CanViewBalance) {
+		if (fraction.TargetToken == "") {
+			data.BudgetError = "токен команды не задан"
 		} else {
-			data.Budget = budget
+			budget, budgetErr := hackerwars.GetTeamBudget(fraction.TargetToken)
+			if (budgetErr != nil) {
+				data.BudgetError = budgetErr.Error()
+			} else {
+				data.Budget = budget
+			}
 		}
 	}
 

@@ -49,7 +49,7 @@ func setCookie(w http.ResponseWriter, claims *Claims) error {
 	http.SetCookie(w, &http.Cookie{
 		Name: CookieName,
 		Value: signed,
-		Path: "/panel",
+		Path: "/",
 		HttpOnly: true,
 		Secure: true,
 		SameSite: http.SameSiteLaxMode,
@@ -79,6 +79,11 @@ func ParseSessionCookie(r *http.Request) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func HasValidSession(r *http.Request) bool {
+	_, err := ParseSessionCookie(r)
+	return err == nil
 }
 
 // RenewIfNeeded extends the session cookie when it's close to expiring.

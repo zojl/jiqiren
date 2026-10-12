@@ -2,7 +2,12 @@
 <section class="fraction-header">
   <h1>{{.FractionIcon}} {{.FractionName}}</h1>
   {{if .CanViewBalance}}
-    {{if .Budget}}<div class="budget">бюджет: {{.Budget.Info.Budget}}</div>
+    {{if .Budget}}
+    <div class="budget">
+      бюджет: {{.Budget.Info.Budget}}
+      · доход сегодня: {{.Budget.Info.Income.Today}}, всего: {{.Budget.Info.Income.Total}}
+      · донат сегодня: {{.Budget.Info.Contributions.Today}}, всего: {{.Budget.Info.Contributions.Total}}
+    </div>
     {{else if .BudgetError}}<div class="error">бюджет недоступен: {{.BudgetError}}</div>{{end}}
   {{end}}
 </section>
