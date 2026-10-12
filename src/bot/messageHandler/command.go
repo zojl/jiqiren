@@ -26,7 +26,14 @@ func getCommand(messageObject *events.MessageNewObject, vk *api.VK) Command {
 			Vk: vk,
 		}
 	}
-	
+
+	if isCommand(messageObject, []string{"login"}) {
+		return command.Login{
+			Message: messageObject,
+			Vk: vk,
+		}
+	}
+
 	return nil
 }
 

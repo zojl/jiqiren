@@ -9,6 +9,8 @@ import (
 
     "jiqiren/bot/messageHandler"
     "jiqiren/bot/database"
+    "jiqiren/bot/panel"
+    "jiqiren/bot/panel/auth"
 
     "github.com/SevereCloud/vksdk/v2/api"
     "github.com/SevereCloud/vksdk/v2/events"
@@ -44,9 +46,26 @@ func main() {
         }
     })
 
+    mux := http.NewServeMux()
+    mux.Handle("/panel/", http.StripPrefix("/panel", panel.NewRouter()))
+
+    callbackPath := os.Getenv("CALLBACK_URL")
+    mux.HandleFunc(callbackPath, func(w http.ResponseWriter, r *http.Request) {
+        if (r.Method == http.MethodGet) {
+            if code := r.URL.Query().Get("login"); code != "" {
+                auth.HandleLoginRedirect(w, r, code)
+                return
+            }
+
+            http.Redirect(w, r, "/panel", http.StatusFound)
+            return
+        }
+
+        cb.HandleFunc(w, r)
+    })
+
     log.Println("Starting Web Server")
-    http.HandleFunc(os.Getenv("CALLBACK_URL"), cb.HandleFunc)
-    if err := http.ListenAndServe(":" + os.Getenv("CALLBACK_PORT"), nil); err != nil {
+    if err := http.ListenAndServe(":" + os.Getenv("CALLBACK_PORT"), mux); err != nil {
         log.Fatal(err)
     }
 }

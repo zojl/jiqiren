@@ -1,0 +1,50 @@
+{{define "dashboard"}}
+<section class="fraction-header">
+  <h1>{{.FractionIcon}} {{.FractionName}}</h1>
+  {{if .CanViewBalance}}
+    {{if .Budget}}<div class="budget">бюджет: {{.Budget.Info.Budget}}</div>
+    {{else if .BudgetError}}<div class="error">бюджет недоступен: {{.BudgetError}}</div>{{end}}
+  {{end}}
+</section>
+
+<section class="target-row">
+  <details class="target-dropdown">
+    <summary class="btn">команда → {{.FractionTargetLabel}}</summary>
+    {{if .CanSetFractionTarget}}
+    <form method="post" action="/panel/target" class="target-form">
+      <input type="hidden" name="scope" value="fraction">
+      <select name="target">{{range .TargetOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select>
+      <button type="submit">направить</button>
+    </form>
+    {{end}}
+  </details>
+  {{if .CanSetFractionToken}}<a class="icon" href="/panel/fraction/token" title="токен команды">🔑</a>{{end}}
+</section>
+
+<section class="squads">
+  {{range .Squads}}
+  <div class="squad-row">
+    <details class="target-dropdown">
+      <summary class="btn">{{.Code}} {{.Name}} → {{.TargetLabel}}</summary>
+      {{if .CanSetTarget}}
+      <form method="post" action="/panel/target" class="target-form">
+        <input type="hidden" name="scope" value="squad">
+        <input type="hidden" name="squad_id" value="{{.Id}}">
+        <select name="target">{{range $.TargetOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select>
+        <button type="submit">направить</button>
+      </form>
+      {{end}}
+    </details>
+    {{if .CanRename}}<a class="icon" href="/panel/squads/{{.Id}}/rename" title="переименовать">✎</a>{{end}}
+    {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Id}}/token" title="токен отряда">🔑</a>{{end}}
+  </div>
+  {{end}}
+</section>
+
+{{if .CanManageSquads}}
+<section class="actions">
+  <a class="btn" href="/panel/squads/new">+ отряд</a>
+  <a class="btn" href="/panel/managers">менеджеры</a>
+</section>
+{{end}}
+{{end}}

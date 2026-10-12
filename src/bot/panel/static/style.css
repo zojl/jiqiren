@@ -1,0 +1,113 @@
+:root {
+  color-scheme: dark;
+  --bg: #0a0d0a;
+  --fg: #c8ffd4;
+  --dim: #5f8f6f;
+  --accent: #39ff8f;
+  --border: #1d2e20;
+  --danger: #ff5f5f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "SF Mono", "JetBrains Mono", Consolas, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.bar {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand { color: var(--accent); letter-spacing: 0.1em; }
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+h1, h2 { color: var(--accent); font-weight: normal; }
+h1 { font-size: 1.1em; }
+h2 { font-size: 1em; margin-top: 32px; }
+
+.fraction-header { margin-bottom: 20px; }
+.budget { color: var(--dim); }
+.error { color: var(--danger); }
+
+.target-row, .squad-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.target-dropdown { flex: 1; }
+
+.btn, summary.btn {
+  display: inline-block;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: #0f140f;
+  color: var(--fg);
+  padding: 6px 10px;
+  border-radius: 2px;
+}
+
+.btn:hover, summary.btn:hover { border-color: var(--accent); }
+
+.target-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+select, input[type="text"], input[type="password"] {
+  background: #0f140f;
+  color: var(--fg);
+  border: 1px solid var(--border);
+  padding: 5px 8px;
+  font-family: inherit;
+}
+
+button {
+  background: var(--accent);
+  color: #06120a;
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button.danger { background: var(--danger); }
+
+.icon {
+  font-size: 1.1em;
+  opacity: 0.8;
+}
+.icon:hover { opacity: 1; }
+
+.actions { margin-top: 20px; display: flex; gap: 12px; }
+
+.form { display: flex; flex-direction: column; gap: 12px; max-width: 360px; }
+.form label { display: flex; flex-direction: column; gap: 4px; color: var(--dim); }
+
+.hint { color: var(--dim); font-size: 0.9em; }
+.back { display: inline-block; margin-top: 20px; color: var(--dim); }
+
+table.list { width: 100%; border-collapse: collapse; margin-top: 12px; }
+table.list th, table.list td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+table.list th { color: var(--dim); font-weight: normal; }
