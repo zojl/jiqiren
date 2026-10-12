@@ -21,7 +21,7 @@ type squadFormData struct {
 func NewSquadForm(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 	if (!permissions.CanManageSquads()) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 
@@ -31,7 +31,7 @@ func NewSquadForm(w http.ResponseWriter, r *http.Request) {
 func CreateSquad(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 	if (!permissions.CanManageSquads()) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 
@@ -65,7 +65,7 @@ func RenameSquadForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if (!permissions.CanRenameSquad(squadId)) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 
@@ -91,7 +91,7 @@ func RenameSquad(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if (!permissions.CanRenameSquad(squadId)) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 
@@ -112,7 +112,7 @@ func RenameSquad(w http.ResponseWriter, r *http.Request) {
 func DeleteSquad(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 	if (!permissions.CanManageSquads()) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 

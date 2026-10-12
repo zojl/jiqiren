@@ -20,7 +20,7 @@ type budgetFragmentData struct {
 func FractionBudget(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 	if (!permissions.CanViewBalance()) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 

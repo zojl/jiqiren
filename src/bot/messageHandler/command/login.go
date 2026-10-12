@@ -32,7 +32,7 @@ func (params Login) Handle() {
 	vkId := uint(params.Message.Message.FromID)
 	manager, managerErr := repository.FindOneManagerByVkId(vkId)
 	if (managerErr != nil) {
-		replyParams.Reply("Вы не зарегистрированы как менеджер.")
+		replyParams.Reply("You are not registered as a manager / 您尚未注册为管理员")
 		return
 	}
 

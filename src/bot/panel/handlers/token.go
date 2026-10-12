@@ -16,7 +16,7 @@ type tokenFormData struct {
 func FractionTokenForm(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 	if (!permissions.CanSetFractionToken()) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 
@@ -26,7 +26,7 @@ func FractionTokenForm(w http.ResponseWriter, r *http.Request) {
 func SetFractionToken(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 	if (!permissions.CanSetFractionToken()) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 
@@ -54,7 +54,7 @@ func SquadTokenForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if (!permissions.CanSetSquadToken(squadId)) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 
@@ -79,7 +79,7 @@ func SetSquadToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if (!permissions.CanSetSquadToken(squadId)) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 

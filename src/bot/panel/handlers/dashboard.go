@@ -39,7 +39,7 @@ type dashboardData struct {
 func Dashboard(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 	if (!permissions.CanViewTargets()) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 

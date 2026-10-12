@@ -12,7 +12,7 @@ import (
 func HandleLoginRedirect(w http.ResponseWriter, r *http.Request, code string) {
 	manager, err := repository.FindOneManagerByLoginCode(code)
 	if (err != nil) {
-		http.Error(w, "Код недействителен или истёк", http.StatusUnauthorized)
+		http.Error(w, "Invalid or expired code / 验证码无效或已过期", http.StatusUnauthorized)
 		return
 	}
 

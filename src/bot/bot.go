@@ -62,7 +62,7 @@ func main() {
             http.Redirect(w, r, "/panel", http.StatusFound)
         } else {
             w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-            w.Write([]byte("Jīqìrén"))
+            w.Write([]byte("机器人 | Jīqìrén"))
         }
     }
 

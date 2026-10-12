@@ -34,7 +34,7 @@ func setSquadTarget(w http.ResponseWriter, r *http.Request, permissions *auth.Pe
 	}
 
 	if (!permissions.CanSetSquadTarget(uint(squadId))) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 
@@ -60,7 +60,7 @@ func setSquadTarget(w http.ResponseWriter, r *http.Request, permissions *auth.Pe
 
 func setFractionTarget(w http.ResponseWriter, r *http.Request, permissions *auth.Permissions, target uint) {
 	if (!permissions.CanSetFractionTarget()) {
-		http.Error(w, "Доступ запрещён", http.StatusForbidden)
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 
