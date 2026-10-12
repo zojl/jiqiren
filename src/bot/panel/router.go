@@ -25,6 +25,8 @@ func NewRouter() chi.Router {
 
 		r.Get("/", handlers.Dashboard)
 
+		r.Post("/logout", handlers.Logout)
+
 		r.Post("/target", handlers.SetTarget)
 
 		r.Get("/squads/new", handlers.NewSquadForm)

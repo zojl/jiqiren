@@ -25,9 +25,23 @@ a:hover { text-decoration: underline; }
 .bar {
   padding: 12px 20px;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .brand { color: var(--accent); letter-spacing: 0.1em; }
+
+.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--dim);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+.link:hover { color: var(--accent); text-decoration: underline; }
 
 main {
   max-width: 720px;

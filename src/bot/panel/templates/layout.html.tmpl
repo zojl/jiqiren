@@ -7,7 +7,10 @@
 <link rel="stylesheet" href="/panel/static/style.css">
 </head>
 <body>
-<header class="bar"><a href="/panel" class="brand">[ jiqiren ]</a></header>
+<header class="bar">
+  <a href="/panel" class="brand">[ jiqiren ]</a>
+  <form method="post" action="/panel/logout" class="inline logout"><button type="submit" class="link">выход</button></form>
+</header>
 <main>
 {{.Body}}
 </main>

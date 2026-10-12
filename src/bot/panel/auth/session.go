@@ -81,6 +81,18 @@ func ParseSessionCookie(r *http.Request) (*Claims, error) {
 	return claims, nil
 }
 
+func ClearSession(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name: CookieName,
+		Value: "",
+		Path: "/",
+		HttpOnly: true,
+		Secure: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge: -1,
+	})
+}
+
 func HasValidSession(r *http.Request) bool {
 	_, err := ParseSessionCookie(r)
 	return err == nil
