@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type Team struct {
 	Id uint `gorm:"primaryKey"`
 	Name string
@@ -9,4 +11,5 @@ type Team struct {
 	ChatId *int64 `gorm:"null"`
 	TargetToken string `gorm:"size:255"`
 	Target *uint `gorm:"null"`
+	UpdatedAt time.Time
 }

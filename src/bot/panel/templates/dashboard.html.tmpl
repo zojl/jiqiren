@@ -11,7 +11,7 @@
 
 <section class="target-row">
   <details class="target-dropdown">
-    <summary class="btn">команда → {{.FractionTargetLabel}}</summary>
+    <summary class="btn">{{.FractionIcon}} {{.FractionName}} → {{.FractionTargetLabel}}</summary>
     {{if .CanSetFractionTarget}}
     <form method="post" action="/panel/target" class="target-form">
       <input type="hidden" name="scope" value="fraction">
