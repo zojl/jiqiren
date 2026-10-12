@@ -40,7 +40,18 @@ h1 { font-size: 1.1em; }
 h2 { font-size: 1em; margin-top: 32px; }
 
 .fraction-header { margin-bottom: 20px; }
-.budget { color: var(--dim); }
+.budget-dropdown { margin-top: 8px; }
+.budget-content { margin-top: 8px; }
+.budget { margin: 0; max-width: 320px; }
+.budget-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 2px 0;
+  color: var(--dim);
+}
+.budget-row dt { margin: 0; }
+.budget-row dd { margin: 0; color: var(--fg); }
 .error { color: var(--danger); }
 
 .target-row, .squad-row {

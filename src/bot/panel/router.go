@@ -33,6 +33,7 @@ func NewRouter() chi.Router {
 
 		r.Get("/fraction/token", handlers.FractionTokenForm)
 		r.Post("/fraction/token", handlers.SetFractionToken)
+		r.Get("/fraction/budget", handlers.FractionBudget)
 
 		r.Get("/managers", handlers.ManagerList)
 		r.Post("/managers", handlers.CreateManager)

@@ -5,7 +5,6 @@ import (
 
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
-	"jiqiren/bot/external/hackerwars"
 	"jiqiren/bot/panel/auth"
 	"jiqiren/bot/panel/templates"
 )
@@ -30,8 +29,6 @@ type dashboardData struct {
 	FractionIcon string
 	TargetOptions []targetOption
 	CanViewBalance bool
-	Budget *hackerwars.Budget
-	BudgetError string
 	CanSetFractionTarget bool
 	CanSetFractionToken bool
 	FractionTargetLabel string
@@ -67,19 +64,6 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		CanSetFractionToken: permissions.CanSetFractionToken(),
 		FractionTargetLabel: targetLabel(allFractions, fraction.Target),
 		CanManageSquads: permissions.CanManageSquads(),
-	}
-
-	if (data.CanViewBalance) {
-		if (fraction.TargetToken == "") {
-			data.BudgetError = "токен команды не задан"
-		} else {
-			budget, budgetErr := hackerwars.GetTeamBudget(fraction.TargetToken)
-			if (budgetErr != nil) {
-				data.BudgetError = budgetErr.Error()
-			} else {
-				data.Budget = budget
-			}
-		}
 	}
 
 	squads, squadsErr := repository.FindTeamsByFractionId(fraction.Id)

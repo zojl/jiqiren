@@ -1,0 +1,13 @@
+{{define "budget_fragment"}}
+{{if .Budget}}
+<dl class="budget">
+  <div class="budget-row"><dt>бюджет</dt><dd>{{.Budget.Info.Budget}}</dd></div>
+  <div class="budget-row"><dt>доход сегодня</dt><dd>{{.Budget.Info.Income.Today}}</dd></div>
+  <div class="budget-row"><dt>доход всего</dt><dd>{{.Budget.Info.Income.Total}}</dd></div>
+  <div class="budget-row"><dt>донат сегодня</dt><dd>{{.Budget.Info.Contributions.Today}}</dd></div>
+  <div class="budget-row"><dt>донат всего</dt><dd>{{.Budget.Info.Contributions.Total}}</dd></div>
+</dl>
+{{else if .Error}}
+<div class="error">бюджет недоступен: {{.Error}}</div>
+{{end}}
+{{end}}

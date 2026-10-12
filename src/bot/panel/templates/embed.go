@@ -29,3 +29,13 @@ func Render(w http.ResponseWriter, name string, data interface{}) {
 		http.Error(w, "Ошибка шаблона: "+err.Error(), http.StatusInternalServerError)
 	}
 }
+
+// RenderFragment executes the named template on its own, with no layout
+// wrapper — for small HTML snippets fetched by JS (e.g. a lazily loaded
+// spoiler) rather than full pages.
+func RenderFragment(w http.ResponseWriter, name string, data interface{}) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := parsed.ExecuteTemplate(w, name, data); err != nil {
+		http.Error(w, "Ошибка шаблона: "+err.Error(), http.StatusInternalServerError)
+	}
+}
