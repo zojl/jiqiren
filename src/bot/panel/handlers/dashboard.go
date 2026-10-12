@@ -97,7 +97,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func buildTargetOptions(fractions []model.Fraction, ownFractionId uint) []targetOption {
-	options := []targetOption{}
+	options := []targetOption{{Value: model.TargetNone, Label: "✕ снять цель"}}
 	for _, fraction := range fractions {
 		if (fraction.Id == ownFractionId) {
 			continue
@@ -110,7 +110,7 @@ func buildTargetOptions(fractions []model.Fraction, ownFractionId uint) []target
 }
 
 func targetLabel(fractions []model.Fraction, target *uint) string {
-	if (target == nil) {
+	if (target == nil || *target == model.TargetNone) {
 		return "—"
 	}
 
