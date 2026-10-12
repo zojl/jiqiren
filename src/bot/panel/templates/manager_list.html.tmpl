@@ -1,0 +1,39 @@
+{{define "manager_list"}}
+<h1>менеджеры</h1>
+<table class="list">
+<tr><th>vk id</th><th>имя</th><th>роль</th><th>отряд</th><th></th></tr>
+{{range .Managers}}
+<tr>
+  <td>{{.VkId}}</td>
+  <td>{{if .Name}}{{.Name}}{{else}}—{{end}}</td>
+  <td>{{.AccountType}}</td>
+  <td>{{.SquadLabel}}</td>
+  <td>
+    <a class="icon" href="/panel/managers/{{.Id}}/edit" title="редактировать">✎</a>
+    <form method="post" action="/panel/managers/{{.Id}}/delete" onsubmit="return confirm('Удалить?');" class="inline"><button type="submit" class="danger">✕</button></form>
+  </td>
+</tr>
+{{end}}
+</table>
+
+<h2>добавить менеджера</h2>
+<form method="post" action="/panel/managers" class="form">
+  <label>vk id<input type="text" name="vk_id" required></label>
+  <label>роль
+    <select name="account_type">
+      <option value="">—</option>
+      <option value="teamlead">teamlead</option>
+      <option value="deputy">deputy</option>
+      <option value="squad_lead">squad_lead</option>
+    </select>
+  </label>
+  <label>отряд
+    <select name="squad_id">
+      <option value="">—</option>
+      {{range .Squads}}<option value="{{.Id}}">{{.Label}}</option>{{end}}
+    </select>
+  </label>
+  <button type="submit">добавить</button>
+</form>
+<a class="back" href="/panel">← назад</a>
+{{end}}

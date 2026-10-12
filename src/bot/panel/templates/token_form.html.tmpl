@@ -1,0 +1,9 @@
+{{define "token_form"}}
+<h1>токен</h1>
+<form method="post" action="{{.Action}}" class="form">
+  <label>новый токен<input type="password" name="token" required autocomplete="off"></label>
+  <button type="submit">сохранить</button>
+</form>
+<p class="hint">текущий токен нигде не отображается — только замена</p>
+<a class="back" href="/panel">← назад</a>
+{{end}}
