@@ -69,6 +69,10 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 	squads, squadsErr := repository.FindTeamsByFractionId(fraction.Id)
 	if (squadsErr == nil) {
 		for _, squad := range squads {
+			if (!permissions.CanViewSquad(squad.Id)) {
+				continue
+			}
+
 			data.Squads = append(data.Squads, squadView{
 				Id: squad.Id,
 				Name: squad.Name,

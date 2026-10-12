@@ -57,6 +57,17 @@ func (p *Permissions) CanViewTargets() bool {
 	return p.isSquadLead() && p.claims.SquadId != nil
 }
 
+// CanViewSquad gates whether a specific squad's target is shown at all.
+// Teamlead/deputy see every squad of the fraction; a plain squad lead only
+// ever sees their own squad, never other squads' targets.
+func (p *Permissions) CanViewSquad(squadId uint) bool {
+	if (p.isTeamlead() || p.isDeputy()) {
+		return true
+	}
+
+	return p.isSquadLead() && p.ownsSquad(squadId)
+}
+
 func (p *Permissions) CanViewBalance() bool {
 	return p.isTeamlead() || p.isDeputy()
 }
