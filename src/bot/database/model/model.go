@@ -9,6 +9,7 @@ func GetAllModels() []interface{} {
 		Fraction{},
 		User{},
 		Team{},
+		Manager{},
 		Profile{},
 		Report{},
 		ContestType{},

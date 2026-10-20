@@ -1,0 +1,12 @@
+{{define "squad_form"}}
+<h1>{{if .ShowCodeFields}}новый отряд{{else}}переименовать отряд{{end}}</h1>
+<form method="post" action="{{.Action}}" class="form">
+  <label>название<input type="text" name="name" value="{{.Name}}" required></label>
+  {{if .ShowCodeFields}}
+  <label>короткий код<input type="text" name="code" maxlength="2" required></label>
+  <label>id чата (необязательно)<input type="text" name="chat_id"></label>
+  {{end}}
+  <button type="submit">сохранить</button>
+</form>
+<a class="back" href="/panel">← назад</a>
+{{end}}
