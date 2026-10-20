@@ -47,6 +47,13 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if squadId, isHome := permissions.HomeSquadId(); (isHome) {
+		if squad, squadErr := repository.FindOneTeamById(squadId); (squadErr == nil) {
+			http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+			return
+		}
+	}
+
 	fraction, err := repository.FindOneFractionById(permissions.FractionId())
 	if (err != nil) {
 		http.Error(w, "Фракция не найдена", http.StatusInternalServerError)

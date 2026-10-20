@@ -1,9 +1,26 @@
 {{define "squad_page"}}
-<h1>{{.Code}} {{.Name}}</h1>
+<h1>{{.Code}} {{.Name}} {{if .CanRename}}<a class="icon" href="/panel/squads/{{.Code}}/rename" title="редактировать">✎</a>{{end}}</h1>
 <dl class="budget">
-  <div class="budget-row"><dt>цель</dt><dd>{{.TargetLabel}}</dd></div>
+  <div class="budget-row">
+    <dt>цель</dt>
+    <dd>
+      {{if .CanSetTarget}}
+      <details class="target-picker" data-scope="squad" data-squad-id="{{.Id}}">
+        <summary class="icon-select-btn" title="цель отряда">{{.CurrentTargetIcon}}</summary>
+        <div class="target-menu">
+          {{range .TargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
+        </div>
+      </details>
+      {{else}}
+      {{.TargetLabel}}
+      {{end}}
+    </dd>
+  </div>
   {{if .ChatId}}<div class="budget-row"><dt>чат</dt><dd>{{.ChatId}}</dd></div>{{end}}
-  <div class="budget-row"><dt>токен</dt><dd>{{if .HasToken}}установлен{{else}}не задан{{end}}</dd></div>
+  <div class="budget-row">
+    <dt>токен</dt>
+    <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Code}}/token" title="токен отряда">🗝</a>{{end}}</dd>
+  </div>
 </dl>
 
 <h2>участники</h2>

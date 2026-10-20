@@ -61,11 +61,17 @@ type squadFormData struct {
 }
 
 type squadPageData struct {
+	Id uint
 	Name string
 	Code string
 	ChatId *int64
 	TargetLabel string
+	CurrentTargetIcon string
+	TargetOptions []targetIconOption
 	HasToken bool
+	CanSetTarget bool
+	CanRename bool
+	CanSetToken bool
 	Members []squadMemberView
 }
 
@@ -95,12 +101,23 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	target := model.TargetNone
+	if (squad.Target != nil) {
+		target = *squad.Target
+	}
+
 	templates.Render(w, "squad_page", squadPageData{
+		Id: squad.Id,
 		Name: squad.Name,
 		Code: squad.Code,
 		ChatId: squad.ChatId,
 		TargetLabel: targetLabel(allFractions, squad.Target),
+		CurrentTargetIcon: targetIcon(allFractions, squad.Target),
+		TargetOptions: buildTargetIconOptions(allFractions, squad.FractionId, target),
 		HasToken: squad.TargetToken != "",
+		CanSetTarget: permissions.CanSetSquadTarget(squad.Id),
+		CanRename: permissions.CanRenameSquad(squad.Id),
+		CanSetToken: permissions.CanSetSquadToken(squad.Id),
 		Members: members,
 	})
 }
@@ -348,25 +365,19 @@ func CreateSquad(w http.ResponseWriter, r *http.Request) {
 func RenameSquadForm(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 
-	squadId, parseErr := squadIdFromPath(r)
-	if (parseErr != nil) {
-		http.Error(w, "Некорректный отряд", http.StatusBadRequest)
-		return
-	}
-
-	if (!permissions.CanRenameSquad(squadId)) {
-		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
-		return
-	}
-
-	squad, squadErr := repository.FindOneTeamById(squadId)
-	if (squadErr != nil || squad.FractionId != permissions.FractionId()) {
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
 		http.Error(w, "Отряд не найден", http.StatusNotFound)
 		return
 	}
 
+	if (!permissions.CanRenameSquad(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
 	templates.Render(w, "squad_form", squadFormData{
-		Action: "/panel/squads/" + strconv.FormatUint(uint64(squadId), 10) + "/rename",
+		Action: "/panel/squads/" + squad.Code + "/rename",
 		Name: squad.Name,
 	})
 }
@@ -374,20 +385,14 @@ func RenameSquadForm(w http.ResponseWriter, r *http.Request) {
 func RenameSquad(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 
-	squadId, parseErr := squadIdFromPath(r)
-	if (parseErr != nil) {
-		http.Error(w, "Некорректный отряд", http.StatusBadRequest)
-		return
-	}
-
-	if (!permissions.CanRenameSquad(squadId)) {
-		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
-		return
-	}
-
-	squad, squadErr := repository.FindOneTeamById(squadId)
-	if (squadErr != nil || squad.FractionId != permissions.FractionId()) {
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
 		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanRenameSquad(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 
@@ -410,19 +415,13 @@ func DeleteSquad(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	squadId, parseErr := squadIdFromPath(r)
-	if (parseErr != nil) {
-		http.Error(w, "Некорректный отряд", http.StatusBadRequest)
-		return
-	}
-
-	squad, squadErr := repository.FindOneTeamById(squadId)
-	if (squadErr != nil || squad.FractionId != permissions.FractionId()) {
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
 		http.Error(w, "Отряд не найден", http.StatusNotFound)
 		return
 	}
 
-	if deleteErr := repository.DeleteTeam(squadId); deleteErr != nil {
+	if deleteErr := repository.DeleteTeam(squad.Id); deleteErr != nil {
 		http.Error(w, "Не удалось удалить отряд", http.StatusInternalServerError)
 		return
 	}
@@ -430,13 +429,4 @@ func DeleteSquad(w http.ResponseWriter, r *http.Request) {
 	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionDeleteSquad,
 		fmt.Sprintf("удалён отряд %s «%s»", squad.Code, squad.Name))
 	http.Redirect(w, r, "/panel", http.StatusFound)
-}
-
-func squadIdFromPath(r *http.Request) (uint, error) {
-	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
-	if (err != nil) {
-		return 0, err
-	}
-
-	return uint(id), nil
 }

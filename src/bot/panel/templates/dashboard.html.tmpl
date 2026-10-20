@@ -37,8 +37,8 @@
     {{else}}
     <span class="icon" title="цель отряда">{{.CurrentTargetIcon}}</span>
     {{end}}
-    {{if .CanRename}}<a class="icon" href="/panel/squads/{{.Id}}/rename" title="редактировать">✎</a>{{end}}
-    {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Id}}/token" title="токен отряда">🗝</a>{{end}}
+    {{if .CanRename}}<a class="icon" href="/panel/squads/{{.Code}}/rename" title="редактировать">✎</a>{{end}}
+    {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Code}}/token" title="токен отряда">🗝</a>{{end}}
   </div>
   {{end}}
 </section>

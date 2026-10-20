@@ -114,7 +114,7 @@ button.danger { background: var(--danger); }
 }
 .icon:hover { opacity: 1; }
 
-.squad-link { flex: 1; }
+.squad-link { min-width: 10em; }
 
 .target-picker { position: relative; display: inline-block; }
 

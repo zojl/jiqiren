@@ -3,13 +3,14 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"jiqiren/bot/audit"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/panel/auth"
 	"jiqiren/bot/panel/templates"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type tokenFormData struct {
@@ -51,45 +52,33 @@ func SetFractionToken(w http.ResponseWriter, r *http.Request) {
 func SquadTokenForm(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 
-	squadId, parseErr := squadIdFromPath(r)
-	if (parseErr != nil) {
-		http.Error(w, "Некорректный отряд", http.StatusBadRequest)
-		return
-	}
-
-	if (!permissions.CanSetSquadToken(squadId)) {
-		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
-		return
-	}
-
-	squad, squadErr := repository.FindOneTeamById(squadId)
-	if (squadErr != nil || squad.FractionId != permissions.FractionId()) {
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
 		http.Error(w, "Отряд не найден", http.StatusNotFound)
 		return
 	}
 
+	if (!permissions.CanSetSquadToken(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
 	templates.Render(w, "token_form", tokenFormData{
-		Action: "/panel/squads/" + strconv.FormatUint(uint64(squadId), 10) + "/token",
+		Action: "/panel/squads/" + squad.Code + "/token",
 	})
 }
 
 func SetSquadToken(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 
-	squadId, parseErr := squadIdFromPath(r)
-	if (parseErr != nil) {
-		http.Error(w, "Некорректный отряд", http.StatusBadRequest)
-		return
-	}
-
-	if (!permissions.CanSetSquadToken(squadId)) {
-		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
-		return
-	}
-
-	squad, squadErr := repository.FindOneTeamById(squadId)
-	if (squadErr != nil || squad.FractionId != permissions.FractionId()) {
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
 		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanSetSquadToken(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
 
