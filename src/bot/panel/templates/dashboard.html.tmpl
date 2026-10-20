@@ -26,19 +26,16 @@
 <section class="squads">
   {{range .Squads}}
   <div class="squad-row">
-    <details class="target-dropdown">
-      <summary class="btn">{{.Code}} {{.Name}} → {{.TargetLabel}}</summary>
-      {{if .CanSetTarget}}
-      <form method="post" action="/panel/target" class="target-form">
-        <input type="hidden" name="scope" value="squad">
-        <input type="hidden" name="squad_id" value="{{.Id}}">
-        <select name="target">{{range $.TargetOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select>
-        <button type="submit">направить</button>
-      </form>
-      {{end}}
-    </details>
-    {{if .CanRename}}<a class="icon" href="/panel/squads/{{.Id}}/rename" title="переименовать">✎</a>{{end}}
-    {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Id}}/token" title="токен отряда">🔑</a>{{end}}
+    <a class="squad-link" href="/panel/squads/{{.Code}}">{{.Code}} {{.Name}}</a>
+    {{if .CanSetTarget}}
+    <select class="icon-select target-select" data-scope="squad" data-squad-id="{{.Id}}" title="цель отряда">
+      {{range .TargetOptions}}<option value="{{.Value}}" title="{{.Name}}" {{if .Selected}}selected{{end}}>{{.Icon}}</option>{{end}}
+    </select>
+    {{else}}
+    <span class="icon" title="цель отряда">{{.CurrentTargetIcon}}</span>
+    {{end}}
+    {{if .CanRename}}<a class="icon" href="/panel/squads/{{.Id}}/rename" title="редактировать">✎</a>{{end}}
+    {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Id}}/token" title="токен отряда">🗝</a>{{end}}
   </div>
   {{end}}
 </section>

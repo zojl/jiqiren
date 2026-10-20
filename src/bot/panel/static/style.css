@@ -6,6 +6,7 @@
   --accent: #39ff8f;
   --border: #1d2e20;
   --danger: #ff5f5f;
+  --warn: #e8c547;
 }
 
 * { box-sizing: border-box; }
@@ -121,6 +122,27 @@ button.danger { background: var(--danger); }
 }
 .icon:hover { opacity: 1; }
 
+.squad-link { flex: 1; }
+
+select.icon-select {
+  width: auto;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+select.icon-select:hover { border-color: var(--accent); }
+
+dialog.popup {
+  background: #0f140f;
+  color: var(--fg);
+  border: 1px solid var(--danger);
+  border-radius: 2px;
+  padding: 16px;
+  max-width: 320px;
+  font-family: inherit;
+}
+dialog.popup::backdrop { background: rgba(0, 0, 0, 0.6); }
+dialog.popup .popup-message { margin: 0 0 12px; color: var(--danger); }
+
 .actions { margin-top: 20px; display: flex; gap: 12px; }
 
 .form { display: flex; flex-direction: column; gap: 12px; max-width: 360px; }
@@ -137,3 +159,10 @@ table.list th, table.list td {
   border-bottom: 1px solid var(--border);
 }
 table.list th { color: var(--dim); font-weight: normal; }
+
+.table-scroll { overflow-x: auto; }
+table.members td, table.members th { white-space: nowrap; }
+
+.rating-good { color: var(--accent); }
+.rating-warn { color: var(--warn); }
+.rating-bad { color: var(--danger); }

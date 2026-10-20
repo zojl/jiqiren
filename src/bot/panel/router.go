@@ -31,6 +31,7 @@ func NewRouter() chi.Router {
 
 		r.Get("/squads/new", handlers.NewSquadForm)
 		r.Post("/squads", handlers.CreateSquad)
+		r.Get("/squads/{code}", handlers.SquadPage)
 		r.Get("/squads/{id}/rename", handlers.RenameSquadForm)
 		r.Post("/squads/{id}/rename", handlers.RenameSquad)
 		r.Post("/squads/{id}/delete", handlers.DeleteSquad)

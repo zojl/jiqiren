@@ -31,3 +31,43 @@ document.addEventListener("toggle", function (event) {
     .then(function (html) { content.innerHTML = html; })
     .catch(function () { content.innerHTML = '<div class="error">не удалось загрузить</div>'; });
 }, true);
+
+function showErrorPopup(message) {
+  var dialog = document.getElementById("error-popup");
+  dialog.querySelector(".popup-message").textContent = message;
+  dialog.showModal();
+}
+
+document.addEventListener("click", function (event) {
+  if (event.target.matches(".popup-close")) {
+    event.target.closest("dialog").close();
+  }
+});
+
+document.querySelectorAll(".target-select").forEach(function (select) {
+  var lastValue = select.value;
+
+  select.addEventListener("change", function () {
+    var newValue = select.value;
+    var body = new URLSearchParams({ scope: select.dataset.scope, target: newValue });
+    if (select.dataset.squadId) {
+      body.set("squad_id", select.dataset.squadId);
+    }
+
+    fetch("/panel/target", { method: "POST", body: body, credentials: "same-origin" })
+      .then(function (response) {
+        if (!response.ok) {
+          return response.text().then(function (text) {
+            select.value = lastValue;
+            showErrorPopup(text);
+          });
+        }
+
+        lastValue = newValue;
+      })
+      .catch(function () {
+        select.value = lastValue;
+        showErrorPopup("Сетевая ошибка");
+      });
+  });
+});

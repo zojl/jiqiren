@@ -3,7 +3,9 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
+	"time"
 
 	"jiqiren/bot/audit"
 	"jiqiren/bot/database/model"
@@ -14,10 +16,268 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// moscow is a fixed +3 offset rather than a tzdata-backed location: Moscow
+// has not observed DST since 2014, and the prod image (golang:alpine) isn't
+// guaranteed to ship tzdata. Matches the UTC offset already assumed in
+// repository.FindLastProfileByVkIdForBattleDate (battle at 15:00 UTC = 18:00 MSK).
+var moscow = time.FixedZone("MSK", 3*60*60)
+
+const battleHourUTC = 15 // 18:00 MSK
+const inactiveStaleAfter = 7 * 24 * time.Hour
+const inactiveHiddenAfter = 30 * 24 * time.Hour
+
+type squadMemberView struct {
+	Name string
+	VkId uint
+	WayIcon string
+	Stale bool
+	LastSeen string
+
+	Level uint
+	Practice uint
+	Theory uint
+	Cunning uint
+	Wisdom uint
+
+	Stamina uint
+	StaminaLabel string
+	StaminaClass string
+
+	Money uint
+	MoneyLabel string
+	MoneyClass string
+
+	TargetLabel string
+	TargetClass string
+
+	SleepAt string
+	SleepWarning bool
+}
+
 type squadFormData struct {
 	Action string
 	Name string
 	ShowCodeFields bool
+}
+
+type squadPageData struct {
+	Name string
+	Code string
+	ChatId *int64
+	TargetLabel string
+	HasToken bool
+	Members []squadMemberView
+}
+
+func SquadPage(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanViewSquad(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	allFractions, fractionsErr := repository.FindAllFractions()
+	if (fractionsErr != nil) {
+		http.Error(w, "Ошибка загрузки фракций", http.StatusInternalServerError)
+		return
+	}
+
+	members, membersErr := buildSquadMembers(squad, allFractions)
+	if (membersErr != nil) {
+		http.Error(w, "Не удалось загрузить участников", http.StatusInternalServerError)
+		return
+	}
+
+	templates.Render(w, "squad_page", squadPageData{
+		Name: squad.Name,
+		Code: squad.Code,
+		ChatId: squad.ChatId,
+		TargetLabel: targetLabel(allFractions, squad.Target),
+		HasToken: squad.TargetToken != "",
+		Members: members,
+	})
+}
+
+// buildSquadMembers derives the squad roster from each player's own most
+// recently reported profile — there is no authoritative membership list.
+// A player who moved on now shows a different TeamId on their latest
+// profile and is excluded; one who simply stopped reporting is kept for a
+// month, marked stale after a week.
+func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squadMemberView, error) {
+	profiles, err := repository.FindLatestProfilesForTeam(squad.Id)
+	if (err != nil) {
+		return nil, err
+	}
+
+	userIds := make([]uint, 0, len(profiles))
+	for _, profile := range profiles {
+		userIds = append(userIds, profile.UserId)
+	}
+
+	users, _ := repository.FindUsersByIds(userIds)
+	vkIdByUserId := make(map[uint]uint, len(users))
+	for _, user := range users {
+		vkIdByUserId[user.Id] = user.VkId
+	}
+
+	now := time.Now()
+	nextBattle := nextBattleTime(now)
+	sleepWarningStart := nextBattle.Add(-12 * time.Hour)
+
+	members := make([]squadMemberView, 0, len(profiles))
+	for _, profile := range profiles {
+		if (profile.TeamId == nil || *profile.TeamId != squad.Id) {
+			continue
+		}
+
+		inactiveFor := now.Sub(profile.MessageDate)
+		if (inactiveFor > inactiveHiddenAfter) {
+			continue
+		}
+
+		staminaLabel := staminaRating(profile.Stamina)
+		moneyLabel := moneyRating(profile.Money)
+		targetClass := "rating-bad"
+		if (profileTargetMatchesSquad(profile, squad)) {
+			targetClass = "rating-good"
+		}
+
+		member := squadMemberView{
+			Name: profile.Username,
+			VkId: vkIdByUserId[profile.UserId],
+			WayIcon: wayIcon(profile.Way),
+			Stale: inactiveFor > inactiveStaleAfter,
+			LastSeen: profile.MessageDate.In(moscow).Format("02.01 15:04"),
+			Level: profile.Level,
+			Practice: profile.Practice,
+			Theory: profile.Theory,
+			Cunning: profile.Cunning,
+			Wisdom: profile.Wisdom,
+			Stamina: profile.Stamina,
+			StaminaLabel: staminaLabel,
+			StaminaClass: ratingClass(staminaLabel),
+			Money: profile.Money,
+			MoneyLabel: moneyLabel,
+			MoneyClass: ratingClass(moneyLabel),
+			TargetLabel: playerTargetLabel(profile, allFractions, squad),
+			TargetClass: targetClass,
+			SleepAt: "—",
+		}
+
+		if (profile.SleepAt != nil) {
+			member.SleepAt = profile.SleepAt.In(moscow).Format("15:04")
+			member.SleepWarning = !profile.SleepAt.Before(sleepWarningStart) && !profile.SleepAt.After(nextBattle)
+		}
+
+		members = append(members, member)
+	}
+
+	sort.Slice(members, func(i, j int) bool { return members[i].Name < members[j].Name })
+
+	return members, nil
+}
+
+func nextBattleTime(now time.Time) time.Time {
+	nowUTC := now.UTC()
+	battle := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), battleHourUTC, 0, 0, 0, time.UTC)
+	if (!nowUTC.Before(battle)) {
+		battle = battle.Add(24 * time.Hour)
+	}
+
+	return battle
+}
+
+func staminaRating(stamina uint) string {
+	switch {
+	case stamina >= 250:
+		return "отлично"
+	case stamina >= 200:
+		return "хорошо"
+	default:
+		return "плохо"
+	}
+}
+
+func moneyRating(money uint) string {
+	switch {
+	case money <= 9:
+		return "отлично"
+	case money <= 100:
+		return "приемлемо"
+	default:
+		return "плохо"
+	}
+}
+
+func ratingClass(label string) string {
+	switch (label) {
+	case "отлично", "хорошо":
+		return "rating-good"
+	case "приемлемо":
+		return "rating-warn"
+	default:
+		return "rating-bad"
+	}
+}
+
+func wayIcon(way uint) string {
+	switch (way) {
+	case 1:
+		return "⬛"
+	case 2:
+		return "⬜"
+	case 3:
+		return "🔲"
+	case 4:
+		return "🔳"
+	default:
+		return ""
+	}
+}
+
+// profileTargetMatchesSquad compares a player's chosen battle target to the
+// squad's directive. A player's own fraction as target means "defending"
+// (that's how the in-game 🔐 icon is parsed, see getTarget in
+// plain/profile.go), matching the squad target sentinel model.TargetDefense.
+func profileTargetMatchesSquad(profile model.Profile, squad *model.Team) bool {
+	if (profile.TargetId == nil) {
+		return false
+	}
+
+	if (squad.Target == nil || *squad.Target == model.TargetNone) {
+		return true
+	}
+
+	if (*squad.Target == model.TargetDefense) {
+		return *profile.TargetId == squad.FractionId
+	}
+
+	return *profile.TargetId == *squad.Target
+}
+
+func playerTargetLabel(profile model.Profile, allFractions []model.Fraction, squad *model.Team) string {
+	if (profile.TargetId == nil) {
+		return "—"
+	}
+
+	if (*profile.TargetId == squad.FractionId) {
+		return "🔐 защита"
+	}
+
+	for _, fraction := range allFractions {
+		if (fraction.Id == *profile.TargetId) {
+			return fraction.Icon + " " + fraction.Name
+		}
+	}
+
+	return "?"
 }
 
 func NewSquadForm(w http.ResponseWriter, r *http.Request) {

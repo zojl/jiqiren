@@ -18,6 +18,17 @@ func FindOneTeamById(id uint) (*model.Team, error) {
 	return &team, nil
 }
 
+func FindOneTeamByCodeAndFraction(code string, fractionId uint) (*model.Team, error) {
+	db := database.GetDb()
+	team := model.Team{}
+	err := db.Unscoped().Where("code = ? AND fraction_id = ?", code, fractionId).First(&team).Error
+	if (err != nil) {
+		return nil, fmt.Errorf("No squad with code: %s", code)
+	}
+
+	return &team, nil
+}
+
 func FindTeamsByFractionId(fractionId uint) ([]model.Team, error) {
 	db := database.GetDb()
 	teams := []model.Team{}

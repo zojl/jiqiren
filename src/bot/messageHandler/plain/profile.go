@@ -190,6 +190,13 @@ func insertProfile(
 		profile.TeamId = nil
 	}
 
+	if (len(parsedProfile.BeforeSleepHour) > 0 || len(parsedProfile.BeforeSleepMinute) > 0) {
+		hours, _ := strconv.ParseUint(parsedProfile.BeforeSleepHour, 10, 64)
+		minutes, _ := strconv.ParseUint(parsedProfile.BeforeSleepMinute, 10, 64)
+		sleepAt := messageTime.Add(time.Duration(hours)*time.Hour + time.Duration(minutes)*time.Minute)
+		profile.SleepAt = &sleepAt
+	}
+
 	if (target.Id > 0) {
 		profile.Target = *target
 	} else {

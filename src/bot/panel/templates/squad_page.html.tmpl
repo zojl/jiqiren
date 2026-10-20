@@ -1,0 +1,33 @@
+{{define "squad_page"}}
+<h1>{{.Code}} {{.Name}}</h1>
+<dl class="budget">
+  <div class="budget-row"><dt>цель</dt><dd>{{.TargetLabel}}</dd></div>
+  {{if .ChatId}}<div class="budget-row"><dt>чат</dt><dd>{{.ChatId}}</dd></div>{{end}}
+  <div class="budget-row"><dt>токен</dt><dd>{{if .HasToken}}установлен{{else}}не задан{{end}}</dd></div>
+</dl>
+
+<h2>участники</h2>
+{{if .Members}}
+<div class="table-scroll">
+<table class="list members">
+<tr><th>игрок</th><th>путь</th><th>ур</th><th>статы</th><th>выносл.</th><th>деньги</th><th>цель</th><th>сон (мск)</th></tr>
+{{range .Members}}
+<tr>
+  <td>{{if .Stale}}❄️ {{end}}<a href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener" title="{{.LastSeen}}">{{.Name}}</a></td>
+  <td>{{.WayIcon}}</td>
+  <td>{{.Level}}</td>
+  <td>📡{{.Practice}} 💾{{.Theory}} 📱{{.Cunning}} 🔎{{.Wisdom}}</td>
+  <td class="{{.StaminaClass}}">{{.Stamina}}</td>
+  <td class="{{.MoneyClass}}">{{.Money}}</td>
+  <td class="{{.TargetClass}}">{{.TargetLabel}}</td>
+  <td>{{.SleepAt}}{{if .SleepWarning}} ⚠️{{end}}</td>
+</tr>
+{{end}}
+</table>
+</div>
+{{else}}
+<p class="hint">нет активных участников за последний месяц</p>
+{{end}}
+
+<a class="back" href="/panel">← назад</a>
+{{end}}
