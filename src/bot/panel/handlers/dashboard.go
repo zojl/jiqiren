@@ -9,11 +9,6 @@ import (
 	"jiqiren/bot/panel/templates"
 )
 
-type targetOption struct {
-	Value uint
-	Label string
-}
-
 type targetIconOption struct {
 	Value uint
 	Icon string
@@ -35,11 +30,11 @@ type squadView struct {
 type dashboardData struct {
 	FractionName string
 	FractionIcon string
-	TargetOptions []targetOption
+	FractionCurrentTargetIcon string
+	FractionTargetOptions []targetIconOption
 	CanViewBalance bool
 	CanSetFractionTarget bool
 	CanSetFractionToken bool
-	FractionTargetLabel string
 	CanManageSquads bool
 	CanViewAuditLog bool
 	Squads []squadView
@@ -64,14 +59,19 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fractionTarget := model.TargetNone
+	if (fraction.Target != nil) {
+		fractionTarget = *fraction.Target
+	}
+
 	data := dashboardData{
 		FractionName: fraction.Name,
 		FractionIcon: fraction.Icon,
-		TargetOptions: buildTargetOptions(allFractions, fraction.Id),
+		FractionCurrentTargetIcon: targetIcon(allFractions, fraction.Target),
+		FractionTargetOptions: buildTargetIconOptions(allFractions, fraction.Id, fractionTarget),
 		CanViewBalance: permissions.CanViewBalance(),
 		CanSetFractionTarget: permissions.CanSetFractionTarget(),
 		CanSetFractionToken: permissions.CanSetFractionToken(),
-		FractionTargetLabel: targetLabel(allFractions, fraction.Target),
 		CanManageSquads: permissions.CanManageSquads(),
 		CanViewAuditLog: permissions.CanViewAuditLog(),
 	}
@@ -104,21 +104,6 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 	templates.Render(w, "dashboard", data)
 }
 
-func buildTargetOptions(fractions []model.Fraction, ownFractionId uint) []targetOption {
-	options := []targetOption{{Value: model.TargetNone, Label: "✕ снять цель"}}
-	for _, fraction := range fractions {
-		if (fraction.Id == ownFractionId) {
-			continue
-		}
-		options = append(options, targetOption{Value: fraction.Id, Label: fraction.Icon + " " + fraction.Name})
-	}
-	options = append(options, targetOption{Value: model.TargetDefense, Label: "🔐 защита"})
-
-	return options
-}
-
-// buildTargetIconOptions mirrors buildTargetOptions but renders icon-only
-// options for the compact per-squad target picker.
 func buildTargetIconOptions(fractions []model.Fraction, ownFractionId uint, current uint) []targetIconOption {
 	options := []targetIconOption{{Value: model.TargetNone, Icon: "✕", Name: "снять цель", Selected: current == model.TargetNone}}
 	for _, fraction := range fractions {

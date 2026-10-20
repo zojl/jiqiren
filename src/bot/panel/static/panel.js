@@ -1,19 +1,3 @@
-document.addEventListener("toggle", function (event) {
-  if (!event.target.matches(".target-dropdown")) {
-    return;
-  }
-
-  if (!event.target.open) {
-    return;
-  }
-
-  document.querySelectorAll(".target-dropdown[open]").forEach(function (other) {
-    if (other !== event.target) {
-      other.open = false;
-    }
-  });
-}, true);
-
 // The balance spoiler re-fetches fresh data from its handle on every open —
 // nothing is cached, so closing and opening it again always pulls new numbers.
 document.addEventListener("toggle", function (event) {

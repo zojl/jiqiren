@@ -13,7 +13,7 @@
 <tr><th>игрок</th><th>выносл.</th><th>деньги</th><th>цель</th><th>сон (мск)</th><th>статы</th></tr>
 {{range .Members}}
 <tr>
-  <td>{{if .Stale}}❄️ {{end}}<a href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener" title="{{.LastSeen}}">{{.WayIcon}}{{.Name}}({{.Level}})</a></td>
+  <td>{{if .Stale}}❄️ {{end}}<a href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener">{{.WayIcon}}{{.Name}}({{.Level}})</a> <span class="hint">{{.LastSeen}}</span></td>
   <td class="{{.StaminaClass}}">{{.Stamina}}</td>
   <td class="{{.MoneyClass}}">{{.Money}}</td>
   <td class="{{.TargetClass}}">{{.TargetLabel}}</td>

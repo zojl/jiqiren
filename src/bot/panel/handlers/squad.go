@@ -168,7 +168,7 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 			VkId: vkIdByUserId[profile.UserId],
 			WayIcon: wayIcon(profile.Way),
 			Stale: inactiveFor > inactiveStaleAfter,
-			LastSeen: profile.MessageDate.In(moscow).Format("02.01 15:04"),
+			LastSeen: formatMskMoment(profile.MessageDate, now),
 			Level: profile.Level,
 			Practice: profile.Practice,
 			Theory: profile.Theory,
@@ -186,7 +186,7 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 		}
 
 		if (profile.SleepAt != nil) {
-			member.SleepAt = formatSleepAt(*profile.SleepAt, now)
+			member.SleepAt = formatMskMoment(*profile.SleepAt, now)
 			member.SleepWarning = !profile.SleepAt.Before(sleepWarningStart) && !profile.SleepAt.After(nextBattle)
 		}
 
@@ -198,10 +198,10 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 	return members, nil
 }
 
-// formatSleepAt omits the date only when it's today — otherwise "15:04"
-// alone reads as "tonight" even when the moment is days away.
-func formatSleepAt(sleepAt time.Time, now time.Time) string {
-	sleepMsk := sleepAt.In(moscow)
+// formatMskMoment omits the date only when it's today — otherwise "15:04"
+// alone reads as "tonight"/"just now" even when the moment is far off.
+func formatMskMoment(moment time.Time, now time.Time) string {
+	sleepMsk := moment.In(moscow)
 	nowMsk := now.In(moscow)
 	if (sleepMsk.Year() == nowMsk.Year() && sleepMsk.YearDay() == nowMsk.YearDay()) {
 		return sleepMsk.Format("15:04")

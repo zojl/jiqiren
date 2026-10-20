@@ -9,21 +9,18 @@
   {{end}}
 </section>
 
-<section class="target-row">
-  <details class="target-dropdown">
-    <summary class="btn">{{.FractionIcon}} {{.FractionName}} → {{.FractionTargetLabel}}</summary>
-    {{if .CanSetFractionTarget}}
-    <form method="post" action="/panel/target" class="target-form">
-      <input type="hidden" name="scope" value="fraction">
-      <select name="target">{{range .TargetOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select>
-      <button type="submit">направить</button>
-    </form>
-    {{end}}
-  </details>
-  {{if .CanSetFractionToken}}<a class="icon" href="/panel/fraction/token" title="токен команды">🔑</a>{{end}}
-</section>
-
 <section class="squads">
+  <div class="squad-row">
+    <span class="squad-link">{{.FractionIcon}} {{.FractionName}}</span>
+    {{if .CanSetFractionTarget}}
+    <select class="icon-select target-select" data-scope="fraction" title="цель команды">
+      {{range .FractionTargetOptions}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Icon}} {{.Name}}</option>{{end}}
+    </select>
+    {{else}}
+    <span class="icon" title="цель команды">{{.FractionCurrentTargetIcon}}</span>
+    {{end}}
+    {{if .CanSetFractionToken}}<a class="icon" href="/panel/fraction/token" title="токен команды">🗝</a>{{end}}
+  </div>
   {{range .Squads}}
   <div class="squad-row">
     <a class="squad-link" href="/panel/squads/{{.Code}}">{{.Code}} {{.Name}}</a>
