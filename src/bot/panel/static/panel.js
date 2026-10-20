@@ -28,30 +28,54 @@ document.addEventListener("click", function (event) {
   }
 });
 
-document.querySelectorAll(".target-select").forEach(function (select) {
-  var lastValue = select.value;
+document.addEventListener("toggle", function (event) {
+  if (!event.target.matches(".target-picker") || !event.target.open) {
+    return;
+  }
 
-  select.addEventListener("change", function () {
-    var newValue = select.value;
-    var body = new URLSearchParams({ scope: select.dataset.scope, target: newValue });
-    if (select.dataset.squadId) {
-      body.set("squad_id", select.dataset.squadId);
+  document.querySelectorAll(".target-picker[open]").forEach(function (other) {
+    if (other !== event.target) {
+      other.open = false;
     }
-
-    fetch("/panel/target", { method: "POST", body: body, credentials: "same-origin" })
-      .then(function (response) {
-        if (!response.ok) {
-          return response.text().then(function (text) {
-            select.value = lastValue;
-            showErrorPopup(text);
-          });
-        }
-
-        lastValue = newValue;
-      })
-      .catch(function () {
-        select.value = lastValue;
-        showErrorPopup("Сетевая ошибка");
-      });
   });
+}, true);
+
+document.addEventListener("click", function (event) {
+  document.querySelectorAll(".target-picker[open]").forEach(function (picker) {
+    if (!picker.contains(event.target)) {
+      picker.open = false;
+    }
+  });
+});
+
+document.addEventListener("click", function (event) {
+  var button = event.target.closest(".target-option");
+  if (!button) {
+    return;
+  }
+
+  var picker = button.closest(".target-picker");
+  var summary = picker.querySelector("summary");
+  var body = new URLSearchParams({ scope: picker.dataset.scope, target: button.dataset.value });
+  if (picker.dataset.squadId) {
+    body.set("squad_id", picker.dataset.squadId);
+  }
+
+  fetch("/panel/target", { method: "POST", body: body, credentials: "same-origin" })
+    .then(function (response) {
+      if (!response.ok) {
+        return response.text().then(function (text) { showErrorPopup(text); });
+      }
+
+      summary.textContent = button.dataset.icon;
+      picker.querySelectorAll(".target-option").forEach(function (option) {
+        option.classList.toggle("selected", option === button);
+      });
+    })
+    .catch(function () {
+      showErrorPopup("Сетевая ошибка");
+    })
+    .finally(function () {
+      picker.open = false;
+    });
 });

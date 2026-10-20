@@ -13,9 +13,12 @@
   <div class="squad-row">
     <span class="squad-link">{{.FractionIcon}} {{.FractionName}}</span>
     {{if .CanSetFractionTarget}}
-    <select class="icon-select target-select" data-scope="fraction" title="цель команды">
-      {{range .FractionTargetOptions}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Icon}} {{.Name}}</option>{{end}}
-    </select>
+    <details class="target-picker" data-scope="fraction">
+      <summary class="icon-select-btn" title="цель команды">{{.FractionCurrentTargetIcon}}</summary>
+      <div class="target-menu">
+        {{range .FractionTargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
+      </div>
+    </details>
     {{else}}
     <span class="icon" title="цель команды">{{.FractionCurrentTargetIcon}}</span>
     {{end}}
@@ -25,9 +28,12 @@
   <div class="squad-row">
     <a class="squad-link" href="/panel/squads/{{.Code}}">{{.Code}} {{.Name}}</a>
     {{if .CanSetTarget}}
-    <select class="icon-select target-select" data-scope="squad" data-squad-id="{{.Id}}" title="цель отряда">
-      {{range .TargetOptions}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Icon}} {{.Name}}</option>{{end}}
-    </select>
+    <details class="target-picker" data-scope="squad" data-squad-id="{{.Id}}">
+      <summary class="icon-select-btn" title="цель отряда">{{.CurrentTargetIcon}}</summary>
+      <div class="target-menu">
+        {{range .TargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
+      </div>
+    </details>
     {{else}}
     <span class="icon" title="цель отряда">{{.CurrentTargetIcon}}</span>
     {{end}}
