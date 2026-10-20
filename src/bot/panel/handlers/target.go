@@ -91,8 +91,6 @@ func setFractionTarget(w http.ResponseWriter, r *http.Request, permissions *auth
 	http.Redirect(w, r, "/panel", http.StatusFound)
 }
 
-// formatTargetDetail renders a target value for the audit log, matching
-// the wording used on the dashboard (снята цель / защита / vs фракция).
 func formatTargetDetail(target uint) string {
 	switch (target) {
 	case model.TargetNone:

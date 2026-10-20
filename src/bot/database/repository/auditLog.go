@@ -12,9 +12,6 @@ func CreateAuditLog(entry *model.AuditLog) error {
 	return db.Create(entry).Error
 }
 
-// FindAuditLogsByFractionSince returns the fraction's audit trail newer
-// than `since`, newest first. The table itself is never pruned — callers
-// decide the visible window (the panel shows the last two weeks).
 func FindAuditLogsByFractionSince(fractionId uint, since time.Time) ([]model.AuditLog, error) {
 	db := database.GetDb()
 	logs := []model.AuditLog{}

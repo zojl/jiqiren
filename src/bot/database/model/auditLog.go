@@ -19,9 +19,8 @@ const (
 	AuditActionViewBalance     AuditAction = "view_balance"
 )
 
-// AuditLog is append-only: rows are never updated or deleted, so VkId is
-// captured at write time rather than joined from Manager, and stays
-// accurate even after the manager row is edited or removed.
+// VkId is stored directly (not joined from Manager) so it survives the
+// manager being edited or deleted later.
 type AuditLog struct {
 	Id         uint `gorm:"primaryKey"`
 	FractionId uint
