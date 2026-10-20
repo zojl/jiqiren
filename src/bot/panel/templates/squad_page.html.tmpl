@@ -10,17 +10,15 @@
 {{if .Members}}
 <div class="table-scroll">
 <table class="list members">
-<tr><th>игрок</th><th>путь</th><th>ур</th><th>статы</th><th>выносл.</th><th>деньги</th><th>цель</th><th>сон (мск)</th></tr>
+<tr><th>игрок</th><th>выносл.</th><th>деньги</th><th>цель</th><th>сон (мск)</th><th>статы</th></tr>
 {{range .Members}}
 <tr>
-  <td>{{if .Stale}}❄️ {{end}}<a href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener" title="{{.LastSeen}}">{{.Name}}</a></td>
-  <td>{{.WayIcon}}</td>
-  <td>{{.Level}}</td>
-  <td>📡{{.Practice}} 💾{{.Theory}} 📱{{.Cunning}} 🔎{{.Wisdom}}</td>
+  <td>{{if .Stale}}❄️ {{end}}<a href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener" title="{{.LastSeen}}">{{.WayIcon}}{{.Name}}({{.Level}})</a></td>
   <td class="{{.StaminaClass}}">{{.Stamina}}</td>
   <td class="{{.MoneyClass}}">{{.Money}}</td>
   <td class="{{.TargetClass}}">{{.TargetLabel}}</td>
   <td>{{.SleepAt}}{{if .SleepWarning}} ⚠️{{end}}</td>
+  <td>📡{{.Practice}} 💾{{.Theory}} 📱{{.Cunning}} 🔎{{.Wisdom}}</td>
 </tr>
 {{end}}
 </table>

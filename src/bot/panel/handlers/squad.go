@@ -129,6 +129,7 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 
 	now := time.Now()
 	nextBattle := nextBattleTime(now)
+	lastBattle := nextBattle.Add(-24 * time.Hour)
 	sleepWarningStart := nextBattle.Add(-12 * time.Hour)
 
 	members := make([]squadMemberView, 0, len(profiles))
@@ -142,11 +143,24 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 			continue
 		}
 
+		// A profile sent before the last battle says nothing about
+		// readiness for the next one — grey out the battle-relevant
+		// fields instead of showing a stale good/bad verdict.
+		beforeLastBattle := profile.MessageDate.Before(lastBattle)
+
 		staminaLabel := staminaRating(profile.Stamina)
 		moneyLabel := moneyRating(profile.Money)
+		staminaClass := ratingClass(staminaLabel)
+		moneyClass := ratingClass(moneyLabel)
 		targetClass := "rating-bad"
 		if (profileTargetMatchesSquad(profile, squad)) {
 			targetClass = "rating-good"
+		}
+
+		if (beforeLastBattle) {
+			staminaClass = "rating-stale"
+			moneyClass = "rating-stale"
+			targetClass = "rating-stale"
 		}
 
 		member := squadMemberView{
@@ -162,17 +176,17 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 			Wisdom: profile.Wisdom,
 			Stamina: profile.Stamina,
 			StaminaLabel: staminaLabel,
-			StaminaClass: ratingClass(staminaLabel),
+			StaminaClass: staminaClass,
 			Money: profile.Money,
 			MoneyLabel: moneyLabel,
-			MoneyClass: ratingClass(moneyLabel),
+			MoneyClass: moneyClass,
 			TargetLabel: playerTargetLabel(profile, allFractions, squad),
 			TargetClass: targetClass,
 			SleepAt: "—",
 		}
 
 		if (profile.SleepAt != nil) {
-			member.SleepAt = profile.SleepAt.In(moscow).Format("15:04")
+			member.SleepAt = formatSleepAt(*profile.SleepAt, now)
 			member.SleepWarning = !profile.SleepAt.Before(sleepWarningStart) && !profile.SleepAt.After(nextBattle)
 		}
 
@@ -182,6 +196,18 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 	sort.Slice(members, func(i, j int) bool { return members[i].Name < members[j].Name })
 
 	return members, nil
+}
+
+// formatSleepAt omits the date only when it's today — otherwise "15:04"
+// alone reads as "tonight" even when the moment is days away.
+func formatSleepAt(sleepAt time.Time, now time.Time) string {
+	sleepMsk := sleepAt.In(moscow)
+	nowMsk := now.In(moscow)
+	if (sleepMsk.Year() == nowMsk.Year() && sleepMsk.YearDay() == nowMsk.YearDay()) {
+		return sleepMsk.Format("15:04")
+	}
+
+	return sleepMsk.Format("02.01 15:04")
 }
 
 func nextBattleTime(now time.Time) time.Time {

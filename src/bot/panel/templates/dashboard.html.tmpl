@@ -29,7 +29,7 @@
     <a class="squad-link" href="/panel/squads/{{.Code}}">{{.Code}} {{.Name}}</a>
     {{if .CanSetTarget}}
     <select class="icon-select target-select" data-scope="squad" data-squad-id="{{.Id}}" title="цель отряда">
-      {{range .TargetOptions}}<option value="{{.Value}}" title="{{.Name}}" {{if .Selected}}selected{{end}}>{{.Icon}}</option>{{end}}
+      {{range .TargetOptions}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Icon}} {{.Name}}</option>{{end}}
     </select>
     {{else}}
     <span class="icon" title="цель отряда">{{.CurrentTargetIcon}}</span>

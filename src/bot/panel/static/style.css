@@ -125,9 +125,12 @@ button.danger { background: var(--danger); }
 .squad-link { flex: 1; }
 
 select.icon-select {
-  width: auto;
-  padding: 4px 6px;
+  width: 2.2em;
+  padding: 4px 2px;
   cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
 }
 select.icon-select:hover { border-color: var(--accent); }
 
@@ -166,3 +169,4 @@ table.members td, table.members th { white-space: nowrap; }
 .rating-good { color: var(--accent); }
 .rating-warn { color: var(--warn); }
 .rating-bad { color: var(--danger); }
+.rating-stale { color: var(--dim); }
