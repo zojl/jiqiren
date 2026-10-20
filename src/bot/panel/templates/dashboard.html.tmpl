@@ -16,7 +16,7 @@
     <details class="target-picker" data-scope="fraction">
       <summary class="icon-select-btn" title="цель команды">{{.FractionCurrentTargetIcon}}</summary>
       <div class="target-menu">
-        {{range .FractionTargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
+        {{range .FractionTargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-target-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
       </div>
     </details>
     {{else}}
@@ -31,7 +31,7 @@
     <details class="target-picker" data-scope="squad" data-squad-id="{{.Id}}">
       <summary class="icon-select-btn" title="цель отряда">{{.CurrentTargetIcon}}</summary>
       <div class="target-menu">
-        {{range .TargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
+        {{range .TargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-target-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
       </div>
     </details>
     {{else}}

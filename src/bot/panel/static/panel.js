@@ -67,7 +67,7 @@ document.addEventListener("click", function (event) {
         return response.text().then(function (text) { showErrorPopup(text); });
       }
 
-      summary.textContent = button.dataset.icon;
+      summary.textContent = button.dataset.targetIcon;
       picker.querySelectorAll(".target-option").forEach(function (option) {
         option.classList.toggle("selected", option === button);
       });
