@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"jiqiren/bot/audit"
+	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/messageHandler/reply"
 
@@ -47,6 +49,8 @@ func (params Login) Handle() {
 		replyParams.Reply("Ошибка сохранения кода, попробуйте позже.")
 		return
 	}
+
+	audit.Record(manager.FractionId, manager.Id, model.AuditActionLoginRequest, "запрошена ссылка для входа")
 
 	replyParams.Reply(fmt.Sprintf("https://jiqiren.huoqiang.ltd/?login=%s", code))
 }

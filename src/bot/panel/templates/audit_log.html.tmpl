@@ -1,0 +1,16 @@
+{{define "audit_log"}}
+<h1>журнал действий</h1>
+<p class="hint">за последние 2 недели</p>
+<table class="list">
+<tr><th>время</th><th>кто</th><th>действие</th><th>подробности</th></tr>
+{{range .Entries}}
+<tr>
+  <td>{{.Time}}</td>
+  <td>{{.Who}}</td>
+  <td>{{.Action}}</td>
+  <td>{{.Details}}</td>
+</tr>
+{{end}}
+</table>
+<a class="back" href="/panel">← назад</a>
+{{end}}

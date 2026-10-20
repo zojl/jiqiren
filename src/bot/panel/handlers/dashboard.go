@@ -33,6 +33,7 @@ type dashboardData struct {
 	CanSetFractionToken bool
 	FractionTargetLabel string
 	CanManageSquads bool
+	CanViewAuditLog bool
 	Squads []squadView
 }
 
@@ -64,6 +65,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		CanSetFractionToken: permissions.CanSetFractionToken(),
 		FractionTargetLabel: targetLabel(allFractions, fraction.Target),
 		CanManageSquads: permissions.CanManageSquads(),
+		CanViewAuditLog: permissions.CanViewAuditLog(),
 	}
 
 	squads, squadsErr := repository.FindTeamsByFractionId(fraction.Id)

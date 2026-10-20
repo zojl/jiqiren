@@ -103,6 +103,10 @@ func (p *Permissions) CanManageManagers() bool {
 	return p.isTeamlead()
 }
 
+func (p *Permissions) CanViewAuditLog() bool {
+	return p.isTeamlead()
+}
+
 func (p *Permissions) CanManageSquads() bool {
 	return p.isTeamlead()
 }

@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 
+	"jiqiren/bot/audit"
+	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/external/hackerwars"
 	"jiqiren/bot/panel/auth"
@@ -29,6 +31,8 @@ func FractionBudget(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Фракция не найдена", http.StatusInternalServerError)
 		return
 	}
+
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionViewBalance, "просмотр баланса фракции")
 
 	if (fraction.TargetToken == "") {
 		templates.RenderFragment(w, "budget_fragment", budgetFragmentData{Error: "токен команды не задан"})

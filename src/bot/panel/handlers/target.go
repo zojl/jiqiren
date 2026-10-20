@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
+	"jiqiren/bot/audit"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/external/hackerwars"
@@ -55,6 +57,8 @@ func setSquadTarget(w http.ResponseWriter, r *http.Request, permissions *auth.Pe
 	}
 
 	repository.SetTeamTarget(squad, target)
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionSetTarget,
+		fmt.Sprintf("отряд %s → %s", squad.Code, formatTargetDetail(target)))
 	http.Redirect(w, r, "/panel", http.StatusFound)
 }
 
@@ -82,5 +86,25 @@ func setFractionTarget(w http.ResponseWriter, r *http.Request, permissions *auth
 	}
 
 	repository.SetFractionTarget(fraction, target)
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionSetTarget,
+		fmt.Sprintf("фракция → %s", formatTargetDetail(target)))
 	http.Redirect(w, r, "/panel", http.StatusFound)
+}
+
+// formatTargetDetail renders a target value for the audit log, matching
+// the wording used on the dashboard (снята цель / защита / vs фракция).
+func formatTargetDetail(target uint) string {
+	switch (target) {
+	case model.TargetNone:
+		return "снята"
+	case model.TargetDefense:
+		return "🛡 защита"
+	}
+
+	fraction, err := repository.FindOneFractionById(target)
+	if (err != nil) {
+		return "?"
+	}
+
+	return fraction.Icon + " " + fraction.Name
 }
