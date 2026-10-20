@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
+	"jiqiren/bot/audit"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/panel/auth"
@@ -52,6 +54,8 @@ func CreateSquad(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionCreateSquad,
+		fmt.Sprintf("создан отряд %s «%s»", squad.Code, squad.Name))
 	http.Redirect(w, r, "/panel", http.StatusFound)
 }
 
@@ -101,11 +105,15 @@ func RenameSquad(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if renameErr := repository.RenameTeam(squad, r.FormValue("name")); renameErr != nil {
+	oldName := squad.Name
+	newName := r.FormValue("name")
+	if renameErr := repository.RenameTeam(squad, newName); renameErr != nil {
 		http.Error(w, "Не удалось переименовать отряд", http.StatusInternalServerError)
 		return
 	}
 
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionRenameSquad,
+		fmt.Sprintf("отряд %s: «%s» → «%s»", squad.Code, oldName, newName))
 	http.Redirect(w, r, "/panel", http.StatusFound)
 }
 
@@ -133,6 +141,8 @@ func DeleteSquad(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionDeleteSquad,
+		fmt.Sprintf("удалён отряд %s «%s»", squad.Code, squad.Name))
 	http.Redirect(w, r, "/panel", http.StatusFound)
 }
 

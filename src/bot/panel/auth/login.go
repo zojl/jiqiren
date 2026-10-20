@@ -3,6 +3,8 @@ package auth
 import (
 	"net/http"
 
+	"jiqiren/bot/audit"
+	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 )
 
@@ -29,6 +31,7 @@ func HandleLoginRedirect(w http.ResponseWriter, r *http.Request, code string) {
 	}
 
 	repository.ClearManagerLoginCode(manager)
+	audit.Record(manager.FractionId, manager.Id, model.AuditActionLogin, "вход в панель")
 
 	http.Redirect(w, r, "/panel", http.StatusFound)
 }

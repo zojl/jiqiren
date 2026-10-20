@@ -47,6 +47,8 @@ func NewRouter() chi.Router {
 		r.Get("/managers/{id}/edit", handlers.EditManagerForm)
 		r.Post("/managers/{id}/edit", handlers.EditManager)
 		r.Post("/managers/{id}/delete", handlers.DeleteManager)
+
+		r.Get("/audit", handlers.AuditLog)
 	})
 
 	return r

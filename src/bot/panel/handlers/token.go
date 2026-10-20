@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
+	"jiqiren/bot/audit"
+	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/panel/auth"
 	"jiqiren/bot/panel/templates"
@@ -41,6 +44,7 @@ func SetFractionToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionSetFractionToken, "обновлён токен команды")
 	http.Redirect(w, r, "/panel", http.StatusFound)
 }
 
@@ -94,5 +98,7 @@ func SetSquadToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionSetSquadToken,
+		fmt.Sprintf("обновлён токен отряда %s", squad.Code))
 	http.Redirect(w, r, "/panel", http.StatusFound)
 }

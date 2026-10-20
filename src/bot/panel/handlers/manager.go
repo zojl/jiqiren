@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"jiqiren/bot/audit"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/panel/auth"
@@ -120,6 +122,8 @@ func CreateManager(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionCreateManager,
+		fmt.Sprintf("добавлен менеджер vk%d (%s)", manager.VkId, roleLabel(manager.AccountType)))
 	http.Redirect(w, r, "/panel/managers", http.StatusFound)
 }
 
@@ -190,6 +194,8 @@ func EditManager(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionUpdateManager,
+		fmt.Sprintf("обновлён менеджер vk%d (%s)", manager.VkId, roleLabel(manager.AccountType)))
 	http.Redirect(w, r, "/panel/managers", http.StatusFound)
 }
 
@@ -211,6 +217,8 @@ func DeleteManager(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionDeleteManager,
+		fmt.Sprintf("удалён менеджер vk%d", manager.VkId))
 	http.Redirect(w, r, "/panel/managers", http.StatusFound)
 }
 
@@ -226,6 +234,14 @@ func findOwnManager(r *http.Request, permissions *auth.Permissions) (*model.Mana
 	}
 
 	return manager, nil
+}
+
+func roleLabel(accountType *model.AccountType) string {
+	if (accountType == nil) {
+		return "—"
+	}
+
+	return string(*accountType)
 }
 
 func parseAccountType(raw string) (*model.AccountType, error) {
