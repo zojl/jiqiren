@@ -72,6 +72,7 @@ type squadPageData struct {
 	CanSetTarget bool
 	CanRename bool
 	CanSetToken bool
+	ShowBackLink bool
 	Members []squadMemberView
 }
 
@@ -106,6 +107,8 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		target = *squad.Target
 	}
 
+	homeSquadId, isHome := permissions.HomeSquadId()
+
 	templates.Render(w, "squad_page", squadPageData{
 		Id: squad.Id,
 		Name: squad.Name,
@@ -118,6 +121,7 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		CanSetTarget: permissions.CanSetSquadTarget(squad.Id),
 		CanRename: permissions.CanRenameSquad(squad.Id),
 		CanSetToken: permissions.CanSetSquadToken(squad.Id),
+		ShowBackLink: !isHome || homeSquadId != squad.Id,
 		Members: members,
 	})
 }
