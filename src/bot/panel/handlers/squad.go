@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"jiqiren/bot/audit"
@@ -54,6 +55,10 @@ type squadMemberView struct {
 
 	SleepAt string
 	SleepWarning bool
+
+	HasReport bool
+	ReportStamina uint
+	ReportMoney string
 }
 
 type squadFormData struct {
@@ -155,6 +160,19 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 	lastBattle := nextBattle.Add(-24 * time.Hour)
 	sleepWarningStart := nextBattle.Add(-12 * time.Hour)
 
+	lastBattleMsk := lastBattle.In(moscow)
+	lastBattleDate := time.Date(lastBattleMsk.Year(), lastBattleMsk.Month(), lastBattleMsk.Day(), 0, 0, 0, 0, time.UTC)
+	reportByUserId := make(map[uint]model.Report, len(profiles))
+	if reports, reportsErr := repository.FindReportsByUserIdsAndDate(userIds, &lastBattleDate); (reportsErr == nil) {
+		for _, report := range reports {
+			// Guard against a report whose battle_date happens to match by
+			// coincidence but whose message predates the battle itself.
+			if (report.MessageDate.After(lastBattle)) {
+				reportByUserId[report.UserId] = report
+			}
+		}
+	}
+
 	members := make([]squadMemberView, 0, len(profiles))
 	for _, profile := range profiles {
 		if (profile.TeamId == nil || *profile.TeamId != squad.Id) {
@@ -215,12 +233,43 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 			member.SleepWarning = !profile.SleepAt.Before(sleepWarningStart) && !profile.SleepAt.After(nextBattle)
 		}
 
+		if report, hasReport := reportByUserId[profile.UserId]; (hasReport) {
+			member.HasReport = true
+			member.ReportStamina = report.Stamina
+			member.ReportMoney = formatReportMoney(report)
+		}
+
 		members = append(members, member)
 	}
 
 	sort.Slice(members, func(i, j int) bool { return members[i].Name < members[j].Name })
 
 	return members, nil
+}
+
+// formatReportMoney renders the battle's money delta as signed parts —
+// income, intercepted-transaction bonus (++), loss from a breached defense,
+// and loss from a failed attack — omitting whichever parts were zero.
+func formatReportMoney(report model.Report) string {
+	parts := make([]string, 0, 4)
+	if (report.RewardMoney > 0) {
+		parts = append(parts, fmt.Sprintf("+%d", report.RewardMoney))
+	}
+	if (report.TransactionMoney > 0) {
+		parts = append(parts, fmt.Sprintf("++%d", report.TransactionMoney))
+	}
+	if (report.LostMoney > 0) {
+		parts = append(parts, fmt.Sprintf("-%d(деф)", report.LostMoney))
+	}
+	if (report.AttackLostMoney > 0) {
+		parts = append(parts, fmt.Sprintf("-%d(атака)", report.AttackLostMoney))
+	}
+
+	if (len(parts) == 0) {
+		return "0"
+	}
+
+	return strings.Join(parts, " ")
 }
 
 // formatMskMoment omits the date only when it's today — otherwise "15:04"
