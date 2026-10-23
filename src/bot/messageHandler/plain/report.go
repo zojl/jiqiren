@@ -15,7 +15,7 @@ import (
 
 var reportRegulars = [...]string {
 	`Результаты битвы за (?P<Date>\d{2}\.\d{2}\.\d{4})`,
-	`(?:Атака на |Команда )(?P<Target>[💠🚧🎭🈵🔱🇺🇸]{1,2})\S+ (?P<BattleResult>прошла успешно|отбила вашу атаку)`, //this ones for attack
+	`(?:Атака на |Команда )(?P<Target>[💠🚧🎭🈵🔱🇺🇸]{1,2})\S+ (?P<BattleResult>прошла успешно|отбила вашу атаку|отбила твою атаку)`, //this ones for attack
 	`Твоя команда (?P<BattleResult>успешно отбила атаку.|не смогла отбить атаку.)`, //this ones for defence
 	`Ты получил:(?:\nДеньги: ?(?P<RewardMoney>\d+)💵)?\nОпыт: (?P<RewardExperience>\d+)💡(?:\nVKCoin: (?P<RewardVkc>\d+\.?\d+)💸)?\nОсталось выносливости: 🔋(?P<Stamina>\d+)%`,
 	`(?:Вы перехватили транзакцию \S+|Вы получили награду за защиту:)\nДеньги: (?P<TransactionMoney>\d+)💵\nОпыт: (?P<TransactionExperience>\d+)💡`,
