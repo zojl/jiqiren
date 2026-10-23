@@ -38,6 +38,8 @@ type squadMemberView struct {
 	Theory uint
 	Cunning uint
 	Wisdom uint
+	Attack uint
+	Defense uint
 
 	Stamina uint
 	StaminaLabel string
@@ -195,6 +197,8 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 			Theory: profile.Theory,
 			Cunning: profile.Cunning,
 			Wisdom: profile.Wisdom,
+			Attack: profile.Practice*3 + profile.Cunning*2,
+			Defense: profile.Theory*3 + profile.Wisdom*2,
 			Stamina: profile.Stamina,
 			StaminaLabel: staminaLabel,
 			StaminaClass: staminaClass,

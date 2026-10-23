@@ -27,7 +27,7 @@
 {{if .Members}}
 <div class="table-scroll">
 <table class="list members">
-<tr><th>игрок</th><th>выносл.</th><th>деньги</th><th>цель</th><th>сон (мск)</th><th>статы</th></tr>
+<tr><th>игрок</th><th>выносл.</th><th>деньги</th><th>цель</th><th>сон (мск)</th><th>атк</th><th>деф</th><th>статы</th></tr>
 {{range .Members}}
 <tr>
   <td>{{if .Stale}}❄️ {{end}}<a href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener">{{.WayIcon}}{{.Name}}({{.Level}})</a> <span class="hint">{{.LastSeen}}</span></td>
@@ -35,6 +35,8 @@
   <td class="{{.MoneyClass}}">{{.Money}}</td>
   <td class="{{.TargetClass}}">{{.TargetLabel}}</td>
   <td>{{.SleepAt}}{{if .SleepWarning}} ⚠️{{end}}</td>
+  <td>⚔️{{.Attack}}</td>
+  <td>🛡️{{.Defense}}</td>
   <td>📡{{.Practice}} 💾{{.Theory}} 📱{{.Cunning}} 🔎{{.Wisdom}}</td>
 </tr>
 {{end}}
