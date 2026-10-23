@@ -56,6 +56,17 @@ func DeleteTeam(id uint) error {
 	return db.Delete(&model.Team{}, id).Error
 }
 
+// SetTeamChat binds (or, with both nils, unbinds) the squad's chat. Takes
+// a map so nil values actually clear the columns — a struct-based Updates
+// call would just skip zero fields instead.
+func SetTeamChat(team *model.Team, chatId *int64, chatName *string) error {
+	db := database.GetDb()
+	return db.Model(team).Updates(map[string]interface{}{
+		"chat_id": chatId,
+		"chat_name": chatName,
+	}).Error
+}
+
 func SetTeamToken(team *model.Team, token string) error {
 	db := database.GetDb()
 	return db.Model(team).Update("TargetToken", token).Error

@@ -71,7 +71,8 @@ type squadPageData struct {
 	Id uint
 	Name string
 	Code string
-	ChatId *int64
+	ChatName string
+	CanUnbindChat bool
 	TargetLabel string
 	CurrentTargetIcon string
 	TargetOptions []targetIconOption
@@ -120,7 +121,8 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		Id: squad.Id,
 		Name: squad.Name,
 		Code: squad.Code,
-		ChatId: squad.ChatId,
+		ChatName: squadChatLabel(squad),
+		CanUnbindChat: squad.ChatId != nil && permissions.CanRenameSquad(squad.Id),
 		TargetLabel: targetLabel(allFractions, squad.Target),
 		CurrentTargetIcon: targetIcon(allFractions, squad.Target),
 		TargetOptions: buildTargetIconOptions(allFractions, squad.FractionId, target),
@@ -362,6 +364,20 @@ func profileTargetMatchesSquad(profile model.Profile, squad *model.Team) bool {
 	return *profile.TargetId == *squad.Target
 }
 
+// squadChatLabel falls back to the raw chat id when a chat is bound but
+// its title wasn't captured (e.g. bound before this field existed).
+func squadChatLabel(squad *model.Team) string {
+	if (squad.ChatId == nil) {
+		return ""
+	}
+
+	if (squad.ChatName != nil && *squad.ChatName != "") {
+		return *squad.ChatName
+	}
+
+	return fmt.Sprintf("#%d", *squad.ChatId)
+}
+
 func playerTargetLabel(profile model.Profile, allFractions []model.Fraction, squad *model.Team) string {
 	if (profile.TargetId == nil) {
 		return "—"
@@ -463,6 +479,30 @@ func RenameSquad(w http.ResponseWriter, r *http.Request) {
 	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionRenameSquad,
 		fmt.Sprintf("отряд %s: «%s» → «%s»", squad.Code, oldName, newName))
 	http.Redirect(w, r, "/panel", http.StatusFound)
+}
+
+func UnbindSquadChat(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanRenameSquad(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	if unbindErr := repository.SetTeamChat(squad, nil, nil); (unbindErr != nil) {
+		http.Error(w, "Не удалось отвязать чат", http.StatusInternalServerError)
+		return
+	}
+
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionBindSquadChat,
+		fmt.Sprintf("отряд %s: чат отвязан", squad.Code))
+	http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
 }
 
 func DeleteSquad(w http.ResponseWriter, r *http.Request) {

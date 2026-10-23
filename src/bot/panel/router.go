@@ -38,6 +38,7 @@ func NewRouter() chi.Router {
 
 		r.Get("/squads/{code}/token", handlers.SquadTokenForm)
 		r.Post("/squads/{code}/token", handlers.SetSquadToken)
+		r.Post("/squads/{code}/unbind-chat", handlers.UnbindSquadChat)
 
 		r.Get("/fraction/token", handlers.FractionTokenForm)
 		r.Post("/fraction/token", handlers.SetFractionToken)

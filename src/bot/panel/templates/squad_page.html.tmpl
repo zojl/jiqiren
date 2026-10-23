@@ -16,7 +16,17 @@
       {{end}}
     </dd>
   </div>
-  {{if .ChatId}}<div class="budget-row"><dt>чат</dt><dd>{{.ChatId}}</dd></div>{{end}}
+  <div class="budget-row">
+    <dt>чат отряда</dt>
+    <dd>
+      {{if .ChatName}}
+      {{.ChatName}}
+      {{if .CanUnbindChat}}<form method="post" action="/panel/squads/{{.Code}}/unbind-chat" onsubmit="return confirm('Отвязать чат?');" class="inline"><button type="submit" class="danger">✕</button></form>{{end}}
+      {{else}}
+      не привязан
+      {{end}}
+    </dd>
+  </div>
   <div class="budget-row">
     <dt>токен</dt>
     <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Code}}/token" title="токен отряда">🗝</a>{{end}}</dd>
