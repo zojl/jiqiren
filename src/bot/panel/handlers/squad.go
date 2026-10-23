@@ -247,29 +247,29 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 	return members, nil
 }
 
-// formatReportMoney renders the battle's money delta as signed parts —
-// income, intercepted-transaction bonus (++), loss from a breached defense,
-// and loss from a failed attack — omitting whichever parts were zero.
+// formatReportMoney renders the battle's money delta as labeled parts —
+// income, intercepted-transaction bonus, loss from a breached defense, and
+// loss from a failed attack — omitting whichever parts were zero.
 func formatReportMoney(report model.Report) string {
 	parts := make([]string, 0, 4)
 	if (report.RewardMoney > 0) {
-		parts = append(parts, fmt.Sprintf("+%d", report.RewardMoney))
+		parts = append(parts, fmt.Sprintf("доход +%d", report.RewardMoney))
 	}
 	if (report.TransactionMoney > 0) {
-		parts = append(parts, fmt.Sprintf("++%d", report.TransactionMoney))
+		parts = append(parts, fmt.Sprintf("транза +%d", report.TransactionMoney))
 	}
 	if (report.LostMoney > 0) {
-		parts = append(parts, fmt.Sprintf("-%d(деф)", report.LostMoney))
+		parts = append(parts, fmt.Sprintf("пробив -%d", report.LostMoney))
 	}
 	if (report.AttackLostMoney > 0) {
-		parts = append(parts, fmt.Sprintf("-%d(атака)", report.AttackLostMoney))
+		parts = append(parts, fmt.Sprintf("атака -%d", report.AttackLostMoney))
 	}
 
 	if (len(parts) == 0) {
 		return "0"
 	}
 
-	return strings.Join(parts, " ")
+	return strings.Join(parts, ", ")
 }
 
 // formatMskMoment omits the date only when it's today — otherwise "15:04"
