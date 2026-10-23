@@ -40,8 +40,8 @@
   <td>📡{{.Practice}} 💾{{.Theory}} 📱{{.Cunning}} 🔎{{.Wisdom}}</td>
 </tr>
 {{if .HasReport}}
-<tr>
-  <td colspan="8" class="hint">отчёт за битву: 🔋{{.ReportStamina}} 💵{{.ReportMoney}}</td>
+<tr class="report-row">
+  <td colspan="8" class="hint">↳ отчёт за битву: 🔋{{.ReportStamina}} 💵{{.ReportMoney}}</td>
 </tr>
 {{end}}
 {{end}}

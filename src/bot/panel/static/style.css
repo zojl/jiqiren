@@ -196,6 +196,9 @@ table.list th { color: var(--dim); font-weight: normal; }
 table.members td, table.members th { white-space: nowrap; }
 table.members td:first-child { white-space: normal; }
 
+table.members tr:has(+ tr.report-row) td { border-bottom: none; }
+table.members tr.report-row td { padding-top: 0; padding-left: 28px; }
+
 .rating-good { color: var(--accent); }
 .rating-warn { color: var(--warn); }
 .rating-bad { color: var(--danger); }
