@@ -25,3 +25,20 @@ func Next(now time.Time) time.Time {
 func Last(now time.Time) time.Time {
 	return Next(now).Add(-24 * time.Hour)
 }
+
+// Today returns the current MSK calendar day as a date-only instant (UTC
+// midnight) — the representation callers persist as "which day something
+// last happened" (e.g. ScheduledMessage.LastSentDate).
+func Today(now time.Time) time.Time {
+	nowMsk := now.In(Moscow)
+	return time.Date(nowMsk.Year(), nowMsk.Month(), nowMsk.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+// IsPastToday reports whether an hour:minute (MSK) has already gone by
+// today.
+func IsPastToday(hour uint, minute uint, now time.Time) bool {
+	nowMsk := now.In(Moscow)
+	sendMoment := time.Date(nowMsk.Year(), nowMsk.Month(), nowMsk.Day(), int(hour), int(minute), 0, 0, Moscow)
+
+	return nowMsk.After(sendMoment)
+}

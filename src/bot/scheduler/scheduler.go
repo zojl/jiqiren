@@ -50,7 +50,7 @@ func tick() {
 
 	now := time.Now()
 	nowMsk := now.In(moscow)
-	today := time.Date(nowMsk.Year(), nowMsk.Month(), nowMsk.Day(), 0, 0, 0, 0, time.UTC)
+	today := battletime.Today(now)
 
 	for _, message := range messages {
 		if (!isDue(message, nowMsk, today)) {
