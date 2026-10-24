@@ -36,7 +36,7 @@ func generateSleepReminderText(squad *model.Team, now time.Time) string {
 
 		who := mention(vkIdByUserId[profile.UserId], profile.Username)
 		when := sleepAt.In(battletime.Moscow).Format("15:04")
-		lines = append(lines, fmt.Sprintf("⚠️ %s уйдёт спать в %s — меньше 12 часов до битвы", who, when))
+		lines = append(lines, fmt.Sprintf("⚠️ %s упадёт спать в %s — меньше 12 часов до битвы", who, when))
 	}
 
 	return strings.Join(lines, "\n")
