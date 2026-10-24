@@ -9,6 +9,7 @@ type Team struct {
 	FractionId uint
 	Fraction Fraction `gorm:"foreignKey:FractionId"`
 	ChatId *int64 `gorm:"null"`
+	ChatName *string `gorm:"null"`
 	TargetToken string `gorm:"size:255"`
 	Target *uint `gorm:"null"`
 	UpdatedAt time.Time

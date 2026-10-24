@@ -15,11 +15,12 @@ import (
 
 var reportRegulars = [...]string {
 	`Результаты битвы за (?P<Date>\d{2}\.\d{2}\.\d{4})`,
-	`(?:Атака на |Команда )(?P<Target>[💠🚧🎭🈵🔱🇺🇸]{1,2})\S+ (?P<BattleResult>прошла успешно|отбила вашу атаку)`, //this ones for attack
+	`(?:Атака на |Команда )(?P<Target>[💠🚧🎭🈵🔱🇺🇸]{1,2})\S+ (?P<BattleResult>прошла успешно|отбила вашу атаку|отбила твою атаку)`, //this ones for attack
 	`Твоя команда (?P<BattleResult>успешно отбила атаку.|не смогла отбить атаку.)`, //this ones for defence
 	`Ты получил:(?:\nДеньги: ?(?P<RewardMoney>\d+)💵)?\nОпыт: (?P<RewardExperience>\d+)💡(?:\nVKCoin: (?P<RewardVkc>\d+\.?\d+)💸)?\nОсталось выносливости: 🔋(?P<Stamina>\d+)%`,
-	`(?:Вы перехватили транзакцию \S+|Вы получили награду за защиту:)\nДеньги: (?P<TransactionMoney>\d+)💵\nОпыт: (?P<TransactionExperience>\d+)💡`,
+	`(?:Вы перехватили транзакцию \S+|Ты перехватил транзакцию \S+|Вы получили награду за защиту:|Ты получил награду за защиту:)\nДеньги: (?P<TransactionMoney>\d+)💵\nОпыт: (?P<TransactionExperience>\d+)💡`,
 	`(?:Твоя компания не отбила|Твоя команда не смогла отбить) атаку\.\nТы потерял:\nДеньги: (?P<LostMoney>\d+)💵`,
+	`(?:Атака на |Команда )[💠🚧🎭🈵🔱🇺🇸]{1,2}\S+ (?:отбила вашу атаку|отбила твою атаку)\.\nТы потерял:\nДеньги: (?P<AttackLostMoney>\d+)💵`, //loss from a failed attack, distinct from LostMoney (a breached defense)
 }
 
 var compiledReportRegulars = make([]*regexp.Regexp, len(reportRegulars), len(reportRegulars))
@@ -123,7 +124,7 @@ func storeReport(parsedReport *ReportParseResult, user *model.User, date *time.T
 	report.RewardMoney = uint(val)
 	val, _ = strconv.ParseUint(parsedReport.RewardExperience, 10, 64)
 	report.RewardExperience = uint(val)
-	val, _ = strconv.ParseUint(parsedReport.RewardVkc, 10, 64)
+	val, _ = strconv.ParseUint(parsedReport.Stamina, 10, 64)
 	report.Stamina = uint(val)
 	val, _ = strconv.ParseUint(parsedReport.TransactionMoney, 10, 64)
 	report.TransactionMoney = uint(val)
@@ -131,7 +132,9 @@ func storeReport(parsedReport *ReportParseResult, user *model.User, date *time.T
 	report.TransactionExperience = uint(val)
 	val, _ = strconv.ParseUint(parsedReport.LostMoney, 10, 64)
 	report.LostMoney = uint(val)
-	report.RewardVkc, _ = strconv.ParseFloat(parsedReport.Stamina, 10)
+	val, _ = strconv.ParseUint(parsedReport.AttackLostMoney, 10, 64)
+	report.AttackLostMoney = uint(val)
+	report.RewardVkc, _ = strconv.ParseFloat(parsedReport.RewardVkc, 64)
 
 	db := database.GetDb()
 	db.Create(&report)
@@ -187,6 +190,7 @@ type ReportParseResult struct {
 	TransactionMoney string
 	TransactionExperience string
 	LostMoney string
+	AttackLostMoney string
 }
 
 type ReportResponse struct {

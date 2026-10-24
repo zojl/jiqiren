@@ -31,12 +31,14 @@ func NewRouter() chi.Router {
 
 		r.Get("/squads/new", handlers.NewSquadForm)
 		r.Post("/squads", handlers.CreateSquad)
-		r.Get("/squads/{id}/rename", handlers.RenameSquadForm)
-		r.Post("/squads/{id}/rename", handlers.RenameSquad)
-		r.Post("/squads/{id}/delete", handlers.DeleteSquad)
+		r.Get("/squads/{code}", handlers.SquadPage)
+		r.Get("/squads/{code}/rename", handlers.RenameSquadForm)
+		r.Post("/squads/{code}/rename", handlers.RenameSquad)
+		r.Post("/squads/{code}/delete", handlers.DeleteSquad)
 
-		r.Get("/squads/{id}/token", handlers.SquadTokenForm)
-		r.Post("/squads/{id}/token", handlers.SetSquadToken)
+		r.Get("/squads/{code}/token", handlers.SquadTokenForm)
+		r.Post("/squads/{code}/token", handlers.SetSquadToken)
+		r.Post("/squads/{code}/unbind-chat", handlers.UnbindSquadChat)
 
 		r.Get("/fraction/token", handlers.FractionTokenForm)
 		r.Post("/fraction/token", handlers.SetFractionToken)
@@ -44,9 +46,9 @@ func NewRouter() chi.Router {
 
 		r.Get("/managers", handlers.ManagerList)
 		r.Post("/managers", handlers.CreateManager)
-		r.Get("/managers/{id}/edit", handlers.EditManagerForm)
-		r.Post("/managers/{id}/edit", handlers.EditManager)
-		r.Post("/managers/{id}/delete", handlers.DeleteManager)
+		r.Get("/managers/{vk_id}/edit", handlers.EditManagerForm)
+		r.Post("/managers/{vk_id}/edit", handlers.EditManager)
+		r.Post("/managers/{vk_id}/delete", handlers.DeleteManager)
 
 		r.Get("/audit", handlers.AuditLog)
 	})

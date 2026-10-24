@@ -18,6 +18,17 @@ func FindOneTeamById(id uint) (*model.Team, error) {
 	return &team, nil
 }
 
+func FindOneTeamByCodeAndFraction(code string, fractionId uint) (*model.Team, error) {
+	db := database.GetDb()
+	team := model.Team{}
+	err := db.Unscoped().Where("code = ? AND fraction_id = ?", code, fractionId).First(&team).Error
+	if (err != nil) {
+		return nil, fmt.Errorf("No squad with code: %s", code)
+	}
+
+	return &team, nil
+}
+
 func FindTeamsByFractionId(fractionId uint) ([]model.Team, error) {
 	db := database.GetDb()
 	teams := []model.Team{}
@@ -43,6 +54,17 @@ func RenameTeam(team *model.Team, name string) error {
 func DeleteTeam(id uint) error {
 	db := database.GetDb()
 	return db.Delete(&model.Team{}, id).Error
+}
+
+// SetTeamChat binds (or, with both nils, unbinds) the squad's chat. Takes
+// a map so nil values actually clear the columns — a struct-based Updates
+// call would just skip zero fields instead.
+func SetTeamChat(team *model.Team, chatId *int64, chatName *string) error {
+	db := database.GetDb()
+	return db.Model(team).Updates(map[string]interface{}{
+		"chat_id": chatId,
+		"chat_name": chatName,
+	}).Error
 }
 
 func SetTeamToken(team *model.Team, token string) error {

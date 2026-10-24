@@ -7,6 +7,17 @@ import (
 	"jiqiren/bot/database/model"
 )
 
+func FindReportsByUserIdsAndDate(userIds []uint, date *time.Time) ([]model.Report, error) {
+	db := database.GetDb()
+	reports := []model.Report{}
+	err := db.Where("user_id IN ? AND battle_date = ?", userIds, date).Find(&reports).Error
+	if (err != nil) {
+		return nil, err
+	}
+
+	return reports, nil
+}
+
 func CountReportsByUserAndDate(vkId int, date *time.Time) int64 {
 	db := database.GetDb()
 	var count int64

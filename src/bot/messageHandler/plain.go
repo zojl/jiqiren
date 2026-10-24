@@ -16,7 +16,7 @@ import (
 )
 
 const battleReportStart = "Результаты битвы за "
-const battleReportEnd = "Или встань на 🔐 защиту своей компании."
+const battleReportEnd = "защиту своей компании."
 const teamProjectResultPrefix1 = "Ты вложился в запил командного проекта."
 const teamProjectResultPrefix2 = "Ты помог команде пилить проект."
 var profileIcons = [...]string {"💻", "💡", "💵", "📈", "💿", "📄", "💽", "📑", "🔘", "💸", "🔥", "🔋", "📡", "💾", "📱", "🔎"}

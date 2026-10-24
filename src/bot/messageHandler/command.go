@@ -34,6 +34,13 @@ func getCommand(messageObject *events.MessageNewObject, vk *api.VK) Command {
 		}
 	}
 
+	if isCommand(messageObject, []string{"bind", "привязать"}) {
+		return command.BindChat{
+			Message: messageObject,
+			Vk: vk,
+		}
+	}
+
 	return nil
 }
 

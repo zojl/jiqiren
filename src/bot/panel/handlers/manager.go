@@ -17,7 +17,6 @@ import (
 )
 
 type managerView struct {
-	Id uint
 	VkId uint
 	Name string
 	AccountType string
@@ -71,7 +70,6 @@ func ManagerList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		views = append(views, managerView{
-			Id: manager.Id,
 			VkId: manager.VkId,
 			Name: names[manager.VkId],
 			AccountType: accountType,
@@ -148,7 +146,7 @@ func EditManagerForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	templates.Render(w, "manager_form", managerFormData{
-		Action: "/panel/managers/" + strconv.FormatUint(uint64(manager.Id), 10) + "/edit",
+		Action: "/panel/managers/" + strconv.FormatUint(uint64(manager.VkId), 10) + "/edit",
 		VkId: manager.VkId,
 		AccountType: accountType,
 		Squads: buildSquadOptions(squads, manager.SquadId),
@@ -223,12 +221,12 @@ func DeleteManager(w http.ResponseWriter, r *http.Request) {
 }
 
 func findOwnManager(r *http.Request, permissions *auth.Permissions) (*model.Manager, error) {
-	id, parseErr := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
+	vkId, parseErr := strconv.ParseUint(chi.URLParam(r, "vk_id"), 10, 64)
 	if (parseErr != nil) {
 		return nil, parseErr
 	}
 
-	manager, managerErr := repository.FindOneManagerById(uint(id))
+	manager, managerErr := repository.FindOneManagerByVkId(uint(vkId))
 	if (managerErr != nil || manager.FractionId != permissions.FractionId()) {
 		return nil, managerErr
 	}

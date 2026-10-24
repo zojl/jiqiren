@@ -96,7 +96,7 @@ func formatTargetDetail(target uint) string {
 	case model.TargetNone:
 		return "снята"
 	case model.TargetDefense:
-		return "🛡 защита"
+		return "🔐 защита"
 	}
 
 	fraction, err := repository.FindOneFractionById(target)

@@ -9,36 +9,36 @@
   {{end}}
 </section>
 
-<section class="target-row">
-  <details class="target-dropdown">
-    <summary class="btn">{{.FractionIcon}} {{.FractionName}} → {{.FractionTargetLabel}}</summary>
-    {{if .CanSetFractionTarget}}
-    <form method="post" action="/panel/target" class="target-form">
-      <input type="hidden" name="scope" value="fraction">
-      <select name="target">{{range .TargetOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select>
-      <button type="submit">направить</button>
-    </form>
-    {{end}}
-  </details>
-  {{if .CanSetFractionToken}}<a class="icon" href="/panel/fraction/token" title="токен команды">🔑</a>{{end}}
-</section>
-
 <section class="squads">
+  <div class="squad-row">
+    <span class="squad-link">{{.FractionIcon}} {{.FractionName}}</span>
+    {{if .CanSetFractionTarget}}
+    <details class="target-picker" data-scope="fraction">
+      <summary class="icon-select-btn" title="цель команды">{{.FractionCurrentTargetIcon}}</summary>
+      <div class="target-menu">
+        {{range .FractionTargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-target-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
+      </div>
+    </details>
+    {{else}}
+    <span class="icon" title="цель команды">{{.FractionCurrentTargetIcon}}</span>
+    {{end}}
+    {{if .CanSetFractionToken}}<a class="icon" href="/panel/fraction/token" title="токен команды">🗝</a>{{end}}
+  </div>
   {{range .Squads}}
   <div class="squad-row">
-    <details class="target-dropdown">
-      <summary class="btn">{{.Code}} {{.Name}} → {{.TargetLabel}}</summary>
-      {{if .CanSetTarget}}
-      <form method="post" action="/panel/target" class="target-form">
-        <input type="hidden" name="scope" value="squad">
-        <input type="hidden" name="squad_id" value="{{.Id}}">
-        <select name="target">{{range $.TargetOptions}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</select>
-        <button type="submit">направить</button>
-      </form>
-      {{end}}
+    <a class="squad-link" href="/panel/squads/{{.Code}}">{{.Code}} {{.Name}}</a>
+    {{if .CanSetTarget}}
+    <details class="target-picker" data-scope="squad" data-squad-id="{{.Id}}">
+      <summary class="icon-select-btn" title="цель отряда">{{.CurrentTargetIcon}}</summary>
+      <div class="target-menu">
+        {{range .TargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-target-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
+      </div>
     </details>
-    {{if .CanRename}}<a class="icon" href="/panel/squads/{{.Id}}/rename" title="переименовать">✎</a>{{end}}
-    {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Id}}/token" title="токен отряда">🔑</a>{{end}}
+    {{else}}
+    <span class="icon" title="цель отряда">{{.CurrentTargetIcon}}</span>
+    {{end}}
+    {{if .CanRename}}<a class="icon" href="/panel/squads/{{.Code}}/rename" title="редактировать">✎</a>{{end}}
+    {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Code}}/token" title="токен отряда">🗝</a>{{end}}
   </div>
   {{end}}
 </section>

@@ -9,8 +9,8 @@
   <td>{{.AccountType}}</td>
   <td>{{.SquadLabel}}</td>
   <td>
-    <a class="icon" href="/panel/managers/{{.Id}}/edit" title="редактировать">✎</a>
-    <form method="post" action="/panel/managers/{{.Id}}/delete" onsubmit="return confirm('Удалить?');" class="inline"><button type="submit" class="danger">✕</button></form>
+    <a class="icon" href="/panel/managers/{{.VkId}}/edit" title="редактировать">✎</a>
+    <form method="post" action="/panel/managers/{{.VkId}}/delete" onsubmit="return confirm('Удалить?');" class="inline"><button type="submit" class="danger">✕</button></form>
   </td>
 </tr>
 {{end}}

@@ -118,3 +118,19 @@ func (p *Permissions) CanRenameSquad(squadId uint) bool {
 
 	return (p.isSquadLead() || p.isDeputy()) && p.ownsSquad(squadId)
 }
+
+// HomeSquadId returns the squad a plain squad lead should land on by
+// default — they have no fraction-wide view, so their "home" is their own
+// squad page rather than the dashboard. Teamlead/deputy always get the
+// full dashboard, even if a SquadId happens to be set on their claims.
+func (p *Permissions) HomeSquadId() (uint, bool) {
+	if (p.isTeamlead() || p.isDeputy() || !p.isSquadLead()) {
+		return 0, false
+	}
+
+	if (p.claims.SquadId == nil) {
+		return 0, false
+	}
+
+	return *p.claims.SquadId, true
+}

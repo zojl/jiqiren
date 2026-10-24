@@ -34,5 +34,6 @@ type Profile struct {
 	UserId uint
 	User User `gorm:"foreignKey:UserId"`
 	MessageDate time.Time
+	SleepAt *time.Time `gorm:"null"`
 	Created time.Time `gorm:"autoCreateTime"`
 }
