@@ -69,6 +69,8 @@ h2 { font-size: 1em; margin-top: 32px; }
 }
 .budget-row dt { margin: 0; }
 .budget-row dd { margin: 0; color: var(--fg); }
+.budget-row.sub { padding-left: 14px; }
+.budget-group { margin-top: 8px; color: var(--dim); }
 .error { color: var(--danger); }
 
 .squad-row {

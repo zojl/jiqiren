@@ -37,14 +37,18 @@
 <details class="battle-summary">
   <summary class="btn">сводка за {{.BattleSummary.BattleDate}}</summary>
   <dl class="budget">
-    <div class="budget-row"><dt>участвовали</dt><dd>{{.BattleSummary.ParticipatedCount}} из {{.BattleSummary.ActiveCount}}, идеально подготовлены: {{.BattleSummary.IdealCount}}</dd></div>
+    <div class="budget-row"><dt>участвовали</dt><dd>{{.BattleSummary.ParticipatedCount}} из {{.BattleSummary.ActiveCount}}</dd></div>
+    <div class="budget-row"><dt>идеально подготовлены</dt><dd>{{.BattleSummary.IdealCount}}</dd></div>
     <div class="budget-row"><dt>⚔️ мощность атаки</dt><dd>{{.BattleSummary.AttackPower}}</dd></div>
     <div class="budget-row"><dt>🛡️ мощность защиты</dt><dd>{{.BattleSummary.DefensePower}}</dd></div>
-    <div class="budget-row"><dt>🔋 выносливость</dt><dd>-{{.BattleSummary.StaminaSpent}} (~{{printf "%.0f" .BattleSummary.StaminaSpentAvg}} на игрока)</dd></div>
-    <div class="budget-row"><dt>💵 доход</dt><dd>+{{.BattleSummary.MoneyIncome}}</dd></div>
-    <div class="budget-row"><dt>💵 транза</dt><dd>+{{.BattleSummary.MoneyTransaction}}</dd></div>
-    <div class="budget-row"><dt>💵 потери (атака)</dt><dd>-{{.BattleSummary.MoneyLostAttack}}</dd></div>
-    <div class="budget-row"><dt>💵 потери (деф)</dt><dd>-{{.BattleSummary.MoneyLostDefense}}</dd></div>
+    <div class="budget-group">🔋 выносливость</div>
+    <div class="budget-row sub"><dt>потрачено</dt><dd>-{{.BattleSummary.StaminaSpent}}</dd></div>
+    <div class="budget-row sub"><dt>в среднем</dt><dd>~{{printf "%.0f" .BattleSummary.StaminaSpentAvg}} на игрока</dd></div>
+    <div class="budget-group">💵 деньги</div>
+    <div class="budget-row sub"><dt>доход</dt><dd>+{{.BattleSummary.MoneyIncome}}</dd></div>
+    <div class="budget-row sub"><dt>транза</dt><dd>+{{.BattleSummary.MoneyTransaction}}</dd></div>
+    <div class="budget-row sub"><dt>потери (атака)</dt><dd>-{{.BattleSummary.MoneyLostAttack}}</dd></div>
+    <div class="budget-row sub"><dt>потери (деф)</dt><dd>-{{.BattleSummary.MoneyLostDefense}}</dd></div>
   </dl>
 </details>
 {{end}}
