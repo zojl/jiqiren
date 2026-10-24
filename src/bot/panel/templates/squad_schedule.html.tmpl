@@ -1,10 +1,11 @@
 {{define "squad_schedule"}}
 <h1>рассылки · {{.SquadCode}} {{.SquadName}}</h1>
 <table class="list">
-<tr><th>время (мск)</th><th>текст</th><th></th></tr>
+<tr><th>время (мск)</th><th>тип</th><th>текст</th><th></th></tr>
 {{range .Messages}}
 <tr>
   <td>{{.Time}}</td>
+  <td>{{.TypeLabel}}</td>
   <td>{{.Text}}</td>
   <td>
     <a class="icon" href="/panel/squads/{{$.SquadCode}}/schedule/{{.Id}}/edit" title="редактировать">✎</a>

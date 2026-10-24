@@ -46,9 +46,10 @@ func CreateScheduledMessage(message *model.ScheduledMessage) error {
 	return db.Create(message).Error
 }
 
-func UpdateScheduledMessage(message *model.ScheduledMessage, hour uint, minute uint, text string) error {
+func UpdateScheduledMessage(message *model.ScheduledMessage, messageType model.ScheduledMessageType, hour uint, minute uint, text string) error {
 	db := database.GetDb()
 	return db.Model(message).Updates(map[string]interface{}{
+		"type": messageType,
 		"send_hour": hour,
 		"send_minute": minute,
 		"text": text,

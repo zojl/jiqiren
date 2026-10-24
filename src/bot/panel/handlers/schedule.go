@@ -16,9 +16,21 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+var scheduleTypeLabels = map[model.ScheduledMessageType]string{
+	model.ScheduledMessageTypeBasic: "обычное",
+	model.ScheduledMessageTypeMissingProfiles: "недостающие профили",
+}
+
+type scheduleTypeOption struct {
+	Value string
+	Label string
+	Selected bool
+}
+
 type scheduledMessageView struct {
 	Id uint
 	Time string
+	TypeLabel string
 	Text string
 }
 
@@ -33,6 +45,31 @@ type scheduleFormData struct {
 	SquadCode string
 	Time string
 	Text string
+	Types []scheduleTypeOption
+}
+
+func buildScheduleTypeOptions(selected model.ScheduledMessageType) []scheduleTypeOption {
+	types := []model.ScheduledMessageType{model.ScheduledMessageTypeBasic, model.ScheduledMessageTypeMissingProfiles}
+
+	options := make([]scheduleTypeOption, 0, len(types))
+	for _, messageType := range types {
+		options = append(options, scheduleTypeOption{
+			Value: string(messageType),
+			Label: scheduleTypeLabels[messageType],
+			Selected: messageType == selected,
+		})
+	}
+
+	return options
+}
+
+func parseScheduleType(raw string) (model.ScheduledMessageType, error) {
+	messageType := model.ScheduledMessageType(raw)
+	if _, known := scheduleTypeLabels[messageType]; (!known) {
+		return "", fmt.Errorf("unknown schedule type: %s", raw)
+	}
+
+	return messageType, nil
 }
 
 func SquadSchedule(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +97,7 @@ func SquadSchedule(w http.ResponseWriter, r *http.Request) {
 		views = append(views, scheduledMessageView{
 			Id: message.Id,
 			Time: fmt.Sprintf("%02d:%02d", message.SendHour, message.SendMinute),
+			TypeLabel: scheduleTypeLabels[message.Type],
 			Text: message.Text,
 		})
 	}
@@ -88,6 +126,7 @@ func NewScheduledMessageForm(w http.ResponseWriter, r *http.Request) {
 	templates.Render(w, "schedule_form", scheduleFormData{
 		Action: "/panel/squads/" + squad.Code + "/schedule",
 		SquadCode: squad.Code,
+		Types: buildScheduleTypeOptions(model.ScheduledMessageTypeBasic),
 	})
 }
 
@@ -105,6 +144,12 @@ func CreateScheduledMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	messageType, typeErr := parseScheduleType(r.FormValue("type"))
+	if (typeErr != nil) {
+		http.Error(w, "Некорректный тип рассылки", http.StatusBadRequest)
+		return
+	}
+
 	hour, minute, timeErr := parseScheduleTime(r.FormValue("time"))
 	if (timeErr != nil) {
 		http.Error(w, "Некорректное время", http.StatusBadRequest)
@@ -112,14 +157,14 @@ func CreateScheduledMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	text := strings.TrimSpace(r.FormValue("text"))
-	if (text == "") {
+	if (text == "" && messageType == model.ScheduledMessageTypeBasic) {
 		http.Error(w, "Текст не может быть пустым", http.StatusBadRequest)
 		return
 	}
 
 	message := model.ScheduledMessage{
 		SquadId: squad.Id,
-		Type: model.ScheduledMessageTypeBasic,
+		Type: messageType,
 		SendHour: hour,
 		SendMinute: minute,
 		Text: text,
@@ -154,6 +199,7 @@ func EditScheduledMessageForm(w http.ResponseWriter, r *http.Request) {
 		SquadCode: squad.Code,
 		Time: fmt.Sprintf("%02d:%02d", message.SendHour, message.SendMinute),
 		Text: message.Text,
+		Types: buildScheduleTypeOptions(message.Type),
 	})
 }
 
@@ -171,6 +217,12 @@ func EditScheduledMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	messageType, typeErr := parseScheduleType(r.FormValue("type"))
+	if (typeErr != nil) {
+		http.Error(w, "Некорректный тип рассылки", http.StatusBadRequest)
+		return
+	}
+
 	hour, minute, timeErr := parseScheduleTime(r.FormValue("time"))
 	if (timeErr != nil) {
 		http.Error(w, "Некорректное время", http.StatusBadRequest)
@@ -178,12 +230,12 @@ func EditScheduledMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	text := strings.TrimSpace(r.FormValue("text"))
-	if (text == "") {
+	if (text == "" && messageType == model.ScheduledMessageTypeBasic) {
 		http.Error(w, "Текст не может быть пустым", http.StatusBadRequest)
 		return
 	}
 
-	if updateErr := repository.UpdateScheduledMessage(message, hour, minute, text); (updateErr != nil) {
+	if updateErr := repository.UpdateScheduledMessage(message, messageType, hour, minute, text); (updateErr != nil) {
 		http.Error(w, "Не удалось обновить рассылку", http.StatusInternalServerError)
 		return
 	}

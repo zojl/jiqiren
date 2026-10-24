@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"jiqiren/bot/battletime"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 
@@ -11,12 +12,7 @@ import (
 	"github.com/SevereCloud/vksdk/v2/api/params"
 )
 
-// moscow is a fixed +3 offset rather than a tzdata-backed location, same
-// rationale as panel/handlers/squad.go: Moscow hasn't observed DST since
-// 2014, and the prod image isn't guaranteed to ship tzdata.
-var moscow = time.FixedZone("MSK", 3*60*60)
-
-const tickInterval = 30 * time.Second
+var moscow = battletime.Moscow
 
 var vk *api.VK
 
@@ -28,14 +24,21 @@ func Start() {
 	go run()
 }
 
+// run ticks once per wall-clock minute, right at its :00 mark — a plain
+// time.Ticker instead would drift by up to its own interval, since it
+// starts counting from whenever the process happened to launch rather
+// than from the minute boundary.
 func run() {
-	ticker := time.NewTicker(tickInterval)
-	defer ticker.Stop()
-
 	for {
 		tick()
-		<-ticker.C
+		time.Sleep(untilNextMinute())
 	}
+}
+
+func untilNextMinute() time.Duration {
+	now := time.Now()
+	next := now.Truncate(time.Minute).Add(time.Minute)
+	return next.Sub(now)
 }
 
 func tick() {
@@ -45,7 +48,8 @@ func tick() {
 		return
 	}
 
-	nowMsk := time.Now().In(moscow)
+	now := time.Now()
+	nowMsk := now.In(moscow)
 	today := time.Date(nowMsk.Year(), nowMsk.Month(), nowMsk.Day(), 0, 0, 0, 0, time.UTC)
 
 	for _, message := range messages {
@@ -58,7 +62,7 @@ func tick() {
 			continue // nothing to send to yet; try again next tick
 		}
 
-		if sendErr := dispatch(message, squad); (sendErr != nil) {
+		if sendErr := dispatch(message, squad, now); (sendErr != nil) {
 			log.Println("scheduler: " + sendErr.Error())
 			continue
 		}
@@ -79,13 +83,31 @@ func isDue(message model.ScheduledMessage, nowMsk time.Time, today time.Time) bo
 	return !nowMsk.Before(sendMoment)
 }
 
-func dispatch(message model.ScheduledMessage, squad *model.Team) error {
+// dispatch builds the final text and sends it. For generated types, the
+// configured Text is an optional prefix — generated content is appended
+// after it; if nothing was generated there's nothing worth sending.
+func dispatch(message model.ScheduledMessage, squad *model.Team, now time.Time) error {
 	switch (message.Type) {
 	case model.ScheduledMessageTypeBasic:
 		return sendText(*squad.ChatId, message.Text)
+	case model.ScheduledMessageTypeMissingProfiles:
+		generated := generateMissingProfilesText(squad, now)
+		if (generated == "") {
+			return nil
+		}
+
+		return sendText(*squad.ChatId, combineText(message.Text, generated))
 	default:
 		return nil
 	}
+}
+
+func combineText(prefix string, generated string) string {
+	if (prefix == "") {
+		return generated
+	}
+
+	return prefix + "\n" + generated
 }
 
 func sendText(peerId int64, text string) error {

@@ -1,8 +1,14 @@
 {{define "schedule_form"}}
 <h1>рассылка</h1>
 <form method="post" action="{{.Action}}" class="form">
+  <label>тип
+    <select name="type">
+      {{range .Types}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Label}}</option>{{end}}
+    </select>
+  </label>
   <label>время (мск)<input type="time" name="time" value="{{.Time}}" required></label>
-  <label>текст<textarea name="text" rows="4" required>{{.Text}}</textarea></label>
+  <label>текст<textarea name="text" rows="4">{{.Text}}</textarea></label>
+  <p class="hint">для «обычного» типа текст — это всё сообщение; для остальных — необязательная подпись перед автоматически сгенерированным списком</p>
   <button type="submit">сохранить</button>
 </form>
 <a class="back" href="/panel/squads/{{.SquadCode}}/schedule">← назад</a>
