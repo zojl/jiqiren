@@ -18,6 +18,11 @@ const (
 	AuditActionDeleteManager   AuditAction = "delete_manager"
 	AuditActionViewBalance     AuditAction = "view_balance"
 	AuditActionBindSquadChat   AuditAction = "bind_squad_chat"
+	AuditActionCreateSchedule  AuditAction = "create_schedule"
+	AuditActionUpdateSchedule  AuditAction = "update_schedule"
+	AuditActionDeleteSchedule  AuditAction = "delete_schedule"
+	AuditActionSetSquadOverride   AuditAction = "set_squad_override"
+	AuditActionClearSquadOverride AuditAction = "clear_squad_override"
 )
 
 // VkId is stored directly (not joined from Manager) so it survives the

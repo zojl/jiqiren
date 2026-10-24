@@ -37,3 +37,14 @@ type Profile struct {
 	SleepAt *time.Time `gorm:"null"`
 	Created time.Time `gorm:"autoCreateTime"`
 }
+
+// EffectiveSquadId is the squad this profile's user should count as
+// belonging to for display/mentions — a manual override always wins over
+// what the profile itself reports.
+func (p Profile) EffectiveSquadId(overrideSquadId *uint) *uint {
+	if (overrideSquadId != nil) {
+		return overrideSquadId
+	}
+
+	return p.TeamId
+}
