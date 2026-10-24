@@ -33,6 +33,12 @@
   </div>
 </dl>
 
+{{if .CanManageSchedule}}
+<section class="actions">
+  <a class="btn" href="/panel/squads/{{.Code}}/schedule">рассылки</a>
+</section>
+{{end}}
+
 <h2>участники</h2>
 {{if .Members}}
 <div class="table-scroll">

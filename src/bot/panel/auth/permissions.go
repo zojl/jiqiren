@@ -119,6 +119,14 @@ func (p *Permissions) CanRenameSquad(squadId uint) bool {
 	return (p.isSquadLead() || p.isDeputy()) && p.ownsSquad(squadId)
 }
 
+func (p *Permissions) CanManageSchedule(squadId uint) bool {
+	if (p.isTeamlead()) {
+		return true
+	}
+
+	return (p.isSquadLead() || p.isDeputy()) && p.ownsSquad(squadId)
+}
+
 // HomeSquadId returns the squad a plain squad lead should land on by
 // default — they have no fraction-wide view, so their "home" is their own
 // squad page rather than the dashboard. Teamlead/deputy always get the

@@ -9,21 +9,18 @@ import (
 	"time"
 
 	"jiqiren/bot/audit"
+	"jiqiren/bot/battletime"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/panel/auth"
 	"jiqiren/bot/panel/templates"
+	"jiqiren/bot/readiness"
 
 	"github.com/go-chi/chi/v5"
 )
 
-// moscow is a fixed +3 offset rather than a tzdata-backed location: Moscow
-// has not observed DST since 2014, and the prod image (golang:alpine) isn't
-// guaranteed to ship tzdata. Matches the UTC offset already assumed in
-// repository.FindLastProfileByVkIdForBattleDate (battle at 15:00 UTC = 18:00 MSK).
-var moscow = time.FixedZone("MSK", 3*60*60)
+var moscow = battletime.Moscow
 
-const battleHourUTC = 15 // 18:00 MSK
 const inactiveStaleAfter = 7 * 24 * time.Hour
 const inactiveHiddenAfter = 30 * 24 * time.Hour
 
@@ -80,6 +77,7 @@ type squadPageData struct {
 	CanSetTarget bool
 	CanRename bool
 	CanSetToken bool
+	CanManageSchedule bool
 	ShowBackLink bool
 	Members []squadMemberView
 }
@@ -130,6 +128,7 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		CanSetTarget: permissions.CanSetSquadTarget(squad.Id),
 		CanRename: permissions.CanRenameSquad(squad.Id),
 		CanSetToken: permissions.CanSetSquadToken(squad.Id),
+		CanManageSchedule: permissions.CanManageSchedule(squad.Id),
 		ShowBackLink: !isHome || homeSquadId != squad.Id,
 		Members: members,
 	})
@@ -158,7 +157,7 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 	}
 
 	now := time.Now()
-	nextBattle := nextBattleTime(now)
+	nextBattle := battletime.Next(now)
 	lastBattle := nextBattle.Add(-24 * time.Hour)
 	sleepWarningStart := nextBattle.Add(-12 * time.Hour)
 
@@ -196,7 +195,7 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 		staminaClass := ratingClass(staminaLabel)
 		moneyClass := ratingClass(moneyLabel)
 		targetClass := "rating-bad"
-		if (profileTargetMatchesSquad(profile, squad)) {
+		if (readiness.TargetMatches(profile, squad)) {
 			targetClass = "rating-good"
 		}
 
@@ -286,16 +285,6 @@ func formatMskMoment(moment time.Time, now time.Time) string {
 	return sleepMsk.Format("02.01 15:04")
 }
 
-func nextBattleTime(now time.Time) time.Time {
-	nowUTC := now.UTC()
-	battle := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), battleHourUTC, 0, 0, 0, time.UTC)
-	if (!nowUTC.Before(battle)) {
-		battle = battle.Add(24 * time.Hour)
-	}
-
-	return battle
-}
-
 func staminaRating(stamina uint) string {
 	switch {
 	case stamina >= 250:
@@ -344,25 +333,6 @@ func wayIcon(way uint) string {
 	}
 }
 
-// profileTargetMatchesSquad compares a player's chosen battle target to the
-// squad's directive. A player's own fraction as target means "defending"
-// (that's how the in-game 🔐 icon is parsed, see getTarget in
-// plain/profile.go), matching the squad target sentinel model.TargetDefense.
-func profileTargetMatchesSquad(profile model.Profile, squad *model.Team) bool {
-	if (profile.TargetId == nil) {
-		return false
-	}
-
-	if (squad.Target == nil || *squad.Target == model.TargetNone) {
-		return true
-	}
-
-	if (*squad.Target == model.TargetDefense) {
-		return *profile.TargetId == squad.FractionId
-	}
-
-	return *profile.TargetId == *squad.Target
-}
 
 // squadChatLabel falls back to the raw chat id when a chat is bound but
 // its title wasn't captured (e.g. bound before this field existed).

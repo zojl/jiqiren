@@ -17,6 +17,7 @@ func GetAllModels() []interface{} {
 		ContestPoints{},
 		ContestProjectMessages{},
 		AuditLog{},
+		ScheduledMessage{},
 	}
 }
 

@@ -65,7 +65,7 @@ func resolveBindChatSquad(manager *model.Manager, code string) (*model.Team, err
 
 	if (isTeamlead) {
 		if (len(code) == 0) {
-			return nil, fmt.Errorf("Тимлиду нужно указать код отряда, например: !bind DD")
+			return nil, fmt.Errorf("Тимлиду нужно указать код отряда, например: %sbind DD", os.Getenv("PREFIX"))
 		}
 
 		squad, squadErr := repository.FindOneTeamByCodeAndFraction(code, manager.FractionId)
