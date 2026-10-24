@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"jiqiren/bot/battletime"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/readiness"
@@ -41,6 +42,8 @@ func generateMissingProfilesText(squad *model.Team, now time.Time) string {
 		vkIdByUserId[user.Id] = user.VkId
 	}
 
+	lastBattle := battletime.Last(now)
+
 	lines := make([]string, 0, len(profiles))
 	for _, profile := range profiles {
 		if (profile.TeamId == nil || *profile.TeamId != squad.Id) {
@@ -51,7 +54,7 @@ func generateMissingProfilesText(squad *model.Team, now time.Time) string {
 			continue
 		}
 
-		line := missingProfileLine(profile, squad, vkIdByUserId[profile.UserId])
+		line := missingProfileLine(profile, squad, lastBattle, vkIdByUserId[profile.UserId])
 		if (line != "") {
 			lines = append(lines, line)
 		}
@@ -60,8 +63,15 @@ func generateMissingProfilesText(squad *model.Team, now time.Time) string {
 	return strings.Join(lines, "\n")
 }
 
-func missingProfileLine(profile model.Profile, squad *model.Team, vkId uint) string {
+// missingProfileLine treats a profile older than the last battle the same
+// as having none: it was prepped for a battle that's already happened and
+// says nothing about readiness for the next one.
+func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle time.Time, vkId uint) string {
 	mention := fmt.Sprintf("[id%d|%s]", vkId, profile.Username)
+
+	if (profile.MessageDate.Before(lastBattle)) {
+		return fmt.Sprintf("‼️ %s не обновил профиль перед битвой", mention)
+	}
 
 	if (profile.TargetId == nil) {
 		return fmt.Sprintf("‼️ %s не выбрал цель", mention)

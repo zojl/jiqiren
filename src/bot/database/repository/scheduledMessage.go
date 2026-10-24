@@ -46,14 +46,24 @@ func CreateScheduledMessage(message *model.ScheduledMessage) error {
 	return db.Create(message).Error
 }
 
+// UpdateScheduledMessage clears LastSentDate when the send time actually
+// changes — otherwise a message already sent today under the old time
+// would stay stuck "sent" even after being rescheduled to later today,
+// and the only way out would be deleting and recreating it.
 func UpdateScheduledMessage(message *model.ScheduledMessage, messageType model.ScheduledMessageType, hour uint, minute uint, text string) error {
 	db := database.GetDb()
-	return db.Model(message).Updates(map[string]interface{}{
+	updates := map[string]interface{}{
 		"type": messageType,
 		"send_hour": hour,
 		"send_minute": minute,
 		"text": text,
-	}).Error
+	}
+
+	if (hour != message.SendHour || minute != message.SendMinute) {
+		updates["last_sent_date"] = nil
+	}
+
+	return db.Model(message).Updates(updates).Error
 }
 
 func DeleteScheduledMessage(id uint) error {
