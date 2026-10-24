@@ -17,16 +17,15 @@ func generateSleepReminderText(squad *model.Team, now time.Time) string {
 		return ""
 	}
 
-	lastBattle := battletime.Last(now)
 	nextBattle := battletime.Next(now)
 	windowStart := nextBattle.Add(-preBattleWindow)
 
 	lines := make([]string, 0, len(profiles))
 	for _, profile := range profiles {
-		// A profile that predates the last battle is stale — its SleepAt
-		// was computed from an old "hours until sleep" reading that has
-		// nothing to do with tonight.
-		if (profile.MessageDate.Before(lastBattle) || profile.SleepAt == nil) {
+		// Unlike missing-profiles' readiness checks, a sleep prediction
+		// isn't tied to the last battle — it's only stale once activeSquadProfiles'
+		// own silentAfter cutoff says so.
+		if (profile.SleepAt == nil) {
 			continue
 		}
 
