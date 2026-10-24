@@ -13,19 +13,34 @@ import (
 // noise — exclude them entirely rather than flag them for anything.
 const silentAfter = 7 * 24 * time.Hour
 
-// activeSquadProfiles returns each current member's latest profile
-// (skipping anyone who's left or gone silent for a week) plus a
-// UserId → VkId lookup for building mentions.
+// activeSquadProfiles returns each current member's latest profile —
+// effective squad (model.Profile.EffectiveSquadId: a manual override wins
+// over the profile's own TeamId) matching this one, skipping anyone
+// who's left or gone silent for a week — plus a UserId → VkId lookup for
+// building mentions.
 func activeSquadProfiles(squad *model.Team, now time.Time) ([]model.Profile, map[uint]uint, error) {
 	profiles, err := repository.FindLatestProfilesForTeam(squad.Id)
 	if (err != nil) {
 		return nil, nil, err
 	}
 
-	active := make([]model.Profile, 0, len(profiles))
-	userIds := make([]uint, 0, len(profiles))
+	candidateIds := make([]uint, 0, len(profiles))
 	for _, profile := range profiles {
-		if (profile.TeamId == nil || *profile.TeamId != squad.Id) {
+		candidateIds = append(candidateIds, profile.UserId)
+	}
+
+	users, _ := repository.FindUsersByIds(candidateIds)
+	vkIdByUserId := make(map[uint]uint, len(users))
+	overrideByUserId := make(map[uint]*uint, len(users))
+	for _, user := range users {
+		vkIdByUserId[user.Id] = user.VkId
+		overrideByUserId[user.Id] = user.SquadOverrideId
+	}
+
+	active := make([]model.Profile, 0, len(profiles))
+	for _, profile := range profiles {
+		effectiveSquadId := profile.EffectiveSquadId(overrideByUserId[profile.UserId])
+		if (effectiveSquadId == nil || *effectiveSquadId != squad.Id) {
 			continue
 		}
 
@@ -34,13 +49,6 @@ func activeSquadProfiles(squad *model.Team, now time.Time) ([]model.Profile, map
 		}
 
 		active = append(active, profile)
-		userIds = append(userIds, profile.UserId)
-	}
-
-	users, _ := repository.FindUsersByIds(userIds)
-	vkIdByUserId := make(map[uint]uint, len(users))
-	for _, user := range users {
-		vkIdByUserId[user.Id] = user.VkId
 	}
 
 	return active, vkIdByUserId, nil

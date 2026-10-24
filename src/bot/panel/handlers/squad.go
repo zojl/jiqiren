@@ -56,6 +56,15 @@ type squadMemberView struct {
 	HasReport bool
 	ReportStamina uint
 	ReportMoney string
+
+	IsOverride bool
+}
+
+type squadHiddenMemberView struct {
+	Name string
+	VkId uint
+	Info string
+	IsOverride bool
 }
 
 type squadFormData struct {
@@ -78,8 +87,10 @@ type squadPageData struct {
 	CanRename bool
 	CanSetToken bool
 	CanManageSchedule bool
+	CanManageMembers bool
 	ShowBackLink bool
 	Members []squadMemberView
+	HiddenMembers []squadHiddenMemberView
 }
 
 func SquadPage(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +113,7 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	members, membersErr := buildSquadMembers(squad, allFractions)
+	members, hiddenMembers, membersErr := buildSquadMembers(squad, allFractions)
 	if (membersErr != nil) {
 		http.Error(w, "Не удалось загрузить участников", http.StatusInternalServerError)
 		return
@@ -129,20 +140,25 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		CanRename: permissions.CanRenameSquad(squad.Id),
 		CanSetToken: permissions.CanSetSquadToken(squad.Id),
 		CanManageSchedule: permissions.CanManageSchedule(squad.Id),
+		CanManageMembers: permissions.CanManageMembers(squad.Id),
 		ShowBackLink: !isHome || homeSquadId != squad.Id,
 		Members: members,
+		HiddenMembers: hiddenMembers,
 	})
 }
 
 // buildSquadMembers derives the squad roster from each player's own most
 // recently reported profile — there is no authoritative membership list.
-// A player who moved on now shows a different TeamId on their latest
-// profile and is excluded; one who simply stopped reporting is kept for a
-// month, marked stale after a week.
-func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squadMemberView, error) {
+// Effective squad is TeamId unless the player has a manual override
+// (model.Profile.EffectiveSquadId), which always wins. Besides the main
+// roster, it separately returns two kinds of "hidden" members whose
+// natural TeamId is this squad: ones overridden elsewhere (reversible —
+// shown so they can be brought back) and ones silent for a month (shown
+// so it's clear where they went, not just silently dropped).
+func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squadMemberView, []squadHiddenMemberView, error) {
 	profiles, err := repository.FindLatestProfilesForTeam(squad.Id)
 	if (err != nil) {
-		return nil, err
+		return nil, nil, err
 	}
 
 	userIds := make([]uint, 0, len(profiles))
@@ -152,8 +168,10 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 
 	users, _ := repository.FindUsersByIds(userIds)
 	vkIdByUserId := make(map[uint]uint, len(users))
+	overrideByUserId := make(map[uint]*uint, len(users))
 	for _, user := range users {
 		vkIdByUserId[user.Id] = user.VkId
+		overrideByUserId[user.Id] = user.SquadOverrideId
 	}
 
 	now := time.Now()
@@ -175,13 +193,36 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 	}
 
 	members := make([]squadMemberView, 0, len(profiles))
+	hidden := make([]squadHiddenMemberView, 0)
 	for _, profile := range profiles {
-		if (profile.TeamId == nil || *profile.TeamId != squad.Id) {
-			continue
-		}
+		override := overrideByUserId[profile.UserId]
+		effectiveSquadId := profile.EffectiveSquadId(override)
+		isEffective := effectiveSquadId != nil && *effectiveSquadId == squad.Id
+		isNatural := profile.TeamId != nil && *profile.TeamId == squad.Id
 
 		inactiveFor := now.Sub(profile.MessageDate)
-		if (inactiveFor > inactiveHiddenAfter) {
+		silentLong := inactiveFor > inactiveHiddenAfter
+
+		if (!isEffective || silentLong) {
+			if (!isNatural) {
+				continue // neither naturally nor effectively this squad's — irrelevant
+			}
+
+			if (override != nil && *override != squad.Id) {
+				hidden = append(hidden, squadHiddenMemberView{
+					Name: profile.Username,
+					VkId: vkIdByUserId[profile.UserId],
+					Info: "перекинут в " + overrideSquadLabel(*override),
+					IsOverride: true,
+				})
+			} else if (silentLong) {
+				hidden = append(hidden, squadHiddenMemberView{
+					Name: profile.Username,
+					VkId: vkIdByUserId[profile.UserId],
+					Info: fmt.Sprintf("не активен %d дн.", int(inactiveFor.Hours()/24)),
+				})
+			}
+
 			continue
 		}
 
@@ -227,6 +268,7 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 			TargetLabel: playerTargetLabel(profile, allFractions, squad),
 			TargetClass: targetClass,
 			SleepAt: "—",
+			IsOverride: !isNatural,
 		}
 
 		if (profile.SleepAt != nil) {
@@ -244,8 +286,18 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 	}
 
 	sort.Slice(members, func(i, j int) bool { return members[i].Name < members[j].Name })
+	sort.Slice(hidden, func(i, j int) bool { return hidden[i].Name < hidden[j].Name })
 
-	return members, nil
+	return members, hidden, nil
+}
+
+func overrideSquadLabel(squadId uint) string {
+	squad, err := repository.FindOneTeamById(squadId)
+	if (err != nil) {
+		return fmt.Sprintf("#%d", squadId)
+	}
+
+	return squad.Code + " " + squad.Name
 }
 
 // formatReportMoney renders the battle's money delta as labeled parts —
@@ -472,6 +524,105 @@ func UnbindSquadChat(w http.ResponseWriter, r *http.Request) {
 
 	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionBindSquadChat,
 		fmt.Sprintf("отряд %s: чат отвязан", squad.Code))
+	http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+}
+
+// AddSquadMemberOverride pulls a player (by vk id) into this squad
+// regardless of what their own profile reports, as long as they already
+// have a profile on record in the same fraction — otherwise there's
+// nothing to validate the move against.
+func AddSquadMemberOverride(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanManageMembers(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	vkId, vkErr := strconv.ParseUint(strings.TrimSpace(r.FormValue("vk_id")), 10, 64)
+	if (vkErr != nil) {
+		http.Error(w, "Некорректный VK id", http.StatusBadRequest)
+		return
+	}
+
+	user := repository.FindOneUserByVkId(int(vkId))
+	if (user == nil) {
+		http.Error(w, "Игрок не найден — у него должен быть хотя бы один присланный профиль", http.StatusNotFound)
+		return
+	}
+
+	profile, profileErr := repository.FindLastProfileByVkId(uint(vkId))
+	if (profileErr != nil) {
+		http.Error(w, "У игрока нет профиля", http.StatusNotFound)
+		return
+	}
+
+	if (profile.FractionId != squad.FractionId) {
+		http.Error(w, "Игрок принадлежит другой фракции", http.StatusBadRequest)
+		return
+	}
+
+	if setErr := repository.SetUserSquadOverride(user, &squad.Id); (setErr != nil) {
+		http.Error(w, "Не удалось переопределить отряд", http.StatusInternalServerError)
+		return
+	}
+
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionSetSquadOverride,
+		fmt.Sprintf("vk%d → отряд %s", vkId, squad.Code))
+	http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+}
+
+// RemoveSquadMemberOverride clears a player's override, restoring their
+// profile-derived squad. Callable from either side of the move — the
+// squad currently holding them via override, or their natural squad —
+// but not from an unrelated third squad.
+func RemoveSquadMemberOverride(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanManageMembers(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	vkId, vkErr := strconv.ParseUint(chi.URLParam(r, "vk_id"), 10, 64)
+	if (vkErr != nil) {
+		http.Error(w, "Некорректный VK id", http.StatusBadRequest)
+		return
+	}
+
+	user := repository.FindOneUserByVkId(int(vkId))
+	if (user == nil) {
+		http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+		return
+	}
+
+	profile, profileErr := repository.FindLastProfileByVkId(uint(vkId))
+	isOverrideTarget := user.SquadOverrideId != nil && *user.SquadOverrideId == squad.Id
+	isNaturalSquad := profileErr == nil && profile.TeamId != nil && *profile.TeamId == squad.Id
+	if (!isOverrideTarget && !isNaturalSquad) {
+		http.Error(w, "Этот игрок не относится к данному отряду", http.StatusBadRequest)
+		return
+	}
+
+	if setErr := repository.SetUserSquadOverride(user, nil); (setErr != nil) {
+		http.Error(w, "Не удалось снять переопределение", http.StatusInternalServerError)
+		return
+	}
+
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionClearSquadOverride,
+		fmt.Sprintf("vk%d: снято переопределение (отряд %s)", vkId, squad.Code))
 	http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
 }
 

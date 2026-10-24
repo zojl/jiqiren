@@ -31,9 +31,11 @@ func FindLastProfileByVkIdForBattleDate(vkId uint, battleDate *time.Time) (*mode
 }
 
 // FindLatestProfilesForTeam returns, for every user who has ever reported
-// being on this team, that user's single most recent profile overall (any
-// team). A user whose latest profile now points elsewhere has left — the
-// caller filters by TeamId to tell current members from past ones.
+// being on this team OR is currently manually overridden onto it, that
+// user's single most recent profile overall (any team). A user whose
+// latest profile now points elsewhere has left — the caller combines
+// TeamId with the user's override (Profile.EffectiveSquadId) to tell
+// current members from past ones.
 func FindLatestProfilesForTeam(teamId uint) ([]model.Profile, error) {
 	db := database.GetDb()
 	profiles := []model.Profile{}
@@ -41,9 +43,13 @@ func FindLatestProfilesForTeam(teamId uint) ([]model.Profile, error) {
 	err := db.Raw(`
 		SELECT DISTINCT ON (profiles.user_id) profiles.*
 		FROM profiles
-		WHERE profiles.user_id IN (SELECT DISTINCT user_id FROM profiles WHERE team_id = ?)
+		WHERE profiles.user_id IN (
+			SELECT DISTINCT user_id FROM profiles WHERE team_id = ?
+			UNION
+			SELECT id FROM users WHERE squad_override_id = ?
+		)
 		ORDER BY profiles.user_id, profiles.message_date DESC
-	`, teamId).Scan(&profiles).Error
+	`, teamId, teamId).Scan(&profiles).Error
 
 	if (err != nil) {
 		return nil, fmt.Errorf("Could not load profiles for team id: %d", teamId)

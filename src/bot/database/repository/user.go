@@ -29,6 +29,11 @@ func FindOneUserByVkId(vkId int) *model.User {
 	return &user
 }
 
+func SetUserSquadOverride(user *model.User, squadId *uint) error {
+	db := database.GetDb()
+	return db.Model(user).Update("SquadOverrideId", squadId).Error
+}
+
 func FindOrCreateUserByVkId(vkId int) *model.User  {
 	user := FindOneUserByVkId(vkId)
 	if (user != nil) {
