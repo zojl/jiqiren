@@ -7,7 +7,6 @@ import (
 
 	"jiqiren/bot/battletime"
 	"jiqiren/bot/database/model"
-	"jiqiren/bot/database/repository"
 	"jiqiren/bot/readiness"
 )
 
@@ -20,40 +19,16 @@ const severeStaminaThreshold = 200
 const recommendedStaminaThreshold = 250
 const recommendedMoneyThreshold = 10
 
-// silentAfter: a profile this old says nothing useful about readiness for
-// the next battle, and pinging someone who's been gone a week is just
-// noise — skip them entirely rather than flag them.
-const silentAfter = 7 * 24 * time.Hour
-
 func generateMissingProfilesText(squad *model.Team, now time.Time) string {
-	profiles, err := repository.FindLatestProfilesForTeam(squad.Id)
+	profiles, vkIdByUserId, err := activeSquadProfiles(squad, now)
 	if (err != nil) {
 		return ""
-	}
-
-	userIds := make([]uint, 0, len(profiles))
-	for _, profile := range profiles {
-		userIds = append(userIds, profile.UserId)
-	}
-
-	users, _ := repository.FindUsersByIds(userIds)
-	vkIdByUserId := make(map[uint]uint, len(users))
-	for _, user := range users {
-		vkIdByUserId[user.Id] = user.VkId
 	}
 
 	lastBattle := battletime.Last(now)
 
 	lines := make([]string, 0, len(profiles))
 	for _, profile := range profiles {
-		if (profile.TeamId == nil || *profile.TeamId != squad.Id) {
-			continue
-		}
-
-		if (now.Sub(profile.MessageDate) > silentAfter) {
-			continue
-		}
-
 		line := missingProfileLine(profile, squad, lastBattle, vkIdByUserId[profile.UserId])
 		if (line != "") {
 			lines = append(lines, line)
@@ -67,14 +42,14 @@ func generateMissingProfilesText(squad *model.Team, now time.Time) string {
 // as having none: it was prepped for a battle that's already happened and
 // says nothing about readiness for the next one.
 func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle time.Time, vkId uint) string {
-	mention := fmt.Sprintf("[id%d|%s]", vkId, profile.Username)
+	who := mention(vkId, profile.Username)
 
 	if (profile.MessageDate.Before(lastBattle)) {
-		return fmt.Sprintf("‼️ %s не обновил профиль перед битвой", mention)
+		return fmt.Sprintf("‼️ %s не обновил профиль перед битвой", who)
 	}
 
 	if (profile.TargetId == nil) {
-		return fmt.Sprintf("‼️ %s не выбрал цель", mention)
+		return fmt.Sprintf("‼️ %s не выбрал цель", who)
 	}
 
 	severe := make([]string, 0, 3)
@@ -89,7 +64,7 @@ func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle tim
 	}
 
 	if (len(severe) > 0) {
-		return fmt.Sprintf("❗ %s %s", mention, strings.Join(severe, " и "))
+		return fmt.Sprintf("❗ %s %s", who, strings.Join(severe, " и "))
 	}
 
 	mild := make([]string, 0, 2)
@@ -101,7 +76,7 @@ func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle tim
 	}
 
 	if (len(mild) > 0) {
-		return fmt.Sprintf("⚠️ %s %s", mention, strings.Join(mild, " и "))
+		return fmt.Sprintf("⚠️ %s %s", who, strings.Join(mild, " и "))
 	}
 
 	return ""

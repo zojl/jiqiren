@@ -19,6 +19,8 @@ import (
 var scheduleTypeLabels = map[model.ScheduledMessageType]string{
 	model.ScheduledMessageTypeBasic: "обычное",
 	model.ScheduledMessageTypeMissingProfiles: "недостающие профили",
+	model.ScheduledMessageTypeMissingReports: "недостающие отчёты",
+	model.ScheduledMessageTypeSleepReminder: "напоминание о сне",
 }
 
 type scheduleTypeOption struct {
@@ -49,7 +51,12 @@ type scheduleFormData struct {
 }
 
 func buildScheduleTypeOptions(selected model.ScheduledMessageType) []scheduleTypeOption {
-	types := []model.ScheduledMessageType{model.ScheduledMessageTypeBasic, model.ScheduledMessageTypeMissingProfiles}
+	types := []model.ScheduledMessageType{
+		model.ScheduledMessageTypeBasic,
+		model.ScheduledMessageTypeMissingProfiles,
+		model.ScheduledMessageTypeMissingReports,
+		model.ScheduledMessageTypeSleepReminder,
+	}
 
 	options := make([]scheduleTypeOption, 0, len(types))
 	for _, messageType := range types {

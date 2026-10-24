@@ -85,26 +85,41 @@ func isDue(message model.ScheduledMessage, nowMsk time.Time, today time.Time) bo
 
 // dispatch builds the final text and sends it. For generated types, the
 // configured Text is an optional prefix — generated content is appended
-// after it; if nothing was generated there's nothing worth sending.
+// after it. If there are no mentions, the prefix alone still goes out as
+// long as it's non-empty; only a fully empty result (no prefix, nothing
+// generated) is skipped, though the slot still counts as handled today.
 func dispatch(message model.ScheduledMessage, squad *model.Team, now time.Time) error {
-	switch (message.Type) {
-	case model.ScheduledMessageTypeBasic:
+	if (message.Type == model.ScheduledMessageTypeBasic) {
 		return sendText(*squad.ChatId, message.Text)
-	case model.ScheduledMessageTypeMissingProfiles:
-		generated := generateMissingProfilesText(squad, now)
-		if (generated == "") {
-			return nil
-		}
+	}
 
-		return sendText(*squad.ChatId, combineText(message.Text, generated))
+	var generated string
+	switch (message.Type) {
+	case model.ScheduledMessageTypeMissingProfiles:
+		generated = generateMissingProfilesText(squad, now)
+	case model.ScheduledMessageTypeMissingReports:
+		generated = generateMissingReportsText(squad, now)
+	case model.ScheduledMessageTypeSleepReminder:
+		generated = generateSleepReminderText(squad, now)
 	default:
 		return nil
 	}
+
+	combined := combineText(message.Text, generated)
+	if (combined == "") {
+		return nil
+	}
+
+	return sendText(*squad.ChatId, combined)
 }
 
 func combineText(prefix string, generated string) string {
 	if (prefix == "") {
 		return generated
+	}
+
+	if (generated == "") {
+		return prefix
 	}
 
 	return prefix + "\n" + generated

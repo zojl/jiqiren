@@ -7,6 +7,8 @@ type ScheduledMessageType string
 const (
 	ScheduledMessageTypeBasic ScheduledMessageType = "basic"
 	ScheduledMessageTypeMissingProfiles ScheduledMessageType = "missing_profiles"
+	ScheduledMessageTypeMissingReports ScheduledMessageType = "missing_reports"
+	ScheduledMessageTypeSleepReminder ScheduledMessageType = "sleep_reminder"
 )
 
 // LastSentDate guards against sending twice on the same MSK calendar day —
