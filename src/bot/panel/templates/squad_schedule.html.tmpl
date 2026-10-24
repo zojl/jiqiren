@@ -1,23 +1,27 @@
 {{define "squad_schedule"}}
 <h1>рассылки · {{.SquadCode}} {{.SquadName}}</h1>
 <table class="list">
-<tr><th>время (мск)</th><th>тип</th><th>текст</th><th></th></tr>
+<tr><th>время (мск)</th><th>тип</th><th>текст</th>{{if .CanManage}}<th></th>{{end}}</tr>
 {{range .Messages}}
 <tr>
   <td>{{.Time}}</td>
   <td>{{.TypeLabel}}</td>
-  <td>{{.Text}}</td>
+  <td class="pre-line">{{.Text}}</td>
+  {{if $.CanManage}}
   <td>
     <a class="icon" href="/panel/squads/{{$.SquadCode}}/schedule/{{.Id}}/edit" title="редактировать">✎</a>
     <form method="post" action="/panel/squads/{{$.SquadCode}}/schedule/{{.Id}}/delete" onsubmit="return confirm('Удалить?');" class="inline"><button type="submit" class="danger">✕</button></form>
   </td>
+  {{end}}
 </tr>
 {{end}}
 </table>
 
+{{if .CanManage}}
 <section class="actions">
   <a class="btn" href="/panel/squads/{{.SquadCode}}/schedule/new">+ рассылка</a>
 </section>
+{{end}}
 
 <a class="back" href="/panel/squads/{{.SquadCode}}">← назад</a>
 {{end}}

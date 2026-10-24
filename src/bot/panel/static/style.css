@@ -202,6 +202,8 @@ table.list th { color: var(--dim); font-weight: normal; }
 table.members td, table.members th { white-space: nowrap; }
 table.members td:first-child { white-space: normal; }
 
+.pre-line { white-space: pre-line; }
+
 table.members tr:has(+ tr.report-row) td { border-bottom: none; }
 table.members tr.report-row td { padding-top: 0; padding-left: 28px; }
 

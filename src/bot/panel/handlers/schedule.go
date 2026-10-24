@@ -39,6 +39,7 @@ type scheduledMessageView struct {
 type scheduleListData struct {
 	SquadCode string
 	SquadName string
+	CanManage bool
 	Messages []scheduledMessageView
 }
 
@@ -88,7 +89,7 @@ func SquadSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if (!permissions.CanManageSchedule(squad.Id)) {
+	if (!permissions.CanViewSchedule(squad.Id)) {
 		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}
@@ -112,6 +113,7 @@ func SquadSchedule(w http.ResponseWriter, r *http.Request) {
 	templates.Render(w, "squad_schedule", scheduleListData{
 		SquadCode: squad.Code,
 		SquadName: squad.Name,
+		CanManage: permissions.CanManageSchedule(squad.Id),
 		Messages: views,
 	})
 }

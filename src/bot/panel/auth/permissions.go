@@ -119,12 +119,22 @@ func (p *Permissions) CanRenameSquad(squadId uint) bool {
 	return (p.isSquadLead() || p.isDeputy()) && p.ownsSquad(squadId)
 }
 
+// CanViewSchedule is fraction-wide for deputy (like CanViewSquad);
+// CanManageSchedule below scopes deputy to their own squad instead.
+func (p *Permissions) CanViewSchedule(squadId uint) bool {
+	if (p.isTeamlead() || p.isDeputy()) {
+		return true
+	}
+
+	return p.isSquadLead() && p.ownsSquad(squadId)
+}
+
 func (p *Permissions) CanManageSchedule(squadId uint) bool {
 	if (p.isTeamlead()) {
 		return true
 	}
 
-	return (p.isSquadLead() || p.isDeputy()) && p.ownsSquad(squadId)
+	return (p.isDeputy() || p.isSquadLead()) && p.ownsSquad(squadId)
 }
 
 func (p *Permissions) CanManageMembers(squadId uint) bool {
