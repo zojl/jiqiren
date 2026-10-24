@@ -91,6 +91,7 @@ type squadPageData struct {
 	ShowBackLink bool
 	Members []squadMemberView
 	HiddenMembers []squadHiddenMemberView
+	BattleSummary *battleSummaryView
 }
 
 func SquadPage(w http.ResponseWriter, r *http.Request) {
@@ -113,11 +114,15 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	members, hiddenMembers, membersErr := buildSquadMembers(squad, allFractions)
+	members, hiddenMembers, activeUserIds, membersErr := buildSquadMembers(squad, allFractions)
 	if (membersErr != nil) {
 		http.Error(w, "Не удалось загрузить участников", http.StatusInternalServerError)
 		return
 	}
+
+	// Best-effort: a battle summary that fails to build (e.g. no battles
+	// yet) just doesn't show, it shouldn't break the rest of the page.
+	battleSummary, _ := buildBattleSummary(squad, activeUserIds, time.Now())
 
 	target := model.TargetNone
 	if (squad.Target != nil) {
@@ -144,6 +149,7 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		ShowBackLink: !isHome || homeSquadId != squad.Id,
 		Members: members,
 		HiddenMembers: hiddenMembers,
+		BattleSummary: battleSummary,
 	})
 }
 
@@ -155,10 +161,10 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 // natural TeamId is this squad: ones overridden elsewhere (reversible —
 // shown so they can be brought back) and ones silent for a month (shown
 // so it's clear where they went, not just silently dropped).
-func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squadMemberView, []squadHiddenMemberView, error) {
+func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squadMemberView, []squadHiddenMemberView, []uint, error) {
 	profiles, err := repository.FindLatestProfilesForTeam(squad.Id)
 	if (err != nil) {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	userIds := make([]uint, 0, len(profiles))
@@ -194,6 +200,7 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 
 	members := make([]squadMemberView, 0, len(profiles))
 	hidden := make([]squadHiddenMemberView, 0)
+	activeUserIds := make([]uint, 0, len(profiles))
 	for _, profile := range profiles {
 		override := overrideByUserId[profile.UserId]
 		effectiveSquadId := profile.EffectiveSquadId(override)
@@ -257,8 +264,8 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 			Theory: profile.Theory,
 			Cunning: profile.Cunning,
 			Wisdom: profile.Wisdom,
-			Attack: profile.Practice*3 + profile.Cunning*2,
-			Defense: profile.Theory*3 + profile.Wisdom*2,
+			Attack: profile.Practice*2 + profile.Cunning*3,
+			Defense: profile.Theory*2 + profile.Wisdom*3,
 			Stamina: profile.Stamina,
 			StaminaLabel: staminaLabel,
 			StaminaClass: staminaClass,
@@ -283,12 +290,121 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 		}
 
 		members = append(members, member)
+		activeUserIds = append(activeUserIds, profile.UserId)
 	}
 
 	sort.Slice(members, func(i, j int) bool { return members[i].Name < members[j].Name })
 	sort.Slice(hidden, func(i, j int) bool { return hidden[i].Name < hidden[j].Name })
 
-	return members, hidden, nil
+	return members, hidden, activeUserIds, nil
+}
+
+type battleSummaryView struct {
+	BattleDate string
+	ActiveCount int
+	ParticipatedCount int
+	IdealCount int
+	AttackPower uint
+	DefensePower uint
+	StaminaSpent uint
+	StaminaSpentAvg float64
+	MoneyIncome uint
+	MoneyTransaction uint
+	MoneyLostAttack uint
+	MoneyLostDefense uint
+}
+
+// buildBattleSummary rolls up the last battle across activeUserIds (the
+// squad's current main roster) using each player's profile as it stood
+// for that battle, not whatever they've since updated to — same window
+// as the contest-points calculation.
+func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time) (*battleSummaryView, error) {
+	if (len(activeUserIds) == 0) {
+		return nil, nil
+	}
+
+	lastBattle := battletime.Last(now)
+	lastBattleMsk := lastBattle.In(moscow)
+	lastBattleDate := time.Date(lastBattleMsk.Year(), lastBattleMsk.Month(), lastBattleMsk.Day(), 0, 0, 0, 0, time.UTC)
+
+	battleProfiles, profilesErr := repository.FindProfilesByUserIdsForBattleDate(activeUserIds, lastBattleDate)
+	if (profilesErr != nil) {
+		return nil, profilesErr
+	}
+
+	battleProfileByUserId := make(map[uint]model.Profile, len(battleProfiles))
+	for _, profile := range battleProfiles {
+		battleProfileByUserId[profile.UserId] = profile
+	}
+
+	reports, reportsErr := repository.FindReportsByUserIdsAndDate(activeUserIds, &lastBattleDate)
+	if (reportsErr != nil) {
+		return nil, reportsErr
+	}
+
+	reportByUserId := make(map[uint]model.Report, len(reports))
+	for _, report := range reports {
+		if (report.MessageDate.After(lastBattle)) {
+			reportByUserId[report.UserId] = report
+		}
+	}
+
+	summary := &battleSummaryView{
+		BattleDate: lastBattleMsk.Format("02.01.2006"),
+		ActiveCount: len(activeUserIds),
+	}
+
+	var staminaSpentTotal uint
+	staminaSampleCount := 0
+
+	for _, userId := range activeUserIds {
+		battleProfile, hasProfile := battleProfileByUserId[userId]
+		if (hasProfile && isIdeallyPrepared(battleProfile, squad)) {
+			summary.IdealCount++
+		}
+
+		report, participated := reportByUserId[userId]
+		if (!participated) {
+			continue
+		}
+
+		summary.ParticipatedCount++
+		summary.MoneyIncome += report.RewardMoney
+		summary.MoneyTransaction += report.TransactionMoney
+		summary.MoneyLostAttack += report.AttackLostMoney
+		summary.MoneyLostDefense += report.LostMoney
+
+		if (!hasProfile) {
+			continue
+		}
+
+		if (report.Stamina <= battleProfile.Stamina) {
+			staminaSpentTotal += battleProfile.Stamina - report.Stamina
+			staminaSampleCount++
+		}
+
+		if (report.IsAttack) {
+			summary.AttackPower += (battleProfile.Practice*2 + battleProfile.Cunning*3) * battleProfile.Stamina
+		} else {
+			summary.DefensePower += (battleProfile.Theory*2 + battleProfile.Wisdom*3) * battleProfile.Stamina
+		}
+	}
+
+	summary.StaminaSpent = staminaSpentTotal
+	if (staminaSampleCount > 0) {
+		summary.StaminaSpentAvg = float64(staminaSpentTotal) / float64(staminaSampleCount)
+	}
+
+	return summary, nil
+}
+
+// isIdeallyPrepared reuses the same "отлично" thresholds already shown
+// per-player (staminaRating/moneyRating), plus a matching target.
+func isIdeallyPrepared(profile model.Profile, squad *model.Team) bool {
+	return profile.TargetId != nil &&
+		readiness.TargetMatches(profile, squad) &&
+		staminaRating(profile.Stamina) == "отлично" &&
+		moneyRating(profile.Money) == "отлично"
 }
 
 func overrideSquadLabel(squadId uint) string {

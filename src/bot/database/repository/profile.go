@@ -58,6 +58,33 @@ func FindLatestProfilesForTeam(teamId uint) ([]model.Profile, error) {
 	return profiles, nil
 }
 
+// FindProfilesByUserIdsForBattleDate returns, for each user, the single
+// profile that was actually in effect for a given past battle — the one
+// sent in the ~24h window before it, same as FindLastProfileByVkIdForBattleDate
+// and the contest-points calculation use. By the time someone views a
+// squad page after the battle, their latest profile overall may already
+// be prepping for the next one, so that's not usable here.
+func FindProfilesByUserIdsForBattleDate(userIds []uint, battleDate time.Time) ([]model.Profile, error) {
+	db := database.GetDb()
+	profiles := []model.Profile{}
+
+	battleMoment := battleDate.Add(15 * time.Hour) // battle is at 18:00 msk, means 15:00 utc
+	windowStart := battleMoment.Add(-24 * time.Hour)
+
+	err := db.Raw(`
+		SELECT DISTINCT ON (user_id) *
+		FROM profiles
+		WHERE user_id IN ? AND message_date < ? AND message_date > ?
+		ORDER BY user_id, message_date DESC
+	`, userIds, battleMoment, windowStart).Scan(&profiles).Error
+
+	if (err != nil) {
+		return nil, fmt.Errorf("Could not load battle-date profiles")
+	}
+
+	return profiles, nil
+}
+
 func FindLastProfileByVkId(vkId uint) (*model.Profile, error) {
 	db := database.GetDb()
 	profile := model.Profile{}
