@@ -89,13 +89,15 @@ h2 { font-size: 1em; margin-top: 32px; }
 
 .btn:hover, summary.btn:hover { border-color: var(--accent); }
 
-select, input[type="text"], input[type="password"] {
+select, input[type="text"], input[type="password"], input[type="time"], textarea {
   background: #0f140f;
   color: var(--fg);
   border: 1px solid var(--border);
   padding: 5px 8px;
   font-family: inherit;
 }
+
+textarea { resize: vertical; }
 
 button {
   background: var(--accent);

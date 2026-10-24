@@ -27,6 +27,9 @@ var auditActionLabels = map[model.AuditAction]string{
 	model.AuditActionDeleteManager:     "удаление менеджера",
 	model.AuditActionViewBalance:       "просмотр баланса",
 	model.AuditActionBindSquadChat:     "привязка чата отряда",
+	model.AuditActionCreateSchedule:    "добавление рассылки",
+	model.AuditActionUpdateSchedule:    "обновление рассылки",
+	model.AuditActionDeleteSchedule:    "удаление рассылки",
 }
 
 type auditLogView struct {
