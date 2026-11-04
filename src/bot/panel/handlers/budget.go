@@ -90,6 +90,18 @@ func resolveBattleDay(selected time.Time, now time.Time) time.Time {
 	return selected
 }
 
+// budgetCycleWindow is the fixed 24h window of the cycle that starts right
+// after battleDay's battle and runs until the next battle's pre-battle
+// anchor — the "today" cycle relative to battleDay, which is what both the
+// live-data seed and the chart visualize (as opposed to the already-
+// concluded cycle shown by "доход за вчера", which ends at battleDay
+// instead of starting there).
+func budgetCycleWindow(battleDay time.Time) (time.Time, time.Time) {
+	from := battletime.PostBattleAnchor(battleDay)
+	to := battletime.PreBattleAnchor(battleDay.AddDate(0, 0, 1))
+	return from, to
+}
+
 func BudgetPage(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 	if (!permissions.CanViewBalance()) {
@@ -131,7 +143,8 @@ func BudgetPage(w http.ResponseWriter, r *http.Request) {
 		data.BattleDayLabel = battleDay.In(battletime.Moscow).Format("02.01.2006")
 	}
 
-	if seed, seedErr := repository.FindLatestBudgetSnapshot(fraction.Id, selected); (seedErr == nil) {
+	seedFrom, seedTo := budgetCycleWindow(battleDay)
+	if seed, seedErr := repository.FindLatestBudgetSnapshotInRange(fraction.Id, seedFrom, seedTo); (seedErr == nil) {
 		data.LiveAvailable = true
 		data.Live = budgetFieldSetFromSnapshot(seed)
 
@@ -217,9 +230,8 @@ type budgetChartResponse struct {
 	Points []budgetChartPoint `json:"points"`
 }
 
-// BudgetChart returns the fixed 24h window (previous cycle's post-battle
-// anchor through the selected cycle's pre-battle anchor) of every snapshot
-// recorded for the fraction, for the page's graph block.
+// BudgetChart returns the fixed 24h window (see budgetCycleWindow) of
+// every snapshot recorded for the fraction, for the page's graph block.
 func BudgetChart(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 	if (!permissions.CanViewBalance()) {
@@ -239,8 +251,7 @@ func BudgetChart(w http.ResponseWriter, r *http.Request) {
 	selected := parseSelectedDate(r, now)
 	battleDay := resolveBattleDay(selected, now)
 
-	from := battletime.PostBattleAnchor(battleDay.AddDate(0, 0, -1))
-	to := battletime.PreBattleAnchor(battleDay)
+	from, to := budgetCycleWindow(battleDay)
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 

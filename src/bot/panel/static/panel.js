@@ -233,20 +233,28 @@ document.addEventListener("click", function (event) {
     canvas.innerHTML = svg;
   }
 
+  function load() {
+    fetch(block.getAttribute("data-chart-url"), { credentials: "same-origin" })
+      .then(function (response) { return response.json(); })
+      .then(function (json) {
+        if (json.error) {
+          canvas.innerHTML = '<div class="error">' + json.error + "</div>";
+          return;
+        }
+
+        data = json;
+        render();
+      })
+      .catch(function () {
+        canvas.innerHTML = '<div class="error">не удалось загрузить график</div>';
+      });
+  }
+
+  var refreshButton = block.querySelector(".budget-chart-refresh");
+  if (refreshButton) {
+    refreshButton.addEventListener("click", load);
+  }
+
   buildLegend();
-
-  fetch(block.getAttribute("data-chart-url"), { credentials: "same-origin" })
-    .then(function (response) { return response.json(); })
-    .then(function (json) {
-      if (json.error) {
-        canvas.innerHTML = '<div class="error">' + json.error + "</div>";
-        return;
-      }
-
-      data = json;
-      render();
-    })
-    .catch(function () {
-      canvas.innerHTML = '<div class="error">не удалось загрузить график</div>';
-    });
+  load();
 })();

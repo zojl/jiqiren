@@ -26,19 +26,17 @@ func mskDayBounds(date time.Time) (time.Time, time.Time) {
 	return start, start.Add(24 * time.Hour)
 }
 
-// FindLatestBudgetSnapshot returns the most recent snapshot (any kind)
-// captured on date's MSK calendar day — the seed value shown in the "live
-// data" block before it's refreshed (for today) or the last known value for
-// a past date (no refresh possible).
-func FindLatestBudgetSnapshot(fractionId uint, date time.Time) (*model.BudgetSnapshot, error) {
-	dayStart, dayEnd := mskDayBounds(date)
-
+// FindLatestBudgetSnapshotInRange returns the most recent snapshot (any
+// kind) captured within [from, to) — the seed value shown in the "live
+// data" block before it's refreshed (for the current cycle) or the last
+// known value for a past cycle (no refresh possible).
+func FindLatestBudgetSnapshotInRange(fractionId uint, from time.Time, to time.Time) (*model.BudgetSnapshot, error) {
 	db := database.GetDb()
 	snapshot := model.BudgetSnapshot{}
-	err := db.Where("fraction_id = ? AND captured_at >= ? AND captured_at < ?", fractionId, dayStart, dayEnd).
+	err := db.Where("fraction_id = ? AND captured_at >= ? AND captured_at < ?", fractionId, from, to).
 		Order("captured_at DESC").First(&snapshot).Error
 	if (err != nil) {
-		return nil, fmt.Errorf("no budget snapshot for fraction %d on %s", fractionId, dayStart.Format("2006-01-02"))
+		return nil, fmt.Errorf("no budget snapshot for fraction %d between %s and %s", fractionId, from.Format(time.RFC3339), to.Format(time.RFC3339))
 	}
 
 	return &snapshot, nil

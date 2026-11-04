@@ -257,7 +257,7 @@ table.members tr.report-row td { padding-top: 0; padding-left: 28px; }
 
 .budget-block h2 { margin: 0 0 8px; font-size: 0.95em; display: flex; align-items: center; gap: 8px; }
 
-.budget-refresh {
+.budget-refresh, .budget-chart-refresh {
   padding: 2px 8px;
   font-size: 0.9em;
 }
