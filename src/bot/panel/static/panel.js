@@ -222,9 +222,9 @@ document.addEventListener("click", function (event) {
       });
     });
 
-    var minValue = values.length ? Math.min.apply(null, values) : 0;
+    var minValue = 0;
     var maxValue = values.length ? Math.max.apply(null, values) : 1;
-    if (minValue === maxValue) {
+    if (maxValue === minValue) {
       maxValue = minValue + 1;
     }
 
