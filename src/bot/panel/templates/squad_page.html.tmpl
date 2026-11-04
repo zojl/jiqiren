@@ -33,14 +33,41 @@
   </div>
 </dl>
 
+{{if .BattleSummary}}
+<details class="battle-summary">
+  <summary class="btn">сводка за {{.BattleSummary.BattleDate}}</summary>
+  <dl class="budget">
+    <div class="budget-row"><dt>активных в отряде</dt><dd>{{.BattleSummary.ActiveCount}}</dd></div>
+    <div class="budget-row"><dt>сдали отчёт</dt><dd>{{.BattleSummary.ParticipatedCount}}</dd></div>
+    <div class="budget-row"><dt>идеально подготовлены</dt><dd>{{.BattleSummary.IdealCount}}</dd></div>
+    <div class="budget-row"><dt>⚔️ мощность атаки</dt><dd>{{.BattleSummary.AttackPower}}</dd></div>
+    <div class="budget-row"><dt>🛡️ мощность защиты</dt><dd>{{.BattleSummary.DefensePower}}</dd></div>
+    <div class="budget-group">🔋 выносливость</div>
+    <div class="budget-row sub"><dt>потрачено</dt><dd>-{{.BattleSummary.StaminaSpent}}</dd></div>
+    <div class="budget-row sub"><dt>в среднем</dt><dd>~{{printf "%.0f" .BattleSummary.StaminaSpentAvg}} на игрока</dd></div>
+    <div class="budget-group">💵 деньги</div>
+    <div class="budget-row sub"><dt>доход</dt><dd>+{{.BattleSummary.MoneyIncome}}</dd></div>
+    <div class="budget-row sub"><dt>транза</dt><dd>+{{.BattleSummary.MoneyTransaction}}</dd></div>
+    <div class="budget-row sub"><dt>потери (атака)</dt><dd>-{{.BattleSummary.MoneyLostAttack}}</dd></div>
+    <div class="budget-row sub"><dt>потери (деф)</dt><dd>-{{.BattleSummary.MoneyLostDefense}}</dd></div>
+  </dl>
+</details>
+{{end}}
+
+{{if .CanViewSchedule}}
+<section class="actions">
+  <a class="btn" href="/panel/squads/{{.Code}}/schedule">рассылки</a>
+</section>
+{{end}}
+
 <h2>участники</h2>
 {{if .Members}}
 <div class="table-scroll">
 <table class="list members">
-<tr><th>игрок</th><th>выносл.</th><th>деньги</th><th>цель</th><th>сон (мск)</th><th>атк</th><th>деф</th><th>статы</th></tr>
+<tr><th>игрок</th><th>выносл.</th><th>деньги</th><th>цель</th><th>сон (мск)</th><th>атк</th><th>деф</th><th>статы</th>{{if .CanManageMembers}}<th></th>{{end}}</tr>
 {{range .Members}}
 <tr>
-  <td>{{if .Stale}}❄️ {{end}}<a href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener">{{.WayIcon}}{{.Name}}({{.Level}})</a> <span class="hint">{{.LastSeen}}</span></td>
+  <td>{{if .Stale}}❄️ {{end}}{{if .IsOverride}}↪ {{end}}<a href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener">{{.WayIcon}}{{.Name}}({{.Level}})</a> <span class="hint">{{.LastSeen}}</span></td>
   <td class="{{.StaminaClass}}">{{.Stamina}}</td>
   <td class="{{.MoneyClass}}">{{.Money}}</td>
   <td class="{{.TargetClass}}">{{.TargetLabel}}</td>
@@ -48,10 +75,13 @@
   <td>⚔️{{.Attack}}</td>
   <td>🛡️{{.Defense}}</td>
   <td>📡{{.Practice}} 💾{{.Theory}} 📱{{.Cunning}} 🔎{{.Wisdom}}</td>
+  {{if $.CanManageMembers}}
+  <td>{{if .IsOverride}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/remove" onsubmit="return confirm('Открепить от отряда?');" class="inline"><button type="submit" class="danger">✕</button></form>{{end}}</td>
+  {{end}}
 </tr>
 {{if .HasReport}}
 <tr class="report-row">
-  <td colspan="8" class="hint">↳ отчёт за битву: 🔋{{.ReportStamina}} 💵{{.ReportMoney}}</td>
+  <td colspan="9" class="hint">↳ отчёт за битву: 🔋{{.ReportStamina}} 💵{{.ReportMoney}}</td>
 </tr>
 {{end}}
 {{end}}
@@ -59,6 +89,29 @@
 </div>
 {{else}}
 <p class="hint">нет активных участников за последний месяц</p>
+{{end}}
+
+{{if .CanManageMembers}}
+<form method="post" action="/panel/squads/{{.Code}}/members" class="form">
+  <label>добавить участника (vk id)<input type="text" name="vk_id" required></label>
+  <button type="submit">добавить</button>
+</form>
+{{end}}
+
+{{if .HiddenMembers}}
+<details class="hidden-members">
+  <summary class="btn">скрытые ({{len .HiddenMembers}})</summary>
+  <table class="list">
+  <tr><th>игрок</th><th></th><th></th></tr>
+  {{range .HiddenMembers}}
+  <tr>
+    <td><a href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener">{{.Name}}</a></td>
+    <td class="hint">{{.Info}}</td>
+    <td>{{if and .IsOverride $.CanManageMembers}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/remove" onsubmit="return confirm('Вернуть в отряд?');" class="inline"><button type="submit">↩ вернуть</button></form>{{end}}</td>
+  </tr>
+  {{end}}
+  </table>
+</details>
 {{end}}
 
 {{if .ShowBackLink}}<a class="back" href="/panel">← назад</a>{{end}}

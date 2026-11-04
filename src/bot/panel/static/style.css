@@ -56,6 +56,8 @@ h2 { font-size: 1em; margin-top: 32px; }
 
 .fraction-header { margin-bottom: 20px; }
 .budget-dropdown { margin-top: 8px; }
+.hidden-members { margin-top: 20px; }
+.hidden-members table.list { margin-top: 8px; }
 .budget-content { margin-top: 8px; }
 .budget { margin: 0; max-width: 320px; }
 .budget-row {
@@ -67,6 +69,8 @@ h2 { font-size: 1em; margin-top: 32px; }
 }
 .budget-row dt { margin: 0; }
 .budget-row dd { margin: 0; color: var(--fg); }
+.budget-row.sub { padding-left: 14px; }
+.budget-group { margin-top: 8px; color: var(--dim); }
 .error { color: var(--danger); }
 
 .squad-row {
@@ -89,13 +93,15 @@ h2 { font-size: 1em; margin-top: 32px; }
 
 .btn:hover, summary.btn:hover { border-color: var(--accent); }
 
-select, input[type="text"], input[type="password"] {
+select, input[type="text"], input[type="password"], input[type="time"], textarea {
   background: #0f140f;
   color: var(--fg);
   border: 1px solid var(--border);
   padding: 5px 8px;
   font-family: inherit;
 }
+
+textarea { resize: vertical; }
 
 button {
   background: var(--accent);
@@ -195,6 +201,8 @@ table.list th { color: var(--dim); font-weight: normal; }
 .table-scroll { overflow-x: auto; }
 table.members td, table.members th { white-space: nowrap; }
 table.members td:first-child { white-space: normal; }
+
+.pre-line { white-space: pre-line; }
 
 table.members tr:has(+ tr.report-row) td { border-bottom: none; }
 table.members tr.report-row td { padding-top: 0; padding-left: 28px; }

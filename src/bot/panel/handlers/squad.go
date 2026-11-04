@@ -9,21 +9,18 @@ import (
 	"time"
 
 	"jiqiren/bot/audit"
+	"jiqiren/bot/battletime"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/panel/auth"
 	"jiqiren/bot/panel/templates"
+	"jiqiren/bot/readiness"
 
 	"github.com/go-chi/chi/v5"
 )
 
-// moscow is a fixed +3 offset rather than a tzdata-backed location: Moscow
-// has not observed DST since 2014, and the prod image (golang:alpine) isn't
-// guaranteed to ship tzdata. Matches the UTC offset already assumed in
-// repository.FindLastProfileByVkIdForBattleDate (battle at 15:00 UTC = 18:00 MSK).
-var moscow = time.FixedZone("MSK", 3*60*60)
+var moscow = battletime.Moscow
 
-const battleHourUTC = 15 // 18:00 MSK
 const inactiveStaleAfter = 7 * 24 * time.Hour
 const inactiveHiddenAfter = 30 * 24 * time.Hour
 
@@ -59,6 +56,15 @@ type squadMemberView struct {
 	HasReport bool
 	ReportStamina uint
 	ReportMoney string
+
+	IsOverride bool
+}
+
+type squadHiddenMemberView struct {
+	Name string
+	VkId uint
+	Info string
+	IsOverride bool
 }
 
 type squadFormData struct {
@@ -80,8 +86,12 @@ type squadPageData struct {
 	CanSetTarget bool
 	CanRename bool
 	CanSetToken bool
+	CanViewSchedule bool
+	CanManageMembers bool
 	ShowBackLink bool
 	Members []squadMemberView
+	HiddenMembers []squadHiddenMemberView
+	BattleSummary *battleSummaryView
 }
 
 func SquadPage(w http.ResponseWriter, r *http.Request) {
@@ -104,11 +114,15 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	members, membersErr := buildSquadMembers(squad, allFractions)
+	members, hiddenMembers, activeUserIds, membersErr := buildSquadMembers(squad, allFractions)
 	if (membersErr != nil) {
 		http.Error(w, "Не удалось загрузить участников", http.StatusInternalServerError)
 		return
 	}
+
+	// Best-effort: a battle summary that fails to build (e.g. no battles
+	// yet) just doesn't show, it shouldn't break the rest of the page.
+	battleSummary, _ := buildBattleSummary(squad, activeUserIds, time.Now())
 
 	target := model.TargetNone
 	if (squad.Target != nil) {
@@ -130,20 +144,27 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		CanSetTarget: permissions.CanSetSquadTarget(squad.Id),
 		CanRename: permissions.CanRenameSquad(squad.Id),
 		CanSetToken: permissions.CanSetSquadToken(squad.Id),
+		CanViewSchedule: permissions.CanViewSchedule(squad.Id),
+		CanManageMembers: permissions.CanManageMembers(squad.Id),
 		ShowBackLink: !isHome || homeSquadId != squad.Id,
 		Members: members,
+		HiddenMembers: hiddenMembers,
+		BattleSummary: battleSummary,
 	})
 }
 
 // buildSquadMembers derives the squad roster from each player's own most
 // recently reported profile — there is no authoritative membership list.
-// A player who moved on now shows a different TeamId on their latest
-// profile and is excluded; one who simply stopped reporting is kept for a
-// month, marked stale after a week.
-func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squadMemberView, error) {
+// Effective squad is TeamId unless the player has a manual override
+// (model.Profile.EffectiveSquadId), which always wins. Besides the main
+// roster, it separately returns two kinds of "hidden" members whose
+// natural TeamId is this squad: ones overridden elsewhere (reversible —
+// shown so they can be brought back) and ones silent for a month (shown
+// so it's clear where they went, not just silently dropped).
+func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squadMemberView, []squadHiddenMemberView, []uint, error) {
 	profiles, err := repository.FindLatestProfilesForTeam(squad.Id)
 	if (err != nil) {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	userIds := make([]uint, 0, len(profiles))
@@ -153,12 +174,14 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 
 	users, _ := repository.FindUsersByIds(userIds)
 	vkIdByUserId := make(map[uint]uint, len(users))
+	overrideByUserId := make(map[uint]*uint, len(users))
 	for _, user := range users {
 		vkIdByUserId[user.Id] = user.VkId
+		overrideByUserId[user.Id] = user.SquadOverrideId
 	}
 
 	now := time.Now()
-	nextBattle := nextBattleTime(now)
+	nextBattle := battletime.Next(now)
 	lastBattle := nextBattle.Add(-24 * time.Hour)
 	sleepWarningStart := nextBattle.Add(-12 * time.Hour)
 
@@ -176,13 +199,37 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 	}
 
 	members := make([]squadMemberView, 0, len(profiles))
+	hidden := make([]squadHiddenMemberView, 0)
+	activeUserIds := make([]uint, 0, len(profiles))
 	for _, profile := range profiles {
-		if (profile.TeamId == nil || *profile.TeamId != squad.Id) {
-			continue
-		}
+		override := overrideByUserId[profile.UserId]
+		effectiveSquadId := profile.EffectiveSquadId(override)
+		isEffective := effectiveSquadId != nil && *effectiveSquadId == squad.Id
+		isNatural := profile.TeamId != nil && *profile.TeamId == squad.Id
 
 		inactiveFor := now.Sub(profile.MessageDate)
-		if (inactiveFor > inactiveHiddenAfter) {
+		silentLong := inactiveFor > inactiveHiddenAfter
+
+		if (!isEffective || silentLong) {
+			if (!isNatural) {
+				continue // neither naturally nor effectively this squad's — irrelevant
+			}
+
+			if (override != nil && *override != squad.Id) {
+				hidden = append(hidden, squadHiddenMemberView{
+					Name: profile.Username,
+					VkId: vkIdByUserId[profile.UserId],
+					Info: "перекинут в " + overrideSquadLabel(*override),
+					IsOverride: true,
+				})
+			} else if (silentLong) {
+				hidden = append(hidden, squadHiddenMemberView{
+					Name: profile.Username,
+					VkId: vkIdByUserId[profile.UserId],
+					Info: fmt.Sprintf("не активен %d дн.", int(inactiveFor.Hours()/24)),
+				})
+			}
+
 			continue
 		}
 
@@ -196,7 +243,7 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 		staminaClass := ratingClass(staminaLabel)
 		moneyClass := ratingClass(moneyLabel)
 		targetClass := "rating-bad"
-		if (profileTargetMatchesSquad(profile, squad)) {
+		if (readiness.TargetMatches(profile, squad)) {
 			targetClass = "rating-good"
 		}
 
@@ -217,8 +264,8 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 			Theory: profile.Theory,
 			Cunning: profile.Cunning,
 			Wisdom: profile.Wisdom,
-			Attack: profile.Practice*3 + profile.Cunning*2,
-			Defense: profile.Theory*3 + profile.Wisdom*2,
+			Attack: profile.Practice*2 + profile.Cunning*3,
+			Defense: profile.Theory*2 + profile.Wisdom*3,
 			Stamina: profile.Stamina,
 			StaminaLabel: staminaLabel,
 			StaminaClass: staminaClass,
@@ -228,6 +275,7 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 			TargetLabel: playerTargetLabel(profile, allFractions, squad),
 			TargetClass: targetClass,
 			SleepAt: "—",
+			IsOverride: !isNatural,
 		}
 
 		if (profile.SleepAt != nil) {
@@ -242,11 +290,130 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 		}
 
 		members = append(members, member)
+		activeUserIds = append(activeUserIds, profile.UserId)
 	}
 
 	sort.Slice(members, func(i, j int) bool { return members[i].Name < members[j].Name })
+	sort.Slice(hidden, func(i, j int) bool { return hidden[i].Name < hidden[j].Name })
 
-	return members, nil
+	return members, hidden, activeUserIds, nil
+}
+
+type battleSummaryView struct {
+	BattleDate string
+	ActiveCount int
+	ParticipatedCount int
+	IdealCount int
+	AttackPower uint
+	DefensePower uint
+	StaminaSpent uint
+	StaminaSpentAvg float64
+	MoneyIncome uint
+	MoneyTransaction uint
+	MoneyLostAttack uint
+	MoneyLostDefense uint
+}
+
+// buildBattleSummary rolls up the last battle across activeUserIds (the
+// squad's current main roster) using each player's profile as it stood
+// for that battle, not whatever they've since updated to — same window
+// as the contest-points calculation.
+func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time) (*battleSummaryView, error) {
+	if (len(activeUserIds) == 0) {
+		return nil, nil
+	}
+
+	lastBattle := battletime.Last(now)
+	lastBattleMsk := lastBattle.In(moscow)
+	lastBattleDate := time.Date(lastBattleMsk.Year(), lastBattleMsk.Month(), lastBattleMsk.Day(), 0, 0, 0, 0, time.UTC)
+
+	battleProfiles, profilesErr := repository.FindProfilesByUserIdsForBattleDate(activeUserIds, lastBattleDate)
+	if (profilesErr != nil) {
+		return nil, profilesErr
+	}
+
+	battleProfileByUserId := make(map[uint]model.Profile, len(battleProfiles))
+	for _, profile := range battleProfiles {
+		battleProfileByUserId[profile.UserId] = profile
+	}
+
+	reports, reportsErr := repository.FindReportsByUserIdsAndDate(activeUserIds, &lastBattleDate)
+	if (reportsErr != nil) {
+		return nil, reportsErr
+	}
+
+	reportByUserId := make(map[uint]model.Report, len(reports))
+	for _, report := range reports {
+		if (report.MessageDate.After(lastBattle)) {
+			reportByUserId[report.UserId] = report
+		}
+	}
+
+	summary := &battleSummaryView{
+		BattleDate: lastBattleMsk.Format("02.01.2006"),
+		ActiveCount: len(activeUserIds),
+	}
+
+	var staminaSpentTotal uint
+	staminaSampleCount := 0
+
+	for _, userId := range activeUserIds {
+		battleProfile, hasProfile := battleProfileByUserId[userId]
+		if (hasProfile && isIdeallyPrepared(battleProfile, squad)) {
+			summary.IdealCount++
+		}
+
+		report, participated := reportByUserId[userId]
+		if (!participated) {
+			continue
+		}
+
+		summary.ParticipatedCount++
+		summary.MoneyIncome += report.RewardMoney
+		summary.MoneyTransaction += report.TransactionMoney
+		summary.MoneyLostAttack += report.AttackLostMoney
+		summary.MoneyLostDefense += report.LostMoney
+
+		if (!hasProfile) {
+			continue
+		}
+
+		if (report.Stamina <= battleProfile.Stamina) {
+			staminaSpentTotal += battleProfile.Stamina - report.Stamina
+			staminaSampleCount++
+		}
+
+		if (report.IsAttack) {
+			summary.AttackPower += (battleProfile.Practice*2 + battleProfile.Cunning*3) * battleProfile.Stamina
+		} else {
+			summary.DefensePower += (battleProfile.Theory*2 + battleProfile.Wisdom*3) * battleProfile.Stamina
+		}
+	}
+
+	summary.StaminaSpent = staminaSpentTotal
+	if (staminaSampleCount > 0) {
+		summary.StaminaSpentAvg = float64(staminaSpentTotal) / float64(staminaSampleCount)
+	}
+
+	return summary, nil
+}
+
+// isIdeallyPrepared reuses the same "отлично" thresholds already shown
+// per-player (staminaRating/moneyRating), plus a matching target.
+func isIdeallyPrepared(profile model.Profile, squad *model.Team) bool {
+	return profile.TargetId != nil &&
+		readiness.TargetMatches(profile, squad) &&
+		staminaRating(profile.Stamina) == "отлично" &&
+		moneyRating(profile.Money) == "отлично"
+}
+
+func overrideSquadLabel(squadId uint) string {
+	squad, err := repository.FindOneTeamById(squadId)
+	if (err != nil) {
+		return fmt.Sprintf("#%d", squadId)
+	}
+
+	return squad.Code + " " + squad.Name
 }
 
 // formatReportMoney renders the battle's money delta as labeled parts —
@@ -284,16 +451,6 @@ func formatMskMoment(moment time.Time, now time.Time) string {
 	}
 
 	return sleepMsk.Format("02.01 15:04")
-}
-
-func nextBattleTime(now time.Time) time.Time {
-	nowUTC := now.UTC()
-	battle := time.Date(nowUTC.Year(), nowUTC.Month(), nowUTC.Day(), battleHourUTC, 0, 0, 0, time.UTC)
-	if (!nowUTC.Before(battle)) {
-		battle = battle.Add(24 * time.Hour)
-	}
-
-	return battle
 }
 
 func staminaRating(stamina uint) string {
@@ -344,25 +501,6 @@ func wayIcon(way uint) string {
 	}
 }
 
-// profileTargetMatchesSquad compares a player's chosen battle target to the
-// squad's directive. A player's own fraction as target means "defending"
-// (that's how the in-game 🔐 icon is parsed, see getTarget in
-// plain/profile.go), matching the squad target sentinel model.TargetDefense.
-func profileTargetMatchesSquad(profile model.Profile, squad *model.Team) bool {
-	if (profile.TargetId == nil) {
-		return false
-	}
-
-	if (squad.Target == nil || *squad.Target == model.TargetNone) {
-		return true
-	}
-
-	if (*squad.Target == model.TargetDefense) {
-		return *profile.TargetId == squad.FractionId
-	}
-
-	return *profile.TargetId == *squad.Target
-}
 
 // squadChatLabel falls back to the raw chat id when a chat is bound but
 // its title wasn't captured (e.g. bound before this field existed).
@@ -502,6 +640,105 @@ func UnbindSquadChat(w http.ResponseWriter, r *http.Request) {
 
 	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionBindSquadChat,
 		fmt.Sprintf("отряд %s: чат отвязан", squad.Code))
+	http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+}
+
+// AddSquadMemberOverride pulls a player (by vk id) into this squad
+// regardless of what their own profile reports, as long as they already
+// have a profile on record in the same fraction — otherwise there's
+// nothing to validate the move against.
+func AddSquadMemberOverride(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanManageMembers(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	vkId, vkErr := strconv.ParseUint(strings.TrimSpace(r.FormValue("vk_id")), 10, 64)
+	if (vkErr != nil) {
+		http.Error(w, "Некорректный VK id", http.StatusBadRequest)
+		return
+	}
+
+	user := repository.FindOneUserByVkId(int(vkId))
+	if (user == nil) {
+		http.Error(w, "Игрок не найден — у него должен быть хотя бы один присланный профиль", http.StatusNotFound)
+		return
+	}
+
+	profile, profileErr := repository.FindLastProfileByVkId(uint(vkId))
+	if (profileErr != nil) {
+		http.Error(w, "У игрока нет профиля", http.StatusNotFound)
+		return
+	}
+
+	if (profile.FractionId != squad.FractionId) {
+		http.Error(w, "Игрок принадлежит другой фракции", http.StatusBadRequest)
+		return
+	}
+
+	if setErr := repository.SetUserSquadOverride(user, &squad.Id); (setErr != nil) {
+		http.Error(w, "Не удалось переопределить отряд", http.StatusInternalServerError)
+		return
+	}
+
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionSetSquadOverride,
+		fmt.Sprintf("vk%d → отряд %s", vkId, squad.Code))
+	http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+}
+
+// RemoveSquadMemberOverride clears a player's override, restoring their
+// profile-derived squad. Callable from either side of the move — the
+// squad currently holding them via override, or their natural squad —
+// but not from an unrelated third squad.
+func RemoveSquadMemberOverride(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanManageMembers(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	vkId, vkErr := strconv.ParseUint(chi.URLParam(r, "vk_id"), 10, 64)
+	if (vkErr != nil) {
+		http.Error(w, "Некорректный VK id", http.StatusBadRequest)
+		return
+	}
+
+	user := repository.FindOneUserByVkId(int(vkId))
+	if (user == nil) {
+		http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+		return
+	}
+
+	profile, profileErr := repository.FindLastProfileByVkId(uint(vkId))
+	isOverrideTarget := user.SquadOverrideId != nil && *user.SquadOverrideId == squad.Id
+	isNaturalSquad := profileErr == nil && profile.TeamId != nil && *profile.TeamId == squad.Id
+	if (!isOverrideTarget && !isNaturalSquad) {
+		http.Error(w, "Этот игрок не относится к данному отряду", http.StatusBadRequest)
+		return
+	}
+
+	if setErr := repository.SetUserSquadOverride(user, nil); (setErr != nil) {
+		http.Error(w, "Не удалось снять переопределение", http.StatusInternalServerError)
+		return
+	}
+
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionClearSquadOverride,
+		fmt.Sprintf("vk%d: снято переопределение (отряд %s)", vkId, squad.Code))
 	http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
 }
 

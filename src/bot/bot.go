@@ -11,6 +11,7 @@ import (
     "jiqiren/bot/database"
     "jiqiren/bot/panel"
     "jiqiren/bot/panel/auth"
+    "jiqiren/bot/scheduler"
 
     "github.com/SevereCloud/vksdk/v2/api"
     "github.com/SevereCloud/vksdk/v2/events"
@@ -22,8 +23,10 @@ func main() {
     prefix := os.Getenv("PREFIX")
     vk := api.NewVK(token)
     panel.SetVK(vk)
+    scheduler.SetVK(vk)
 
     database.Init()
+    scheduler.Start()
 
     // get information about the group
     _, err := vk.GroupsGetByID(nil)
