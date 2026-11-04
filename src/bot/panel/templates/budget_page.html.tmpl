@@ -55,10 +55,11 @@
 
   <section class="budget-block budget-chart-block" data-chart-url="{{.ChartUrl}}">
     <h2>динамика за сутки <button type="button" class="btn budget-chart-refresh" title="обновить">⟳</button></h2>
-    <div class="budget-chart-layout">
-      <div class="budget-chart-legend"></div>
-      <div class="budget-chart-canvas"><p class="hint">загрузка…</p></div>
+    <div class="budget-chart-canvas">
+      <svg class="budget-chart-svg" viewBox="0 0 760 280" preserveAspectRatio="none"><text x="380" y="140" text-anchor="middle" fill="currentColor" opacity="0.6">загрузка…</text></svg>
+      <div class="budget-chart-tooltip" hidden></div>
     </div>
+    <div class="budget-chart-legend"></div>
   </section>
 </div>
 {{end}}
