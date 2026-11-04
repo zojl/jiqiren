@@ -17,6 +17,8 @@ const (
 	AuditActionUpdateManager   AuditAction = "update_manager"
 	AuditActionDeleteManager   AuditAction = "delete_manager"
 	AuditActionViewBalance     AuditAction = "view_balance"
+	AuditActionViewActualBudget AuditAction = "view_actual_budget"
+	AuditActionViewBudgetChart AuditAction = "view_budget_chart"
 	AuditActionBindSquadChat   AuditAction = "bind_squad_chat"
 	AuditActionCreateSchedule  AuditAction = "create_schedule"
 	AuditActionUpdateSchedule  AuditAction = "update_schedule"

@@ -2,10 +2,7 @@
 <section class="fraction-header">
   <h1>{{.FractionIcon}} {{.FractionName}}</h1>
   {{if .CanViewBalance}}
-  <details class="budget-dropdown" data-budget-url="/panel/fraction/budget">
-    <summary class="btn">баланс</summary>
-    <div class="budget-content"></div>
-  </details>
+  <a class="btn" href="/panel/fraction/budget">баланс</a>
   {{end}}
 </section>
 

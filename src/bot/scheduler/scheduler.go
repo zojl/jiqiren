@@ -42,14 +42,17 @@ func untilNextMinute() time.Duration {
 }
 
 func tick() {
+	now := time.Now()
+	nowMsk := now.In(moscow)
+
+	tickBudgetSnapshots(nowMsk)
+
 	messages, err := repository.FindAllScheduledMessages()
 	if (err != nil) {
 		log.Println("scheduler: " + err.Error())
 		return
 	}
 
-	now := time.Now()
-	nowMsk := now.In(moscow)
 	today := battletime.Today(now)
 
 	for _, message := range messages {

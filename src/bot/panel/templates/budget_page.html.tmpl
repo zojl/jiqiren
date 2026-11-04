@@ -1,0 +1,67 @@
+{{define "budget_page"}}
+<h1>баланс</h1>
+
+<form method="get" action="/panel/fraction/budget" class="budget-date-picker">
+  <a class="btn{{if .IsToday}} selected{{end}}" href="/panel/fraction/budget?date={{.TodayDate}}">сегодня</a>
+  <a class="btn{{if eq .SelectedDate .YesterdayDate}} selected{{end}}" href="/panel/fraction/budget?date={{.YesterdayDate}}">вчера</a>
+  <input type="date" name="date" value="{{.SelectedDate}}" onchange="this.form.submit()">
+</form>
+
+{{if .Error}}
+<div class="error">бюджет недоступен: {{.Error}}</div>
+{{else}}
+<div class="budget-grid">
+  <section class="budget-block" data-budget-live{{if .IsToday}} data-live="true"{{end}} data-actual-url="/panel/fraction/budget/actual" data-has-diff-base="{{.LiveHasDiff}}" data-diff-base="{{.LiveIncomeDiffBase}}">
+    <h2>текущие данные{{if .IsToday}} <button type="button" class="btn budget-refresh" title="обновить">⟳</button>{{end}}</h2>
+    {{if .LiveAvailable}}
+    <dl class="budget">
+      <div class="budget-row"><dt>бюджет</dt><dd data-field="budget">{{.Live.Budget}}</dd></div>
+      <div class="budget-row"><dt>доход сегодня</dt><dd data-field="incomeToday">{{.Live.IncomeToday}}{{if .LiveHasDiff}} <span class="hint" data-field="incomeDiff">({{.LiveIncomeDiffLabel}})</span>{{end}}</dd></div>
+      <div class="budget-row"><dt>доход всего</dt><dd data-field="incomeTotal">{{.Live.IncomeTotal}}</dd></div>
+      <div class="budget-row"><dt>донат сегодня</dt><dd data-field="contributionsToday">{{.Live.ContributionsToday}}</dd></div>
+      <div class="budget-row"><dt>донат всего</dt><dd data-field="contributionsTotal">{{.Live.ContributionsTotal}}</dd></div>
+    </dl>
+    {{else}}
+    <p class="hint">нет данных</p>
+    {{end}}
+  </section>
+
+  <section class="budget-block">
+    <h2>итоги битвы{{if .BattleDayLabel}} <span class="hint">{{.BattleDayLabel}}</span>{{end}}</h2>
+    {{if .BattleResultsAvailable}}
+    <dl class="budget">
+      <div class="budget-row"><dt>бюджет</dt><dd>{{.BattleResults.Budget}}</dd></div>
+      <div class="budget-row"><dt>доход сегодня</dt><dd>{{.BattleResults.IncomeToday}}</dd></div>
+      <div class="budget-row"><dt>доход всего</dt><dd>{{.BattleResults.IncomeTotal}}</dd></div>
+      <div class="budget-row"><dt>донат сегодня</dt><dd>{{.BattleResults.ContributionsToday}}</dd></div>
+      <div class="budget-row"><dt>донат всего</dt><dd>{{.BattleResults.ContributionsTotal}}</dd></div>
+    </dl>
+    {{else}}
+    <p class="hint">нет данных</p>
+    {{end}}
+  </section>
+
+  <section class="budget-block">
+    <h2>доход за вчера</h2>
+    {{if .YesterdayAvailable}}
+    <dl class="budget">
+      <div class="budget-row"><dt>доход</dt><dd>{{.YesterdayIncomeLabel}}</dd></div>
+      <div class="budget-row"><dt>донат</dt><dd>{{.YesterdayContributionsLabel}}</dd></div>
+    </dl>
+    {{else}}
+    <p class="hint">нет данных</p>
+    {{end}}
+  </section>
+
+  <section class="budget-block budget-chart-block" data-chart-url="{{.ChartUrl}}">
+    <h2>динамика за сутки</h2>
+    <div class="budget-chart-layout">
+      <div class="budget-chart-legend"></div>
+      <div class="budget-chart-canvas"><p class="hint">загрузка…</p></div>
+    </div>
+  </section>
+</div>
+{{end}}
+
+<a class="back" href="/panel">← назад</a>
+{{end}}

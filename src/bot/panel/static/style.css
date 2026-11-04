@@ -55,10 +55,8 @@ h1 { font-size: 1.1em; }
 h2 { font-size: 1em; margin-top: 32px; }
 
 .fraction-header { margin-bottom: 20px; }
-.budget-dropdown { margin-top: 8px; }
 .hidden-members { margin-top: 20px; }
 .hidden-members table.list { margin-top: 8px; }
-.budget-content { margin-top: 8px; }
 .budget { margin: 0; max-width: 320px; }
 .budget-row {
   display: flex;
@@ -93,7 +91,7 @@ h2 { font-size: 1em; margin-top: 32px; }
 
 .btn:hover, summary.btn:hover { border-color: var(--accent); }
 
-select, input[type="text"], input[type="password"], input[type="time"], textarea {
+select, input[type="text"], input[type="password"], input[type="time"], input[type="date"], textarea {
   background: #0f140f;
   color: var(--fg);
   border: 1px solid var(--border);
@@ -211,3 +209,43 @@ table.members tr.report-row td { padding-top: 0; padding-left: 28px; }
 .rating-warn { color: var(--warn); }
 .rating-bad { color: var(--danger); }
 .rating-stale { color: var(--dim); }
+
+.budget-date-picker { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.budget-date-picker .btn.selected { border-color: var(--accent); color: var(--accent); }
+
+.budget-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+
+.budget-block {
+  grid-column: span 4;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.budget-block h2 { margin: 0 0 8px; font-size: 0.95em; display: flex; align-items: center; gap: 8px; }
+
+.budget-refresh {
+  padding: 2px 8px;
+  font-size: 0.9em;
+}
+
+.budget-chart-block { grid-column: span 12; }
+
+.budget-chart-layout { display: flex; gap: 16px; align-items: flex-start; }
+.budget-chart-legend { display: flex; flex-direction: column; gap: 6px; min-width: 160px; }
+.budget-chart-legend label { display: flex; align-items: center; gap: 6px; color: var(--dim); cursor: pointer; }
+.budget-chart-legend input { accent-color: var(--accent); }
+.budget-chart-legend .swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.budget-chart-canvas { flex: 1; min-width: 0; }
+.budget-chart-canvas svg { width: 100%; height: auto; display: block; }
+
+@media (max-width: 700px) {
+  .budget-grid { grid-template-columns: 1fr; }
+  .budget-block, .budget-chart-block { grid-column: span 1; }
+  .budget-chart-layout { flex-direction: column; }
+}
