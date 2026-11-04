@@ -110,7 +110,7 @@ func SquadSchedule(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	templates.Render(w, "squad_schedule", scheduleListData{
+	templates.Render(w, r, "squad_schedule", scheduleListData{
 		SquadCode: squad.Code,
 		SquadName: squad.Name,
 		CanManage: permissions.CanManageSchedule(squad.Id),
@@ -132,7 +132,7 @@ func NewScheduledMessageForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templates.Render(w, "schedule_form", scheduleFormData{
+	templates.Render(w, r, "schedule_form", scheduleFormData{
 		Action: "/panel/squads/" + squad.Code + "/schedule",
 		SquadCode: squad.Code,
 		Types: buildScheduleTypeOptions(model.ScheduledMessageTypeBasic),
@@ -203,7 +203,7 @@ func EditScheduledMessageForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templates.Render(w, "schedule_form", scheduleFormData{
+	templates.Render(w, r, "schedule_form", scheduleFormData{
 		Action: "/panel/squads/" + squad.Code + "/schedule/" + strconv.FormatUint(uint64(message.Id), 10) + "/edit",
 		SquadCode: squad.Code,
 		Time: fmt.Sprintf("%02d:%02d", message.SendHour, message.SendMinute),

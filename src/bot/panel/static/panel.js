@@ -1,3 +1,23 @@
+document.addEventListener("toggle", function (event) {
+  if (!event.target.matches(".nav-burger") || !event.target.open) {
+    return;
+  }
+
+  document.querySelectorAll(".nav-burger[open]").forEach(function (other) {
+    if (other !== event.target) {
+      other.open = false;
+    }
+  });
+}, true);
+
+document.addEventListener("click", function (event) {
+  document.querySelectorAll(".nav-burger[open]").forEach(function (burger) {
+    if (!burger.contains(event.target)) {
+      burger.open = false;
+    }
+  });
+});
+
 function showErrorPopup(message) {
   var dialog = document.getElementById("error-popup");
   dialog.querySelector(".popup-message").textContent = message;

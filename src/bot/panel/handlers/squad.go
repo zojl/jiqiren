@@ -131,7 +131,7 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 
 	homeSquadId, isHome := permissions.HomeSquadId()
 
-	templates.Render(w, "squad_page", squadPageData{
+	templates.Render(w, r, "squad_page", squadPageData{
 		Id: squad.Id,
 		Name: squad.Name,
 		Code: squad.Code,
@@ -541,7 +541,7 @@ func NewSquadForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templates.Render(w, "squad_form", squadFormData{Action: "/panel/squads", ShowCodeFields: true})
+	templates.Render(w, r, "squad_form", squadFormData{Action: "/panel/squads", ShowCodeFields: true})
 }
 
 func CreateSquad(w http.ResponseWriter, r *http.Request) {
@@ -587,7 +587,7 @@ func RenameSquadForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templates.Render(w, "squad_form", squadFormData{
+	templates.Render(w, r, "squad_form", squadFormData{
 		Action: "/panel/squads/" + squad.Code + "/rename",
 		Name: squad.Name,
 	})

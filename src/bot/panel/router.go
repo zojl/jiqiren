@@ -50,6 +50,7 @@ func NewRouter() chi.Router {
 		r.Post("/squads/{code}/schedule/{id}/edit", handlers.EditScheduledMessage)
 		r.Post("/squads/{code}/schedule/{id}/delete", handlers.DeleteScheduledMessage)
 
+		r.Get("/fraction", handlers.FractionPage)
 		r.Get("/fraction/token", handlers.FractionTokenForm)
 		r.Post("/fraction/token", handlers.SetFractionToken)
 		r.Get("/fraction/budget", handlers.BudgetPage)

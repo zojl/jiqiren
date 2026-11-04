@@ -119,7 +119,7 @@ func BudgetPage(w http.ResponseWriter, r *http.Request) {
 
 	if (fraction.TargetToken == "") {
 		data.Error = "токен команды не задан"
-		templates.Render(w, "budget_page", data)
+		templates.Render(w, r, "budget_page", data)
 		return
 	}
 
@@ -148,7 +148,7 @@ func BudgetPage(w http.ResponseWriter, r *http.Request) {
 		data.YesterdayContributionsLabel = fmt.Sprintf("%+d", int64(preBattle.ContributionsToday)-int64(battleResults.ContributionsToday))
 	}
 
-	templates.Render(w, "budget_page", data)
+	templates.Render(w, r, "budget_page", data)
 }
 
 type budgetActualResponse struct {
