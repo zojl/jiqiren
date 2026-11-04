@@ -30,28 +30,25 @@ type squadView struct {
 type dashboardData struct {
 	FractionName string
 	FractionIcon string
-	FractionCurrentTargetIcon string
-	FractionTargetOptions []targetIconOption
-	CanViewBalance bool
-	CanSetFractionTarget bool
-	CanSetFractionToken bool
 	CanManageSquads bool
-	CanViewAuditLog bool
 	Squads []squadView
 }
 
+// Dashboard is the fraction-wide "Отряды" page — a plain squad lead has no
+// use for it, so a failed permission check falls back to redirecting them
+// to their own squad page instead of a flat 403.
 func Dashboard(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
-	if (!permissions.CanViewTargets()) {
+	if (!permissions.CanViewDashboard()) {
+		if squadId, isHome := permissions.HomeSquadId(); (isHome) {
+			if squad, squadErr := repository.FindOneTeamById(squadId); (squadErr == nil) {
+				http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+				return
+			}
+		}
+
 		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
-	}
-
-	if squadId, isHome := permissions.HomeSquadId(); (isHome) {
-		if squad, squadErr := repository.FindOneTeamById(squadId); (squadErr == nil) {
-			http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
-			return
-		}
 	}
 
 	fraction, err := repository.FindOneFractionById(permissions.FractionId())
@@ -66,21 +63,10 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fractionTarget := model.TargetNone
-	if (fraction.Target != nil) {
-		fractionTarget = *fraction.Target
-	}
-
 	data := dashboardData{
 		FractionName: fraction.Name,
 		FractionIcon: fraction.Icon,
-		FractionCurrentTargetIcon: targetIcon(allFractions, fraction.Target),
-		FractionTargetOptions: buildTargetIconOptions(allFractions, fraction.Id, fractionTarget),
-		CanViewBalance: permissions.CanViewBalance(),
-		CanSetFractionTarget: permissions.CanSetFractionTarget(),
-		CanSetFractionToken: permissions.CanSetFractionToken(),
 		CanManageSquads: permissions.CanManageSquads(),
-		CanViewAuditLog: permissions.CanViewAuditLog(),
 	}
 
 	squads, squadsErr := repository.FindTeamsByFractionId(fraction.Id)
@@ -108,7 +94,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	templates.Render(w, "dashboard", data)
+	templates.Render(w, r, "dashboard", data)
 }
 
 func buildTargetIconOptions(fractions []model.Fraction, ownFractionId uint, current uint) []targetIconOption {

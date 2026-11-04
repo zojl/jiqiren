@@ -1,0 +1,24 @@
+{{define "fraction_page"}}
+<h1>{{.Icon}} {{.Name}}</h1>
+<dl class="budget">
+  <div class="budget-row">
+    <dt>цель</dt>
+    <dd>
+      {{if .CanSetTarget}}
+      <details class="target-picker" data-scope="fraction">
+        <summary class="icon-select-btn" title="цель команды">{{.CurrentTargetIcon}}</summary>
+        <div class="target-menu">
+          {{range .TargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-target-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
+        </div>
+      </details>
+      {{else}}
+      {{.CurrentTargetIcon}}
+      {{end}}
+    </dd>
+  </div>
+  <div class="budget-row">
+    <dt>токен</dt>
+    <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="icon" href="/panel/fraction/token" title="токен команды">🗝</a>{{end}}</dd>
+  </div>
+</dl>
+{{end}}

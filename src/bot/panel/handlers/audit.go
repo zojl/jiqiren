@@ -82,5 +82,5 @@ func AuditLog(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	templates.Render(w, "audit_log", auditLogData{Entries: views})
+	templates.Render(w, r, "audit_log", auditLogData{Entries: views})
 }

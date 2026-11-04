@@ -49,12 +49,29 @@ func (p *Permissions) ownsSquad(squadId uint) bool {
 	return p.claims != nil && p.claims.SquadId != nil && *p.claims.SquadId == squadId
 }
 
-func (p *Permissions) CanViewTargets() bool {
-	if (p.isTeamlead() || p.isDeputy()) {
-		return true
+// CanViewDashboard gates the "Отряды" page (the fraction-wide squad list) —
+// a plain squad lead has no fraction-wide view, they land on "Мой отряд"
+// instead (see HomeSquadId).
+func (p *Permissions) CanViewDashboard() bool {
+	return p.isTeamlead() || p.isDeputy()
+}
+
+// CanViewFraction gates the "Команда" page. Viewing is bundled for
+// teamlead/deputy alike; within the page, editing the target vs. the token
+// is still gated separately (CanSetFractionTarget / CanSetFractionToken).
+func (p *Permissions) CanViewFraction() bool {
+	return p.isTeamlead() || p.isDeputy()
+}
+
+// OwnSquadId returns the manager's personally assigned squad, if any,
+// regardless of role — unlike HomeSquadId this isn't restricted to plain
+// squad leads, since a deputy can also be assigned to a specific squad.
+func (p *Permissions) OwnSquadId() (uint, bool) {
+	if (p.claims == nil || p.claims.SquadId == nil) {
+		return 0, false
 	}
 
-	return p.isSquadLead() && p.claims.SquadId != nil
+	return *p.claims.SquadId, true
 }
 
 // CanViewSquad gates whether a specific squad's target is shown at all.

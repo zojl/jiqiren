@@ -1,0 +1,58 @@
+package handlers
+
+import (
+	"net/http"
+
+	"jiqiren/bot/database/model"
+	"jiqiren/bot/database/repository"
+	"jiqiren/bot/panel/auth"
+	"jiqiren/bot/panel/templates"
+)
+
+type fractionPageData struct {
+	Name               string
+	Icon               string
+	CurrentTargetIcon  string
+	TargetOptions      []targetIconOption
+	CanSetTarget       bool
+	HasToken           bool
+	CanSetToken        bool
+}
+
+// FractionPage is "Команда" — the fraction-wide counterpart of a squad
+// page, deliberately minimal: just target and token, with none of a
+// squad's battle/member/schedule concerns.
+func FractionPage(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+	if (!permissions.CanViewFraction()) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	fraction, err := repository.FindOneFractionById(permissions.FractionId())
+	if (err != nil) {
+		http.Error(w, "Фракция не найдена", http.StatusInternalServerError)
+		return
+	}
+
+	allFractions, allErr := repository.FindAllFractions()
+	if (allErr != nil) {
+		http.Error(w, "Ошибка загрузки фракций", http.StatusInternalServerError)
+		return
+	}
+
+	target := model.TargetNone
+	if (fraction.Target != nil) {
+		target = *fraction.Target
+	}
+
+	templates.Render(w, r, "fraction_page", fractionPageData{
+		Name:              fraction.Name,
+		Icon:              fraction.Icon,
+		CurrentTargetIcon: targetIcon(allFractions, fraction.Target),
+		TargetOptions:     buildTargetIconOptions(allFractions, fraction.Id, target),
+		CanSetTarget:      permissions.CanSetFractionTarget(),
+		HasToken:          fraction.TargetToken != "",
+		CanSetToken:       permissions.CanSetFractionToken(),
+	})
+}

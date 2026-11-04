@@ -1,20 +1,22 @@
-// The balance spoiler re-fetches fresh data from its handle on every open —
-// nothing is cached, so closing and opening it again always pulls new numbers.
 document.addEventListener("toggle", function (event) {
-  if (!event.target.matches(".budget-dropdown") || !event.target.open) {
+  if (!event.target.matches(".nav-burger") || !event.target.open) {
     return;
   }
 
-  var content = event.target.querySelector(".budget-content");
-  var url = event.target.getAttribute("data-budget-url");
-
-  content.innerHTML = '<span class="hint">загрузка…</span>';
-
-  fetch(url, { credentials: "same-origin" })
-    .then(function (response) { return response.text(); })
-    .then(function (html) { content.innerHTML = html; })
-    .catch(function () { content.innerHTML = '<div class="error">не удалось загрузить</div>'; });
+  document.querySelectorAll(".nav-burger[open]").forEach(function (other) {
+    if (other !== event.target) {
+      other.open = false;
+    }
+  });
 }, true);
+
+document.addEventListener("click", function (event) {
+  document.querySelectorAll(".nav-burger[open]").forEach(function (burger) {
+    if (!burger.contains(event.target)) {
+      burger.open = false;
+    }
+  });
+});
 
 function showErrorPopup(message) {
   var dialog = document.getElementById("error-popup");

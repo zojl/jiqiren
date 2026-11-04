@@ -24,7 +24,7 @@ func FractionTokenForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templates.Render(w, "token_form", tokenFormData{Action: "/panel/fraction/token"})
+	templates.Render(w, r, "token_form", tokenFormData{Action: "/panel/fraction/token"})
 }
 
 func SetFractionToken(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +63,7 @@ func SquadTokenForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templates.Render(w, "token_form", tokenFormData{
+	templates.Render(w, r, "token_form", tokenFormData{
 		Action: "/panel/squads/" + squad.Code + "/token",
 	})
 }
