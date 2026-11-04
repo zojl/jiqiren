@@ -1,10 +1,19 @@
 {{define "dashboard"}}
-<h1>{{.FractionIcon}} {{.FractionName}}</h1>
+<div class="fraction-row">
+  <h1><a href="/panel/fraction">{{.FractionIcon}} {{.FractionName}}</a></h1>
+  {{if .CanSetFractionTarget}}
+  <details class="target-picker" data-scope="fraction">
+    <summary class="icon-select-btn" title="цель команды">{{.FractionCurrentTargetIcon}}</summary>
+    <div class="target-menu">
+      {{range .FractionTargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-target-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
+    </div>
+  </details>
+  {{else}}
+  <span class="icon" title="цель команды">{{.FractionCurrentTargetIcon}}</span>
+  {{end}}
+</div>
 
 <section class="squads">
-  <div class="squad-row">
-    <a class="squad-link" href="/panel/fraction">{{.FractionIcon}} {{.FractionName}}</a>
-  </div>
   {{range .Squads}}
   <div class="squad-row">
     <a class="squad-link" href="/panel/squads/{{.Code}}">{{.Code}} {{.Name}}</a>
@@ -18,8 +27,6 @@
     {{else}}
     <span class="icon" title="цель отряда">{{.CurrentTargetIcon}}</span>
     {{end}}
-    {{if .CanRename}}<a class="icon" href="/panel/squads/{{.Code}}/rename" title="редактировать">✎</a>{{end}}
-    {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Code}}/token" title="токен отряда">🗝</a>{{end}}
   </div>
   {{end}}
 </section>

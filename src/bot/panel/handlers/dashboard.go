@@ -23,13 +23,14 @@ type squadView struct {
 	CurrentTargetIcon string
 	TargetOptions []targetIconOption
 	CanSetTarget bool
-	CanSetToken bool
-	CanRename bool
 }
 
 type dashboardData struct {
 	FractionName string
 	FractionIcon string
+	FractionCurrentTargetIcon string
+	FractionTargetOptions []targetIconOption
+	CanSetFractionTarget bool
 	CanManageSquads bool
 	Squads []squadView
 }
@@ -63,9 +64,17 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fractionTarget := model.TargetNone
+	if (fraction.Target != nil) {
+		fractionTarget = *fraction.Target
+	}
+
 	data := dashboardData{
 		FractionName: fraction.Name,
 		FractionIcon: fraction.Icon,
+		FractionCurrentTargetIcon: targetIcon(allFractions, fraction.Target),
+		FractionTargetOptions: buildTargetIconOptions(allFractions, fraction.Id, fractionTarget),
+		CanSetFractionTarget: permissions.CanSetFractionTarget(),
 		CanManageSquads: permissions.CanManageSquads(),
 	}
 
@@ -88,8 +97,6 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 				CurrentTargetIcon: targetIcon(allFractions, squad.Target),
 				TargetOptions: buildTargetIconOptions(allFractions, fraction.Id, target),
 				CanSetTarget: permissions.CanSetSquadTarget(squad.Id),
-				CanSetToken: permissions.CanSetSquadToken(squad.Id),
-				CanRename: permissions.CanRenameSquad(squad.Id),
 			})
 		}
 	}
