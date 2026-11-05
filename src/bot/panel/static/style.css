@@ -90,8 +90,10 @@ h2 { font-size: 1em; margin-top: 32px; }
 .budget-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 16px;
   padding: 2px 0;
+  line-height: 1.8;
   color: var(--dim);
 }
 .budget-row dt { margin: 0; }
