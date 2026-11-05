@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>jiqiren // panel</title>
+<title>Jīqìrén // panel</title>
 <link rel="stylesheet" href="/panel/static/style.css">
 </head>
 <body>
 <header class="bar">
-  <a href="/panel" class="brand">[ jiqiren ]</a>
+  <a href="/panel" class="brand">[ Jīqìrén ]</a>
   <nav class="nav-row">
     {{range .Nav}}<a class="nav-link{{if .Active}} active{{end}}" href="{{.Href}}">{{.Label}}</a>{{end}}
     <form method="post" action="/panel/logout" class="inline logout"><button type="submit" class="link nav-link">выход</button></form>

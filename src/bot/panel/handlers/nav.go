@@ -28,6 +28,10 @@ func buildNav(r *http.Request) []templates.NavItem {
 		items = append(items, templates.NavItem{Label: "Отряды", Href: "/panel/", Active: path == "/"})
 	}
 
+	if (permissions.CanViewBalance()) {
+		items = append(items, templates.NavItem{Label: "Бюджет", Href: "/panel/fraction/budget", Active: strings.HasPrefix(path, "/fraction/budget")})
+	}
+
 	if (permissions.CanViewFraction()) {
 		items = append(items, templates.NavItem{Label: "Команда", Href: "/panel/fraction", Active: path == "/fraction"})
 	}
@@ -37,10 +41,6 @@ func buildNav(r *http.Request) []templates.NavItem {
 			href := "/squads/" + squad.Code
 			items = append(items, templates.NavItem{Label: "Мой отряд", Href: "/panel" + href, Active: path == href})
 		}
-	}
-
-	if (permissions.CanViewBalance()) {
-		items = append(items, templates.NavItem{Label: "Бюджет", Href: "/panel/fraction/budget", Active: strings.HasPrefix(path, "/fraction/budget")})
 	}
 
 	if (permissions.CanManageManagers()) {
