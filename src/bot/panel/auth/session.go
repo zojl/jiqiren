@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"jiqiren/bot/database/model"
-	"jiqiren/bot/database/repository"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -19,19 +18,10 @@ func signingKey() []byte {
 	return []byte(os.Getenv("JWT_SECRET"))
 }
 
-func claimsFromManager(manager *model.Manager) *Claims {
-	var accountType *string
-	if manager.AccountType != nil {
-		value := string(*manager.AccountType)
-		accountType = &value
-	}
-
+func sessionClaimsFromManagerId(managerId uint) *SessionClaims {
 	now := time.Now()
-	return &Claims{
-		ManagerId: manager.Id,
-		FractionId: manager.FractionId,
-		SquadId: manager.SquadId,
-		AccountType: accountType,
+	return &SessionClaims{
+		ManagerId: managerId,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt: jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(sessionLifetime)),
@@ -39,7 +29,7 @@ func claimsFromManager(manager *model.Manager) *Claims {
 	}
 }
 
-func setCookie(w http.ResponseWriter, claims *Claims) error {
+func setCookie(w http.ResponseWriter, claims *SessionClaims) error {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString(signingKey())
 	if (err != nil) {
@@ -60,17 +50,16 @@ func setCookie(w http.ResponseWriter, claims *Claims) error {
 }
 
 func IssueSession(w http.ResponseWriter, manager *model.Manager) error {
-	claims := claimsFromManager(manager)
-	return setCookie(w, claims)
+	return setCookie(w, sessionClaimsFromManagerId(manager.Id))
 }
 
-func ParseSessionCookie(r *http.Request) (*Claims, error) {
+func ParseSessionCookie(r *http.Request) (*SessionClaims, error) {
 	cookie, err := r.Cookie(CookieName)
 	if (err != nil) {
 		return nil, err
 	}
 
-	claims := &Claims{}
+	claims := &SessionClaims{}
 	_, err = jwt.ParseWithClaims(cookie.Value, claims, func(token *jwt.Token) (interface{}, error) {
 		return signingKey(), nil
 	})
@@ -98,10 +87,11 @@ func HasValidSession(r *http.Request) bool {
 	return err == nil
 }
 
-// RenewIfNeeded extends the session cookie when it's close to expiring.
-// The Manager row is refetched only here (not on every request), bounding
-// how long a revoked role can keep working via an old cookie.
-func RenewIfNeeded(w http.ResponseWriter, claims *Claims) {
+// RenewIfNeeded extends the session cookie when it's close to expiring —
+// just a fresh expiry for the same identity. It carries no permission data
+// to refresh: RequireAuth already re-fetches the manager row on every
+// request regardless of how close the cookie is to expiring.
+func RenewIfNeeded(w http.ResponseWriter, claims *SessionClaims) {
 	if (claims.ExpiresAt == nil) {
 		return
 	}
@@ -110,10 +100,5 @@ func RenewIfNeeded(w http.ResponseWriter, claims *Claims) {
 		return
 	}
 
-	manager, err := repository.FindOneManagerById(claims.ManagerId)
-	if (err != nil) {
-		return
-	}
-
-	IssueSession(w, manager)
+	setCookie(w, sessionClaimsFromManagerId(claims.ManagerId))
 }
