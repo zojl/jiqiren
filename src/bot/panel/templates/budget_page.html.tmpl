@@ -54,7 +54,7 @@
   </section>
 
   <section class="budget-block budget-chart-block" data-chart-url="{{.ChartUrl}}">
-    <h2>динамика за сутки <button type="button" class="btn budget-chart-refresh" title="обновить">⟳</button> <span class="hint budget-chart-updated-at"></span></h2>
+    <h2>динамика за сутки{{if .IsToday}} <button type="button" class="btn budget-chart-refresh" title="обновить">⟳</button> <span class="hint budget-chart-updated-at"></span>{{end}}</h2>
     <div class="budget-chart-canvas">
       <svg class="budget-chart-svg" viewBox="0 0 760 280" preserveAspectRatio="none"><text x="380" y="140" text-anchor="middle" fill="currentColor" opacity="0.6">загрузка…</text></svg>
       <div class="budget-chart-tooltip" hidden></div>
