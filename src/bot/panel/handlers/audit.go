@@ -26,10 +26,15 @@ var auditActionLabels = map[model.AuditAction]string{
 	model.AuditActionUpdateManager:     "обновление менеджера",
 	model.AuditActionDeleteManager:     "удаление менеджера",
 	model.AuditActionViewBalance:       "просмотр баланса",
+	model.AuditActionViewActualBudget:  "просмотр текущего бюджета",
+	model.AuditActionViewBudgetChart:   "просмотр графика бюджета",
+	model.AuditActionViewSquad:         "просмотр отряда",
 	model.AuditActionBindSquadChat:     "привязка чата отряда",
 	model.AuditActionCreateSchedule:    "добавление рассылки",
 	model.AuditActionUpdateSchedule:    "обновление рассылки",
 	model.AuditActionDeleteSchedule:    "удаление рассылки",
+	model.AuditActionSetSquadOverride:   "переопределение отряда",
+	model.AuditActionClearSquadOverride: "снятие переопределения отряда",
 }
 
 type auditLogView struct {

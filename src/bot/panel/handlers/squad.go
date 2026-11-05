@@ -108,6 +108,9 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionViewSquad,
+		fmt.Sprintf("просмотр отряда %s «%s»", squad.Code, squad.Name))
+
 	allFractions, fractionsErr := repository.FindAllFractions()
 	if (fractionsErr != nil) {
 		http.Error(w, "Ошибка загрузки фракций", http.StatusInternalServerError)
