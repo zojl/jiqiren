@@ -120,6 +120,15 @@ h2 { font-size: 1em; margin-top: 32px; }
 
 .btn:hover, summary.btn:hover { border-color: var(--accent); }
 
+/* A .btn as a <summary> expands/collapses in place (disclosure triangle);
+   as an <a> with .btn-nav it navigates to another page (trailing arrow) —
+   two different interactions that otherwise looked identical. */
+summary.btn::-webkit-details-marker { display: none; }
+summary.btn::before { content: "▸ "; }
+details[open] > summary.btn::before { content: "▾ "; }
+
+.btn-nav::after { content: " →"; }
+
 .btn-wide { display: block; width: 100%; text-align: center; margin-top: 16px; }
 
 select, input[type="text"], input[type="password"], input[type="time"], input[type="date"], textarea {

@@ -1,6 +1,12 @@
 {{define "squad_page"}}
-<h1>{{.Code}} {{.Name}} {{if .CanRename}}<a class="icon" href="/panel/squads/{{.Code}}/rename" title="редактировать">✎</a>{{end}}</h1>
+<h1>{{.Code}} {{.Name}}</h1>
+
+<h2>настройки</h2>
 <dl class="budget">
+  <div class="budget-row">
+    <dt>название</dt>
+    <dd>{{.Name}} {{if .CanRename}}<a class="btn btn-nav" href="/panel/squads/{{.Code}}/rename">переименовать</a>{{end}}</dd>
+  </div>
   <div class="budget-row">
     <dt>цель</dt>
     <dd>
@@ -21,7 +27,7 @@
     <dd>
       {{if .ChatName}}
       {{.ChatName}}
-      {{if .CanUnbindChat}}<form method="post" action="/panel/squads/{{.Code}}/unbind-chat" onsubmit="return confirm('Отвязать чат?');" class="inline"><button type="submit" class="danger">✕</button></form>{{end}}
+      {{if .CanUnbindChat}}<form method="post" action="/panel/squads/{{.Code}}/unbind-chat" onsubmit="return confirm('Отвязать чат?');" class="inline"><button type="submit" class="danger">✕ отвязать</button></form>{{end}}
       {{else}}
       не привязан
       {{end}}
@@ -29,8 +35,14 @@
   </div>
   <div class="budget-row">
     <dt>токен</dt>
-    <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Code}}/token" title="токен отряда">🗝</a>{{end}}</dd>
+    <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="btn btn-nav" href="/panel/squads/{{.Code}}/token">задать токен</a>{{end}}</dd>
   </div>
+  {{if .CanViewSchedule}}
+  <div class="budget-row">
+    <dt>рассылки</dt>
+    <dd><a class="btn btn-nav" href="/panel/squads/{{.Code}}/schedule">перейти к рассылкам</a></dd>
+  </div>
+  {{end}}
 </dl>
 
 {{if .BattleSummary}}
@@ -52,12 +64,6 @@
     <div class="budget-row sub"><dt>потери (деф)</dt><dd>-{{.BattleSummary.MoneyLostDefense}}</dd></div>
   </dl>
 </details>
-{{end}}
-
-{{if .CanViewSchedule}}
-<section class="actions">
-  <a class="btn" href="/panel/squads/{{.Code}}/schedule">рассылки</a>
-</section>
 {{end}}
 
 <h2>участники</h2>
@@ -92,8 +98,9 @@
 {{end}}
 
 {{if .CanManageMembers}}
+<h2>добавить участника</h2>
 <form method="post" action="/panel/squads/{{.Code}}/members" class="form">
-  <label>добавить участника (vk id)<input type="text" name="vk_id" required></label>
+  <label>vk id<input type="text" name="vk_id" required></label>
   <button type="submit">добавить</button>
 </form>
 {{end}}
