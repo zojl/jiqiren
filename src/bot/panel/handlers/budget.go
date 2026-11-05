@@ -60,9 +60,11 @@ type budgetPageData struct {
 }
 
 // parseSelectedDate reads ?date=YYYY-MM-DD (MSK calendar day) from the
-// request, falling back to today. The result uses the same UTC-midnight
-// representation as battletime.Today, so it can be fed straight into
-// resolveBattleDay and the repository's day-bounded lookups.
+// request, falling back to battletime.BattleToday. The result uses the
+// same UTC-midnight representation as battletime.Today, so it can be fed
+// straight into the repository's day-bounded lookups and budgetCycleWindow
+// — it already *is* the battle day (see BattleToday), no further
+// resolution needed.
 func parseSelectedDate(r *http.Request, now time.Time) time.Time {
 	raw := r.URL.Query().Get("date")
 	if (raw != "") {
@@ -71,24 +73,7 @@ func parseSelectedDate(r *http.Request, now time.Time) time.Time {
 		}
 	}
 
-	return battletime.Today(now)
-}
-
-// resolveBattleDay maps a selected calendar day to the battle cycle whose
-// results should be shown. For any day already fully elapsed this is just
-// that day itself; for "today" specifically, today's battle may not have
-// produced results yet, in which case the previous cycle's results are
-// shown instead.
-func resolveBattleDay(selected time.Time, now time.Time) time.Time {
-	if (!selected.Equal(battletime.Today(now))) {
-		return selected
-	}
-
-	if (now.Before(battletime.PostBattleAnchor(selected))) {
-		return selected.AddDate(0, 0, -1)
-	}
-
-	return selected
+	return battletime.BattleToday(now)
 }
 
 // budgetCycleWindow is the fixed 24h window of the cycle that starts right
@@ -120,13 +105,14 @@ func BudgetPage(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 	selected := parseSelectedDate(r, now)
-	battleDay := resolveBattleDay(selected, now)
+	battleDay := selected
+	today := battletime.BattleToday(now)
 
 	data := budgetPageData{
 		SelectedDate:  selected.Format("2006-01-02"),
-		TodayDate:     battletime.Today(now).Format("2006-01-02"),
-		YesterdayDate: battletime.Today(now).AddDate(0, 0, -1).Format("2006-01-02"),
-		IsToday:       selected.Equal(battletime.Today(now)),
+		TodayDate:     today.Format("2006-01-02"),
+		YesterdayDate: today.AddDate(0, 0, -1).Format("2006-01-02"),
+		IsToday:       selected.Equal(today),
 		ChartUrl:      "/panel/fraction/budget/chart?date=" + selected.Format("2006-01-02"),
 	}
 
@@ -251,7 +237,7 @@ func BudgetChart(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 	selected := parseSelectedDate(r, now)
-	battleDay := resolveBattleDay(selected, now)
+	battleDay := selected
 
 	from, to := budgetCycleWindow(battleDay)
 

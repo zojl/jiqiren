@@ -34,6 +34,16 @@ func Today(now time.Time) time.Time {
 	return time.Date(nowMsk.Year(), nowMsk.Month(), nowMsk.Day(), 0, 0, 0, 0, time.UTC)
 }
 
+// BattleToday returns the calendar day (same UTC-midnight representation
+// as Today) of the most recently started battle cycle — "today" in the
+// battle-cycle sense the budget page means by it: the cycle spans 18:00
+// MSK through 17:59:59 MSK the next calendar day, so e.g. at 00:30 MSK on
+// the 5th, BattleToday is still the 4th (that cycle is still running —
+// the 5th's own battle hasn't happened yet), not the plain calendar date.
+func BattleToday(now time.Time) time.Time {
+	return Today(Last(now))
+}
+
 // IsPastToday reports whether an hour:minute (MSK) has already gone by
 // today.
 func IsPastToday(hour uint, minute uint, now time.Time) bool {
