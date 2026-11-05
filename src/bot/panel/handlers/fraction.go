@@ -17,11 +17,13 @@ type fractionPageData struct {
 	CanSetTarget       bool
 	HasToken           bool
 	CanSetToken        bool
+	Message            string
+	CanSetMessage       bool
 }
 
 // FractionPage is "Команда" — the fraction-wide counterpart of a squad
-// page, deliberately minimal: just target and token, with none of a
-// squad's battle/member/schedule concerns.
+// page, deliberately minimal: target, token and the team message, with
+// none of a squad's battle/member/schedule concerns.
 func FractionPage(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 	if (!permissions.CanViewFraction()) {
@@ -54,5 +56,7 @@ func FractionPage(w http.ResponseWriter, r *http.Request) {
 		CanSetTarget:      permissions.CanSetFractionTarget(),
 		HasToken:          fraction.TargetToken != "",
 		CanSetToken:       permissions.CanSetFractionToken(),
+		Message:           fraction.Message,
+		CanSetMessage:     permissions.CanSetFractionMessage(),
 	})
 }

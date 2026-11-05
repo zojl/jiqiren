@@ -10,6 +10,7 @@ const (
 	AuditActionSetTarget       AuditAction = "set_target"
 	AuditActionSetSquadToken   AuditAction = "set_squad_token"
 	AuditActionSetFractionToken AuditAction = "set_fraction_token"
+	AuditActionSetFractionMessage AuditAction = "set_fraction_message"
 	AuditActionRenameSquad     AuditAction = "rename_squad"
 	AuditActionCreateSquad     AuditAction = "create_squad"
 	AuditActionDeleteSquad     AuditAction = "delete_squad"

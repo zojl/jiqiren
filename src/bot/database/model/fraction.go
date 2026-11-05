@@ -7,4 +7,5 @@ type Fraction struct {
 	Icon string
 	TargetToken string `gorm:"size:255"`
 	Target *uint `gorm:"null"`
+	Message string `gorm:"type:text"`
 }

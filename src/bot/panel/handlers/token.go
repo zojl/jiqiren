@@ -46,7 +46,7 @@ func SetFractionToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionSetFractionToken, "обновлён токен команды")
-	http.Redirect(w, r, "/panel", http.StatusFound)
+	http.Redirect(w, r, "/panel/fraction", http.StatusFound)
 }
 
 func SquadTokenForm(w http.ResponseWriter, r *http.Request) {

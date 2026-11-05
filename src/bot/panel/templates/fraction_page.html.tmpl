@@ -18,7 +18,14 @@
   </div>
   <div class="budget-row">
     <dt>токен</dt>
-    <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="icon" href="/panel/fraction/token" title="токен команды">🗝</a>{{end}}</dd>
+    <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="icon-select-btn" href="/panel/fraction/token" title="токен команды">🗝</a>{{end}}</dd>
   </div>
 </dl>
+
+<h2>сообщение команды{{if .CanSetMessage}} <a class="icon-select-btn" href="/panel/fraction/message" title="редактировать">✎</a>{{end}}</h2>
+{{if .Message}}
+<p class="pre-line">{{.Message}}</p>
+{{else}}
+<p class="hint">не задано</p>
+{{end}}
 {{end}}

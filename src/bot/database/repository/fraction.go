@@ -53,3 +53,8 @@ func SetFractionTarget(fraction *model.Fraction, target uint) error {
 	db := database.GetDb()
 	return db.Model(fraction).Update("Target", target).Error
 }
+
+func SetFractionMessage(fraction *model.Fraction, message string) error {
+	db := database.GetDb()
+	return db.Model(fraction).Update("Message", message).Error
+}

@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	SetTargetKey  = "466F2FFC"
-	TeamBudgetKey = "6CDF1466"
-	baseURL       = "https://aegis.hackerwars.ru"
+	SetTargetKey   = "466F2FFC"
+	TeamBudgetKey  = "6CDF1466"
+	TeamMessageKey = "CAFB4FEE"
+	baseURL        = "https://aegis.hackerwars.ru"
 )
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
@@ -47,6 +48,25 @@ func SetTarget(token string, source string, target uint) error {
 	values.Set("target", strconv.FormatUint(uint64(target), 10))
 
 	_, err := doGet("/set_target/", values)
+	return err
+}
+
+// SetTeamMessage sets (or, with an empty message, clears) the team's
+// profile message. The endpoint is write-only — there is no API to read
+// the message back, which is why a copy must be kept in our own database.
+func SetTeamMessage(token string, team string, message string) error {
+	values := url.Values{}
+	values.Set("key", TeamMessageKey)
+	values.Set("token", token)
+	values.Set("team", team)
+
+	if (message == "") {
+		values.Set("delete", "1")
+	} else {
+		values.Set("message", message)
+	}
+
+	_, err := doGet("/team_message/", values)
 	return err
 }
 
