@@ -78,6 +78,7 @@ type squadPageData struct {
 	Name string
 	Code string
 	ChatName string
+	ChatNameFull string
 	CanUnbindChat bool
 	TargetLabel string
 	CurrentTargetIcon string
@@ -134,11 +135,14 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 
 	homeSquadId, isHome := permissions.HomeSquadId()
 
+	chatName := squadChatLabel(squad)
+
 	templates.Render(w, r, "squad_page", squadPageData{
 		Id: squad.Id,
 		Name: squad.Name,
 		Code: squad.Code,
-		ChatName: squadChatLabel(squad),
+		ChatName: truncateLabel(chatName, 20),
+		ChatNameFull: chatName,
 		CanUnbindChat: squad.ChatId != nil && permissions.CanRenameSquad(squad.Id),
 		TargetLabel: targetLabel(allFractions, squad.Target),
 		CurrentTargetIcon: targetIcon(allFractions, squad.Target),
@@ -504,6 +508,17 @@ func wayIcon(way uint) string {
 	}
 }
 
+
+// truncateLabel cuts label to at most max runes (not bytes — chat names
+// are frequently Cyrillic), appending an ellipsis when it had to.
+func truncateLabel(label string, max int) string {
+	runes := []rune(label)
+	if (len(runes) <= max) {
+		return label
+	}
+
+	return string(runes[:max]) + "…"
+}
 
 // squadChatLabel falls back to the raw chat id when a chat is bound but
 // its title wasn't captured (e.g. bound before this field existed).

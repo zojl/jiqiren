@@ -26,7 +26,7 @@
     <dt>чат отряда</dt>
     <dd>
       {{if .ChatName}}
-      {{.ChatName}}
+      <span title="{{.ChatNameFull}}">{{.ChatName}}</span>
       {{if .CanUnbindChat}}<form method="post" action="/panel/squads/{{.Code}}/unbind-chat" onsubmit="return confirm('Отвязать чат?');" class="inline"><button type="submit" class="danger" title="отвязать">✕</button></form>{{end}}
       {{else}}
       не привязан
