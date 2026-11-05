@@ -41,11 +41,12 @@ type budgetPageData struct {
 	YesterdayDate string
 	IsToday       bool
 
-	LiveAvailable      bool
-	Live               budgetFieldSet
-	LiveHasDiff        bool
+	LiveAvailable       bool
+	Live                budgetFieldSet
+	LiveHasDiff         bool
 	LiveIncomeDiffLabel string
-	LiveIncomeDiffBase uint64
+	LiveIncomeDiffBase  uint64
+	LiveUpdatedAtLabel  string
 
 	BattleResultsAvailable bool
 	BattleResults          budgetFieldSet
@@ -147,6 +148,7 @@ func BudgetPage(w http.ResponseWriter, r *http.Request) {
 	if seed, seedErr := repository.FindLatestBudgetSnapshotInRange(fraction.Id, seedFrom, seedTo); (seedErr == nil) {
 		data.LiveAvailable = true
 		data.Live = budgetFieldSetFromSnapshot(seed)
+		data.LiveUpdatedAtLabel = seed.CapturedAt.In(battletime.Moscow).Format("15:04")
 
 		if (battleResults != nil) {
 			data.LiveHasDiff = true

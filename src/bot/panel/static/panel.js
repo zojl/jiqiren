@@ -82,6 +82,22 @@ document.addEventListener("click", function (event) {
     });
 });
 
+// MSK is read as a fixed UTC+3 offset straight off the epoch, matching the
+// backend's treatment of Moscow time (no DST since 2014) rather than
+// whatever timezone the browser happens to be in.
+function pad2(n) {
+  return (n < 10 ? "0" : "") + n;
+}
+
+function mskHour(ms) {
+  return (new Date(ms).getUTCHours() + 3) % 24;
+}
+
+function mskTimeLabel(ms) {
+  var d = new Date(ms);
+  return pad2(mskHour(ms)) + ":" + pad2(d.getUTCMinutes());
+}
+
 // Budget page — "live" block: seeded server-side from the last known
 // snapshot, then (only while viewing today) refreshed from the actual-data
 // handle once on load and again on every click of its refresh button.
@@ -107,6 +123,11 @@ document.addEventListener("click", function (event) {
       var base = parseInt(block.getAttribute("data-diff-base"), 10) || 0;
       var diff = data.incomeToday - base;
       diffField.textContent = "(" + (diff >= 0 ? "+" : "") + diff + ")";
+    }
+
+    var updatedAtField = block.querySelector('[data-field="updatedAt"]');
+    if (updatedAtField) {
+      updatedAtField.textContent = "обновлено: " + mskTimeLabel(Date.now()) + " МСК";
     }
   }
 
@@ -145,6 +166,7 @@ document.addEventListener("click", function (event) {
   var svg = block.querySelector(".budget-chart-svg");
   var tooltip = block.querySelector(".budget-chart-tooltip");
   var canvas = block.querySelector(".budget-chart-canvas");
+  var updatedAtLabel = block.querySelector(".budget-chart-updated-at");
 
   var SERIES = [
     { key: "incomeToday", label: "доход сегодня", color: "#39ff8f", on: true },
@@ -175,19 +197,6 @@ document.addEventListener("click", function (event) {
       label.appendChild(document.createTextNode(series.label));
       legend.appendChild(label);
     });
-  }
-
-  function pad2(n) {
-    return (n < 10 ? "0" : "") + n;
-  }
-
-  function mskHour(ms) {
-    return (new Date(ms).getUTCHours() + 3) % 24;
-  }
-
-  function mskTimeLabel(ms) {
-    var d = new Date(ms);
-    return pad2(mskHour(ms)) + ":" + pad2(d.getUTCMinutes());
   }
 
   var width = 760;
@@ -371,6 +380,10 @@ document.addEventListener("click", function (event) {
 
         data = json;
         render();
+
+        if (updatedAtLabel) {
+          updatedAtLabel.textContent = "обновлено: " + mskTimeLabel(Date.now()) + " МСК";
+        }
       })
       .catch(function () {
         svg.innerHTML = '<text x="' + (width / 2) + '" y="' + (height / 2) + '" text-anchor="middle" fill="#ff5f5f">не удалось загрузить график</text>';
