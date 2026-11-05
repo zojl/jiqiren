@@ -141,7 +141,7 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		Id: squad.Id,
 		Name: squad.Name,
 		Code: squad.Code,
-		ChatName: truncateLabel(chatName, 20),
+		ChatName: truncateLabel(chatName, 18),
 		ChatNameFull: chatName,
 		CanUnbindChat: squad.ChatId != nil && permissions.CanRenameSquad(squad.Id),
 		TargetLabel: targetLabel(allFractions, squad.Target),
