@@ -127,7 +127,7 @@ function mskTimeLabel(ms) {
 
     var updatedAtField = block.querySelector('[data-field="updatedAt"]');
     if (updatedAtField) {
-      updatedAtField.textContent = "обновлено: " + mskTimeLabel(Date.now()) + " МСК";
+      updatedAtField.textContent = mskTimeLabel(Date.now()) + " МСК";
     }
   }
 
@@ -382,7 +382,7 @@ function mskTimeLabel(ms) {
         render();
 
         if (updatedAtLabel) {
-          updatedAtLabel.textContent = "обновлено: " + mskTimeLabel(Date.now()) + " МСК";
+          updatedAtLabel.textContent = mskTimeLabel(Date.now()) + " МСК";
         }
       })
       .catch(function () {
