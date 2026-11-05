@@ -5,7 +5,7 @@
 <dl class="budget">
   <div class="budget-row">
     <dt>название</dt>
-    <dd>{{.Name}} {{if .CanRename}}<a class="btn btn-nav" href="/panel/squads/{{.Code}}/rename">переименовать</a>{{end}}</dd>
+    <dd>{{.Name}} {{if .CanRename}}<a class="icon-select-btn" href="/panel/squads/{{.Code}}/rename" title="переименовать">✎</a>{{end}}</dd>
   </div>
   <div class="budget-row">
     <dt>цель</dt>
@@ -27,7 +27,7 @@
     <dd>
       {{if .ChatName}}
       {{.ChatName}}
-      {{if .CanUnbindChat}}<form method="post" action="/panel/squads/{{.Code}}/unbind-chat" onsubmit="return confirm('Отвязать чат?');" class="inline"><button type="submit" class="danger">✕ отвязать</button></form>{{end}}
+      {{if .CanUnbindChat}}<form method="post" action="/panel/squads/{{.Code}}/unbind-chat" onsubmit="return confirm('Отвязать чат?');" class="inline"><button type="submit" class="danger" title="отвязать">✕</button></form>{{end}}
       {{else}}
       не привязан
       {{end}}
@@ -35,15 +35,13 @@
   </div>
   <div class="budget-row">
     <dt>токен</dt>
-    <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="btn btn-nav" href="/panel/squads/{{.Code}}/token">задать токен</a>{{end}}</dd>
+    <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="icon-select-btn" href="/panel/squads/{{.Code}}/token" title="токен отряда">🗝</a>{{end}}</dd>
   </div>
-  {{if .CanViewSchedule}}
-  <div class="budget-row">
-    <dt>рассылки</dt>
-    <dd><a class="btn btn-nav" href="/panel/squads/{{.Code}}/schedule">перейти к рассылкам</a></dd>
-  </div>
-  {{end}}
 </dl>
+
+{{if .CanViewSchedule}}
+<a class="btn btn-nav" href="/panel/squads/{{.Code}}/schedule">рассылки</a>
+{{end}}
 
 {{if .BattleSummary}}
 <details class="battle-summary">
