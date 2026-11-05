@@ -244,6 +244,8 @@ table.members tr.report-row td { padding-top: 0; padding-left: 28px; }
 .budget-date-picker { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
 .budget-date-picker .btn.selected { border-color: var(--accent); color: var(--accent); }
 
+.audit-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+
 .budget-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);

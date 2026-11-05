@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -44,8 +45,16 @@ type auditLogView struct {
 	Details string
 }
 
+type auditFilterOption struct {
+	Value    string
+	Label    string
+	Selected bool
+}
+
 type auditLogData struct {
-	Entries []auditLogView
+	Entries        []auditLogView
+	ManagerOptions []auditFilterOption
+	ActionOptions  []auditFilterOption
 }
 
 func AuditLog(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +64,23 @@ func AuditLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries, entriesErr := repository.FindAuditLogsByFractionSince(permissions.FractionId(), time.Now().Add(-auditLogWindow))
+	selectedManagerId := r.URL.Query().Get("manager_id")
+	selectedAction := r.URL.Query().Get("action")
+
+	filter := repository.AuditLogFilter{}
+	if (selectedManagerId != "") {
+		if id, err := strconv.ParseUint(selectedManagerId, 10, 64); (err == nil) {
+			managerId := uint(id)
+			filter.ManagerId = &managerId
+		}
+	}
+
+	if (selectedAction != "") {
+		action := model.AuditAction(selectedAction)
+		filter.Action = &action
+	}
+
+	entries, entriesErr := repository.FindAuditLogs(permissions.FractionId(), time.Now().Add(-auditLogWindow), filter)
 	if (entriesErr != nil) {
 		http.Error(w, "Не удалось загрузить журнал", http.StatusInternalServerError)
 		return
@@ -87,5 +112,49 @@ func AuditLog(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	templates.Render(w, r, "audit_log", auditLogData{Entries: views})
+	templates.Render(w, r, "audit_log", auditLogData{
+		Entries:        views,
+		ManagerOptions: managerFilterOptions(permissions.FractionId(), selectedManagerId),
+		ActionOptions:  actionFilterOptions(selectedAction),
+	})
+}
+
+func managerFilterOptions(fractionId uint, selectedManagerId string) []auditFilterOption {
+	managers, err := repository.FindManagersByFractionId(fractionId)
+	if (err != nil) {
+		return nil
+	}
+
+	vkIds := make([]uint, 0, len(managers))
+	for _, manager := range managers {
+		vkIds = append(vkIds, manager.VkId)
+	}
+	names := fetchVkNames(vkIds)
+
+	options := make([]auditFilterOption, 0, len(managers))
+	for _, manager := range managers {
+		idStr := strconv.FormatUint(uint64(manager.Id), 10)
+		label := names[manager.VkId]
+		if (label == "") {
+			label = "vk" + strconv.FormatUint(uint64(manager.VkId), 10)
+		}
+
+		options = append(options, auditFilterOption{Value: idStr, Label: label, Selected: idStr == selectedManagerId})
+	}
+
+	sort.Slice(options, func(i, j int) bool { return options[i].Label < options[j].Label })
+
+	return options
+}
+
+func actionFilterOptions(selectedAction string) []auditFilterOption {
+	options := make([]auditFilterOption, 0, len(auditActionLabels))
+	for action, label := range auditActionLabels {
+		value := string(action)
+		options = append(options, auditFilterOption{Value: value, Label: label, Selected: value == selectedAction})
+	}
+
+	sort.Slice(options, func(i, j int) bool { return options[i].Label < options[j].Label })
+
+	return options
 }
