@@ -21,8 +21,10 @@ type fractionPageData struct {
 	Message            string
 	CanSetMessage       bool
 
+	StaminaVerySevere  uint
 	StaminaSevere      uint
 	StaminaRecommended uint
+	StaminaIdeal       uint
 	MoneyRecommended   uint
 	MoneySevere        uint
 	CanSetSettings     bool
@@ -68,8 +70,10 @@ func FractionPage(w http.ResponseWriter, r *http.Request) {
 		Message:           fraction.Message,
 		CanSetMessage:     permissions.CanSetFractionMessage(),
 
+		StaminaVerySevere:  thresholds.StaminaVerySevere,
 		StaminaSevere:      thresholds.StaminaSevere,
 		StaminaRecommended: thresholds.StaminaRecommended,
+		StaminaIdeal:       thresholds.StaminaIdeal,
 		MoneyRecommended:   thresholds.MoneyRecommended,
 		MoneySevere:        thresholds.MoneySevere,
 		CanSetSettings:     permissions.CanSetFractionSettings(),

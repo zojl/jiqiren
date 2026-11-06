@@ -31,8 +31,10 @@
 
 <h2>настройки профиля{{if .CanSetSettings}} <a class="icon-select-btn" href="/panel/fraction/settings" title="редактировать">✎</a>{{end}}</h2>
 <dl class="budget">
+  <div class="budget-row"><dt>выносливость — очень мало</dt><dd>{{.StaminaVerySevere}}</dd></div>
   <div class="budget-row"><dt>выносливость — мало</dt><dd>{{.StaminaSevere}}</dd></div>
-  <div class="budget-row"><dt>выносливость — рекомендовано</dt><dd>{{.StaminaRecommended}}</dd></div>
+  <div class="budget-row"><dt>выносливость — рекомендуется больше</dt><dd>{{.StaminaRecommended}}</dd></div>
+  <div class="budget-row"><dt>выносливость — идеально</dt><dd>{{.StaminaIdeal}}</dd></div>
   <div class="budget-row"><dt>деньги — рекомендовано слить</dt><dd>{{.MoneyRecommended}}</dd></div>
   <div class="budget-row"><dt>деньги — много</dt><dd>{{.MoneySevere}}</dd></div>
 </dl>

@@ -11,8 +11,10 @@ type Fraction struct {
 
 	// Readiness thresholds — nil means "use the readiness package's
 	// default", see readiness.ThresholdsFor.
+	StaminaVerySevereThreshold  *uint `gorm:"null"`
 	StaminaSevereThreshold      *uint `gorm:"null"`
 	StaminaRecommendedThreshold *uint `gorm:"null"`
+	StaminaIdealThreshold       *uint `gorm:"null"`
 	MoneyRecommendedThreshold   *uint `gorm:"null"`
 	MoneySevereThreshold        *uint `gorm:"null"`
 }

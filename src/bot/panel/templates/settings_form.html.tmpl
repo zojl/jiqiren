@@ -1,12 +1,14 @@
 {{define "settings_form"}}
 <h1>настройки профиля</h1>
 <form method="post" action="{{.Action}}" class="form">
+  <label>выносливость — очень мало (по умолчанию {{.DefaultStaminaVerySevere}})<input type="number" name="stamina_very_severe" value="{{.StaminaVerySevere}}" placeholder="{{.DefaultStaminaVerySevere}}" min="0"></label>
   <label>выносливость — мало (по умолчанию {{.DefaultStaminaSevere}})<input type="number" name="stamina_severe" value="{{.StaminaSevere}}" placeholder="{{.DefaultStaminaSevere}}" min="0"></label>
-  <label>выносливость — рекомендовано (по умолчанию {{.DefaultStaminaRecommended}})<input type="number" name="stamina_recommended" value="{{.StaminaRecommended}}" placeholder="{{.DefaultStaminaRecommended}}" min="0"></label>
+  <label>выносливость — рекомендуется больше (по умолчанию {{.DefaultStaminaRecommended}})<input type="number" name="stamina_recommended" value="{{.StaminaRecommended}}" placeholder="{{.DefaultStaminaRecommended}}" min="0"></label>
+  <label>выносливость — идеально (по умолчанию {{.DefaultStaminaIdeal}})<input type="number" name="stamina_ideal" value="{{.StaminaIdeal}}" placeholder="{{.DefaultStaminaIdeal}}" min="0"></label>
   <label>деньги — рекомендовано слить (по умолчанию {{.DefaultMoneyRecommended}})<input type="number" name="money_recommended" value="{{.MoneyRecommended}}" placeholder="{{.DefaultMoneyRecommended}}" min="0"></label>
   <label>деньги — много (по умолчанию {{.DefaultMoneySevere}})<input type="number" name="money_severe" value="{{.MoneySevere}}" placeholder="{{.DefaultMoneySevere}}" min="0"></label>
   <button type="submit">сохранить</button>
 </form>
-<p class="hint">пустое поле — использовать значение по умолчанию</p>
+<p class="hint">пустое поле — использовать значение по умолчанию. Выносливость 240–249 всё равно считается «отлично» — порог «идеально» влияет только на счётчик идеально подготовленных в сводке за битву.</p>
 <a class="back" href="/panel/fraction">← назад</a>
 {{end}}

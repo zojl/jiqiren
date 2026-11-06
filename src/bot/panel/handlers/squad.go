@@ -416,10 +416,14 @@ func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time, 
 
 // isIdeallyPrepared reuses the same "отлично" thresholds already shown
 // per-player (readiness.StaminaRating/MoneyRating), plus a matching target.
+// Stamina uses the stricter Ideal cutoff here, not the StaminaRating/
+// "отлично" color threshold — a player can read as green in the table
+// (>= StaminaRecommended) without being fully topped-up enough to count
+// toward this tile.
 func isIdeallyPrepared(profile model.Profile, squad *model.Team, thresholds readiness.Thresholds) bool {
 	return profile.TargetId != nil &&
 		readiness.TargetMatches(profile, squad) &&
-		readiness.StaminaRating(profile.Stamina, thresholds) == "отлично" &&
+		profile.Stamina >= thresholds.StaminaIdeal &&
 		readiness.MoneyRating(profile.Money, thresholds) == "отлично"
 }
 

@@ -62,7 +62,9 @@ func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle tim
 	if (profile.Money > thresholds.MoneySevere) {
 		severe = append(severe, "оставил слишком много денег")
 	}
-	if (profile.Stamina < thresholds.StaminaSevere) {
+	if (profile.Stamina < thresholds.StaminaVerySevere) {
+		severe = append(severe, "очень мало выносливости")
+	} else if (profile.Stamina < thresholds.StaminaSevere) {
 		severe = append(severe, "мало выносливости")
 	}
 
@@ -75,7 +77,7 @@ func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle tim
 		mild = append(mild, fmt.Sprintf("рекомендуется слить деньги до %d", thresholds.MoneyRecommended))
 	}
 	if (profile.Stamina < thresholds.StaminaRecommended) {
-		mild = append(mild, fmt.Sprintf("рекомендуется пополнить выносливость до %d", thresholds.StaminaRecommended))
+		mild = append(mild, fmt.Sprintf("рекомендуется пополнить выносливость до %d", thresholds.StaminaIdeal))
 	}
 
 	if (len(mild) > 0) {
