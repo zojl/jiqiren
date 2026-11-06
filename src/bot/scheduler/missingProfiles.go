@@ -57,7 +57,7 @@ func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle tim
 
 	severe := make([]string, 0, 3)
 	severePrefix := "❗"
-	if (!readiness.TargetMatches(profile, squad)) {
+	if (!readiness.TargetMatches(profile, squad, nil)) {
 		severe = append(severe, "выбрал неправильную цель")
 	}
 	if (profile.Money >= thresholds.MoneyVerySevere) {

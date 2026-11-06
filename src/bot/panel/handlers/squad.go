@@ -259,7 +259,7 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction, thresho
 		staminaClass := ratingClass(staminaLabel)
 		moneyClass := ratingClass(moneyLabel)
 		targetClass := "rating-bad"
-		if (readiness.TargetMatches(profile, squad)) {
+		if (readiness.TargetMatches(profile, squad, nil)) {
 			targetClass = "rating-good"
 		}
 
@@ -422,7 +422,7 @@ func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time, 
 // toward this tile.
 func isIdeallyPrepared(profile model.Profile, squad *model.Team, thresholds readiness.Thresholds) bool {
 	return profile.TargetId != nil &&
-		readiness.TargetMatches(profile, squad) &&
+		readiness.TargetMatches(profile, squad, nil) &&
 		profile.Stamina >= thresholds.StaminaIdeal &&
 		readiness.MoneyRating(profile.Money, thresholds) == "отлично"
 }

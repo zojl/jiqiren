@@ -83,8 +83,8 @@ func storeParsedProfile(parsedProfile *ProfileParseResult, senderId int, message
 	fraction := getFraction(parsedProfile)
 	team := getTeam(parsedProfile, fraction)
 	target := getTarget(parsedProfile, fraction)
-	isProfileInserted := insertProfile(parsedProfile, user, fraction, team, target, messageTime)
-	return validateInsertedProfile(isProfileInserted, parsedProfile, fraction)
+	profile, isProfileInserted := insertProfile(parsedProfile, user, fraction, team, target, messageTime)
+	return validateInsertedProfile(isProfileInserted, parsedProfile, profile, team, fraction)
 }
 
 func getFraction(parsedProfile *ProfileParseResult) *model.Fraction {
@@ -136,7 +136,7 @@ func insertProfile(
 	team *model.Team,
 	target *model.Fraction,
 	messageTime time.Time,
-) bool {
+) (model.Profile, bool) {
 	var (
 		profile model.Profile
 		val uint64
@@ -208,7 +208,7 @@ func insertProfile(
 	db := database.GetDb()
 	db.Create(&profile)
 
-	return profile.Id != 0
+	return profile, profile.Id != 0
 }
 
 func getLeadType(icon string) uint {
@@ -277,7 +277,7 @@ func parseProfile(messageText string) *ProfileParseResult {
 	return &parsedProfile
 }
 
-func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParseResult, fraction *model.Fraction) *ProfileResponse {
+func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParseResult, profile model.Profile, team *model.Team, fraction *model.Fraction) *ProfileResponse {
 	response := ProfileResponse{
 		IsInserted: isProfileInserted,
 		Messages: make([]string, 0, 5),
@@ -285,8 +285,10 @@ func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParse
 
 	thresholds := readiness.ThresholdsFor(fraction)
 
-	if (len(parsedProfile.Target) == 0) {
+	if (profile.TargetId == nil) {
 		response.Messages = append(response.Messages, "‼️Не выбрана цель на следующую битву! Не забудьте выбрать цель перед битвой.")
+	} else if (!readiness.TargetMatches(profile, team, fraction)) {
+		response.Messages = append(response.Messages, "❗Выбрана неправильная цель на следующую битву! Не забудьте сменить цель перед битвой.")
 	}
 
 	if (len(parsedProfile.Money) > 0) {
