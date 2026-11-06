@@ -41,20 +41,24 @@ type budgetPageData struct {
 	YesterdayDate string
 	IsToday       bool
 
-	LiveAvailable       bool
-	Live                budgetFieldSet
-	LiveHasDiff         bool
-	LiveIncomeDiffLabel string
-	LiveIncomeDiffBase  uint64
-	LiveUpdatedAtLabel  string
+	LiveAvailable               bool
+	Live                        budgetFieldSet
+	LiveHasDiff                 bool
+	LiveIncomeDiffLabel         string
+	LiveIncomeDiffBase          uint64
+	LiveContributionsDiffLabel  string
+	LiveContributionsDiffBase   uint64
+	LiveUpdatedAtLabel          string
 
 	BattleResultsAvailable bool
 	BattleResults          budgetFieldSet
 	BattleDayLabel         string
 
-	YesterdayAvailable           bool
-	YesterdayIncomeLabel         string
-	YesterdayContributionsLabel string
+	// YesterdayResults is the pre_battle snapshot for battleDay as-is —
+	// the same field set as BattleResults, just captured ~5 minutes
+	// earlier (17:58 vs. 18:03), not a delta against anything.
+	YesterdayAvailable bool
+	YesterdayResults   budgetFieldSet
 
 	ChartUrl string
 }
@@ -140,13 +144,14 @@ func BudgetPage(w http.ResponseWriter, r *http.Request) {
 			data.LiveHasDiff = true
 			data.LiveIncomeDiffLabel = fmt.Sprintf("%+d", int64(seed.IncomeToday)-int64(battleResults.IncomeToday))
 			data.LiveIncomeDiffBase = battleResults.IncomeToday
+			data.LiveContributionsDiffLabel = fmt.Sprintf("%+d", int64(seed.ContributionsToday)-int64(battleResults.ContributionsToday))
+			data.LiveContributionsDiffBase = battleResults.ContributionsToday
 		}
 	}
 
-	if preBattle, preErr := repository.FindBudgetSnapshotByKindAndDate(fraction.Id, model.BudgetSnapshotKindPreBattle, battleDay); (preErr == nil && battleResults != nil) {
+	if preBattle, preErr := repository.FindBudgetSnapshotByKindAndDate(fraction.Id, model.BudgetSnapshotKindPreBattle, battleDay); (preErr == nil) {
 		data.YesterdayAvailable = true
-		data.YesterdayIncomeLabel = fmt.Sprintf("%+d", int64(preBattle.IncomeToday)-int64(battleResults.IncomeToday))
-		data.YesterdayContributionsLabel = fmt.Sprintf("%+d", int64(preBattle.ContributionsToday)-int64(battleResults.ContributionsToday))
+		data.YesterdayResults = budgetFieldSetFromSnapshot(preBattle)
 	}
 
 	templates.Render(w, r, "budget_page", data)

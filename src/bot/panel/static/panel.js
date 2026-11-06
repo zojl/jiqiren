@@ -107,6 +107,17 @@ function mskTimeLabel(ms) {
     return;
   }
 
+  function updateDiff(field, baseAttr, liveValue) {
+    var diffField = block.querySelector('[data-field="' + field + '"]');
+    if (!diffField || block.getAttribute("data-has-diff-base") !== "true") {
+      return;
+    }
+
+    var base = parseInt(block.getAttribute(baseAttr), 10) || 0;
+    var diff = liveValue - base;
+    diffField.textContent = "(" + (diff >= 0 ? "+" : "") + diff + ")";
+  }
+
   function applyActual(data) {
     if (data.error) {
       return;
@@ -118,12 +129,8 @@ function mskTimeLabel(ms) {
     block.querySelector('[data-field="contributionsToday"]').textContent = data.contributionsToday;
     block.querySelector('[data-field="contributionsTotal"]').textContent = data.contributionsTotal;
 
-    var diffField = block.querySelector('[data-field="incomeDiff"]');
-    if (diffField && block.getAttribute("data-has-diff-base") === "true") {
-      var base = parseInt(block.getAttribute("data-diff-base"), 10) || 0;
-      var diff = data.incomeToday - base;
-      diffField.textContent = "(" + (diff >= 0 ? "+" : "") + diff + ")";
-    }
+    updateDiff("incomeDiff", "data-income-diff-base", data.incomeToday);
+    updateDiff("contributionsDiff", "data-contributions-diff-base", data.contributionsToday);
 
     var updatedAtField = block.querySelector('[data-field="updatedAt"]');
     if (updatedAtField) {
@@ -382,7 +389,12 @@ function mskTimeLabel(ms) {
         render();
 
         if (updatedAtLabel) {
-          updatedAtLabel.textContent = mskTimeLabel(Date.now()) + " МСК";
+          if (data.points.length) {
+            var lastPoint = data.points[data.points.length - 1];
+            updatedAtLabel.textContent = mskTimeLabel(new Date(lastPoint.capturedAt).getTime()) + " МСК";
+          } else {
+            updatedAtLabel.textContent = "";
+          }
         }
       })
       .catch(function () {
