@@ -16,9 +16,9 @@
     {{if .LiveAvailable}}
     <dl class="budget">
       <div class="budget-row"><dt>бюджет</dt><dd data-field="budget">{{.Live.Budget}}</dd></div>
-      <div class="budget-row"><dt>доход сегодня</dt><dd data-field="incomeToday">{{.Live.IncomeToday}}{{if .LiveHasDiff}} <span class="hint" data-field="incomeDiff">({{.LiveIncomeDiffLabel}})</span>{{end}}</dd></div>
+      <div class="budget-row"><dt>доход сегодня</dt><dd><span data-field="incomeToday">{{.Live.IncomeToday}}</span>{{if .LiveHasDiff}} <span class="hint" data-field="incomeDiff">({{.LiveIncomeDiffLabel}})</span>{{end}}</dd></div>
       <div class="budget-row"><dt>доход всего</dt><dd data-field="incomeTotal">{{.Live.IncomeTotal}}</dd></div>
-      <div class="budget-row"><dt>донат сегодня</dt><dd data-field="contributionsToday">{{.Live.ContributionsToday}}{{if .LiveHasDiff}} <span class="hint" data-field="contributionsDiff">({{.LiveContributionsDiffLabel}})</span>{{end}}</dd></div>
+      <div class="budget-row"><dt>донат сегодня</dt><dd><span data-field="contributionsToday">{{.Live.ContributionsToday}}</span>{{if .LiveHasDiff}} <span class="hint" data-field="contributionsDiff">({{.LiveContributionsDiffLabel}})</span>{{end}}</dd></div>
       <div class="budget-row"><dt>донат всего</dt><dd data-field="contributionsTotal">{{.Live.ContributionsTotal}}</dd></div>
     </dl>
     {{else}}
