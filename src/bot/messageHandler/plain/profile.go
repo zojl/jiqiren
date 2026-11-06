@@ -301,9 +301,9 @@ func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParse
 	if (len(parsedProfile.Stamina) > 0) {
 		stamina, _ := strconv.ParseUint(parsedProfile.Stamina, 10, 64)
 		if (stamina < uint64(thresholds.StaminaVerySevere)) {
-			response.Messages = append(response.Messages, "‼️‼️Очень мало выносливости! Не забудьте пополнить выносливость перед битвой.")
+			response.Messages = append(response.Messages, "‼️Очень мало выносливости! Не забудьте пополнить выносливость перед битвой.")
 		} else if (stamina < uint64(thresholds.StaminaSevere)) {
-			response.Messages = append(response.Messages, "‼️Мало выносливости! Не забудьте пополнить выносливость перед битвой.")
+			response.Messages = append(response.Messages, "❗Мало выносливости! Не забудьте пополнить выносливость перед битвой.")
 		} else if (stamina < uint64(thresholds.StaminaRecommended)) {
 			response.Messages = append(response.Messages, fmt.Sprintf("⚠️Рекомендуется пополнить выносливость до %d перед битвой.", thresholds.StaminaIdeal))
 		}

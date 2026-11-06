@@ -56,6 +56,7 @@ func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle tim
 	}
 
 	severe := make([]string, 0, 3)
+	severePrefix := "❗"
 	if (!readiness.TargetMatches(profile, squad)) {
 		severe = append(severe, "выбрал неправильную цель")
 	}
@@ -64,12 +65,13 @@ func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle tim
 	}
 	if (profile.Stamina < thresholds.StaminaVerySevere) {
 		severe = append(severe, "очень мало выносливости")
+		severePrefix = "‼️"
 	} else if (profile.Stamina < thresholds.StaminaSevere) {
 		severe = append(severe, "мало выносливости")
 	}
 
 	if (len(severe) > 0) {
-		return fmt.Sprintf("❗ %s %s", who, strings.Join(severe, " и "))
+		return fmt.Sprintf("%s %s %s", severePrefix, who, strings.Join(severe, " и "))
 	}
 
 	mild := make([]string, 0, 2)
