@@ -65,7 +65,8 @@ var regulars = [...]string {
 	`🔋Выносливость: (?P<Stamina>\d+)`,
 	`\n⚔: (?P<Target>[🔐💠🚧🎭🈵🔱🇺🇸]{1,2})`,
 	`Занятие:\n[А-Яа-я ⚔]*(?P<Target>[🔐💠🚧🎭🈵🔱🇺🇸]{1,2})`,
-	`(?:До 🛌:|🛌До сна осталось:) (?P<BeforeSleepHour>\d{1,2}) (?:ч\.|час.{0,2})(?: и)? (?P<BeforeSleepMinute>\d{1,2}) (?:мин\.|минут.?)`,
+	`(?:До 🛌:|🛌До сна осталось:) (?P<BeforeSleepHour>\d{1,2}) (?:ч\.|час.{0,2})(?:(?: и)? (?P<BeforeSleepMinute>\d{1,2}) (?:мин\.|минут.?))?`,
+	`(?:До 🛌:|🛌До сна осталось:) (?P<BeforeSleepMinute>\d{1,2}) (?:мин\.|минут.?)`,
 }
 
 var compiledRegulars = make([]*regexp.Regexp, len(regulars), len(regulars))
