@@ -292,7 +292,7 @@ func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParse
 	if (len(parsedProfile.Money) > 0) {
 		money, _ := strconv.ParseUint(parsedProfile.Money, 10, 64)
 		if (money >= uint64(thresholds.MoneyVerySevere)) {
-			response.Messages = append(response.Messages, "‼️Очень много денег! Не забудьте слить деньги в акции перед битвой.")
+			response.Messages = append(response.Messages, "‼️Очень много денег! Обязательно слейте деньги в акции перед битвой.")
 		} else if (money >= uint64(thresholds.MoneySevere)) {
 			response.Messages = append(response.Messages, "❗Много денег! Не забудьте слить деньги в акции перед битвой.")
 		} else if (money > uint64(thresholds.MoneyRecommended)) {
@@ -303,7 +303,7 @@ func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParse
 	if (len(parsedProfile.Stamina) > 0) {
 		stamina, _ := strconv.ParseUint(parsedProfile.Stamina, 10, 64)
 		if (stamina < uint64(thresholds.StaminaVerySevere)) {
-			response.Messages = append(response.Messages, "‼️Очень мало выносливости! Не забудьте пополнить выносливость перед битвой.")
+			response.Messages = append(response.Messages, "‼️Очень мало выносливости! Обязательно пополните выносливость перед битвой.")
 		} else if (stamina < uint64(thresholds.StaminaSevere)) {
 			response.Messages = append(response.Messages, "❗Мало выносливости! Не забудьте пополнить выносливость перед битвой.")
 		} else if (stamina < uint64(thresholds.StaminaRecommended)) {
