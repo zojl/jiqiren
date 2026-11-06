@@ -24,9 +24,9 @@ type fractionPageData struct {
 	StaminaVerySevere  uint
 	StaminaSevere      uint
 	StaminaRecommended uint
-	StaminaIdeal       uint
 	MoneyRecommended   uint
 	MoneySevere        uint
+	MoneyVerySevere    uint
 	CanSetSettings     bool
 }
 
@@ -73,9 +73,9 @@ func FractionPage(w http.ResponseWriter, r *http.Request) {
 		StaminaVerySevere:  thresholds.StaminaVerySevere,
 		StaminaSevere:      thresholds.StaminaSevere,
 		StaminaRecommended: thresholds.StaminaRecommended,
-		StaminaIdeal:       thresholds.StaminaIdeal,
 		MoneyRecommended:   thresholds.MoneyRecommended,
 		MoneySevere:        thresholds.MoneySevere,
+		MoneyVerySevere:    thresholds.MoneyVerySevere,
 		CanSetSettings:     permissions.CanSetFractionSettings(),
 	})
 }

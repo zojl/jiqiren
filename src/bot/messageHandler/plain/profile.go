@@ -291,8 +291,10 @@ func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParse
 
 	if (len(parsedProfile.Money) > 0) {
 		money, _ := strconv.ParseUint(parsedProfile.Money, 10, 64)
-		if (money > uint64(thresholds.MoneySevere)) {
+		if (money >= uint64(thresholds.MoneyVerySevere)) {
 			response.Messages = append(response.Messages, "‼️Очень много денег! Не забудьте слить деньги в акции перед битвой.")
+		} else if (money >= uint64(thresholds.MoneySevere)) {
+			response.Messages = append(response.Messages, "❗Много денег! Не забудьте слить деньги в акции перед битвой.")
 		} else if (money > uint64(thresholds.MoneyRecommended)) {
 			response.Messages = append(response.Messages, fmt.Sprintf("⚠️Рекомендуется слить деньги до значения не выше %d перед битвой.", thresholds.MoneyRecommended))
 		}

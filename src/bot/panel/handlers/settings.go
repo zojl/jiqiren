@@ -18,16 +18,16 @@ type settingsFormData struct {
 	StaminaVerySevere  string
 	StaminaSevere      string
 	StaminaRecommended string
-	StaminaIdeal       string
 	MoneyRecommended   string
 	MoneySevere        string
+	MoneyVerySevere    string
 
 	DefaultStaminaVerySevere  uint
 	DefaultStaminaSevere      uint
 	DefaultStaminaRecommended uint
-	DefaultStaminaIdeal       uint
 	DefaultMoneyRecommended   uint
 	DefaultMoneySevere        uint
+	DefaultMoneyVerySevere    uint
 }
 
 func uintLabel(value *uint) string {
@@ -56,16 +56,16 @@ func FractionSettingsForm(w http.ResponseWriter, r *http.Request) {
 		StaminaVerySevere:  uintLabel(fraction.StaminaVerySevereThreshold),
 		StaminaSevere:      uintLabel(fraction.StaminaSevereThreshold),
 		StaminaRecommended: uintLabel(fraction.StaminaRecommendedThreshold),
-		StaminaIdeal:       uintLabel(fraction.StaminaIdealThreshold),
 		MoneyRecommended:   uintLabel(fraction.MoneyRecommendedThreshold),
 		MoneySevere:        uintLabel(fraction.MoneySevereThreshold),
+		MoneyVerySevere:    uintLabel(fraction.MoneyVerySevereThreshold),
 
 		DefaultStaminaVerySevere:  readiness.DefaultStaminaVerySevereThreshold,
 		DefaultStaminaSevere:      readiness.DefaultStaminaSevereThreshold,
 		DefaultStaminaRecommended: readiness.DefaultStaminaRecommendedThreshold,
-		DefaultStaminaIdeal:       readiness.DefaultStaminaIdealThreshold,
 		DefaultMoneyRecommended:   readiness.DefaultMoneyRecommendedThreshold,
 		DefaultMoneySevere:        readiness.DefaultMoneySevereThreshold,
+		DefaultMoneyVerySevere:    readiness.DefaultMoneyVerySevereThreshold,
 	})
 }
 
@@ -109,9 +109,9 @@ func SetFractionReadinessSettings(w http.ResponseWriter, r *http.Request) {
 	staminaVerySevere, err1 := parseOptionalThreshold(r.FormValue("stamina_very_severe"))
 	staminaSevere, err2 := parseOptionalThreshold(r.FormValue("stamina_severe"))
 	staminaRecommended, err3 := parseOptionalThreshold(r.FormValue("stamina_recommended"))
-	staminaIdeal, err4 := parseOptionalThreshold(r.FormValue("stamina_ideal"))
-	moneyRecommended, err5 := parseOptionalThreshold(r.FormValue("money_recommended"))
-	moneySevere, err6 := parseOptionalThreshold(r.FormValue("money_severe"))
+	moneyRecommended, err4 := parseOptionalThreshold(r.FormValue("money_recommended"))
+	moneySevere, err5 := parseOptionalThreshold(r.FormValue("money_severe"))
+	moneyVerySevere, err6 := parseOptionalThreshold(r.FormValue("money_very_severe"))
 	if (err1 != nil || err2 != nil || err3 != nil || err4 != nil || err5 != nil || err6 != nil) {
 		http.Error(w, "Некорректное значение порога", http.StatusBadRequest)
 		return
@@ -120,20 +120,20 @@ func SetFractionReadinessSettings(w http.ResponseWriter, r *http.Request) {
 	effStaminaVerySevere := effectiveOrDefault(staminaVerySevere, readiness.DefaultStaminaVerySevereThreshold)
 	effStaminaSevere := effectiveOrDefault(staminaSevere, readiness.DefaultStaminaSevereThreshold)
 	effStaminaRecommended := effectiveOrDefault(staminaRecommended, readiness.DefaultStaminaRecommendedThreshold)
-	effStaminaIdeal := effectiveOrDefault(staminaIdeal, readiness.DefaultStaminaIdealThreshold)
-	if (!(effStaminaVerySevere < effStaminaSevere && effStaminaSevere < effStaminaRecommended && effStaminaRecommended < effStaminaIdeal)) {
-		http.Error(w, "Пороги выносливости должны идти по возрастанию: очень мало < мало < рекомендовано < идеально", http.StatusBadRequest)
+	if (!(effStaminaVerySevere < effStaminaSevere && effStaminaSevere < effStaminaRecommended && effStaminaRecommended < readiness.StaminaIdealThreshold)) {
+		http.Error(w, "Пороги выносливости должны идти по возрастанию: очень мало < мало < рекомендовано (< 250)", http.StatusBadRequest)
 		return
 	}
 
 	effMoneyRecommended := effectiveOrDefault(moneyRecommended, readiness.DefaultMoneyRecommendedThreshold)
 	effMoneySevere := effectiveOrDefault(moneySevere, readiness.DefaultMoneySevereThreshold)
-	if (effMoneyRecommended >= effMoneySevere) {
-		http.Error(w, "Порог «рекомендовано слить» должен быть меньше порога «много денег»", http.StatusBadRequest)
+	effMoneyVerySevere := effectiveOrDefault(moneyVerySevere, readiness.DefaultMoneyVerySevereThreshold)
+	if (!(effMoneyRecommended < effMoneySevere && effMoneySevere < effMoneyVerySevere)) {
+		http.Error(w, "Пороги денег должны идти по возрастанию: рекомендовано слить < много < очень много", http.StatusBadRequest)
 		return
 	}
 
-	if setErr := repository.SetFractionReadinessSettings(fraction, staminaVerySevere, staminaSevere, staminaRecommended, staminaIdeal, moneyRecommended, moneySevere); (setErr != nil) {
+	if setErr := repository.SetFractionReadinessSettings(fraction, staminaVerySevere, staminaSevere, staminaRecommended, moneyRecommended, moneySevere, moneyVerySevere); (setErr != nil) {
 		http.Error(w, "Не удалось сохранить настройки", http.StatusInternalServerError)
 		return
 	}

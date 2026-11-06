@@ -30,12 +30,22 @@
 {{end}}
 
 <h2>настройки профиля{{if .CanSetSettings}} <a class="icon-select-btn" href="/panel/fraction/settings" title="редактировать">✎</a>{{end}}</h2>
-<dl class="budget">
-  <div class="budget-row"><dt>выносливость — очень мало</dt><dd>{{.StaminaVerySevere}}</dd></div>
-  <div class="budget-row"><dt>выносливость — мало</dt><dd>{{.StaminaSevere}}</dd></div>
-  <div class="budget-row"><dt>выносливость — рекомендуется больше</dt><dd>{{.StaminaRecommended}}</dd></div>
-  <div class="budget-row"><dt>выносливость — идеально</dt><dd>{{.StaminaIdeal}}</dd></div>
-  <div class="budget-row"><dt>деньги — рекомендовано слить</dt><dd>{{.MoneyRecommended}}</dd></div>
-  <div class="budget-row"><dt>деньги — много</dt><dd>{{.MoneySevere}}</dd></div>
-</dl>
+
+<div class="settings-group">
+  <div class="settings-group-label">деньги</div>
+  <div class="threshold-row">
+    <span class="threshold-field" title="очень много"><span class="threshold-icon">‼️</span>{{.MoneyVerySevere}}</span>
+    <span class="threshold-field" title="много"><span class="threshold-icon">❗</span>{{.MoneySevere}}</span>
+    <span class="threshold-field" title="рекомендуется слить"><span class="threshold-icon">⚠️</span>{{.MoneyRecommended}}</span>
+  </div>
+</div>
+
+<div class="settings-group">
+  <div class="settings-group-label">выносливость</div>
+  <div class="threshold-row">
+    <span class="threshold-field" title="очень мало"><span class="threshold-icon">‼️</span>{{.StaminaVerySevere}}</span>
+    <span class="threshold-field" title="мало"><span class="threshold-icon">❗</span>{{.StaminaSevere}}</span>
+    <span class="threshold-field" title="рекомендуется больше"><span class="threshold-icon">⚠️</span>{{.StaminaRecommended}}</span>
+  </div>
+</div>
 {{end}}

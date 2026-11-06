@@ -227,6 +227,23 @@ dialog.popup .popup-message { margin: 0 0 12px; color: var(--danger); }
 .form label { display: flex; flex-direction: column; gap: 4px; color: var(--dim); }
 
 .hint { color: var(--dim); font-size: 0.9em; }
+
+.settings-group { margin-bottom: 20px; }
+.settings-group h2 { margin: 0 0 4px; }
+.settings-group-label { color: var(--dim); margin-bottom: 4px; }
+
+.threshold-row {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  width: fit-content;
+}
+.threshold-field { display: flex; align-items: center; gap: 6px; padding: 6px 12px; }
+.threshold-field:not(:first-child) { border-left: 1px solid var(--border); }
+.settings-form .threshold-field { flex-direction: row; color: var(--fg); }
+.threshold-icon { font-size: 1.05em; }
+.threshold-field input { width: 4.5em; }
 .inline { display: inline; }
 .back { display: inline-block; margin-top: 20px; color: var(--dim); }
 

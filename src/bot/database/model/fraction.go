@@ -10,11 +10,12 @@ type Fraction struct {
 	Message string `gorm:"type:text"`
 
 	// Readiness thresholds — nil means "use the readiness package's
-	// default", see readiness.ThresholdsFor.
+	// default", see readiness.ThresholdsFor. Stamina's "ideal" cutoff isn't
+	// here — it's fixed at readiness.StaminaIdealThreshold, not overridable.
 	StaminaVerySevereThreshold  *uint `gorm:"null"`
 	StaminaSevereThreshold      *uint `gorm:"null"`
 	StaminaRecommendedThreshold *uint `gorm:"null"`
-	StaminaIdealThreshold       *uint `gorm:"null"`
 	MoneyRecommendedThreshold   *uint `gorm:"null"`
 	MoneySevereThreshold        *uint `gorm:"null"`
+	MoneyVerySevereThreshold    *uint `gorm:"null"`
 }

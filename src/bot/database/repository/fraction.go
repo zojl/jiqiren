@@ -63,7 +63,7 @@ func SetFractionMessage(fraction *model.Fraction, message string) error {
 // pointer clears that column back to NULL (readiness.ThresholdsFor falls
 // back to its default), same "empty clears it" convention as the message
 // form's delete behavior.
-func SetFractionReadinessSettings(fraction *model.Fraction, staminaVerySevere *uint, staminaSevere *uint, staminaRecommended *uint, staminaIdeal *uint, moneyRecommended *uint, moneySevere *uint) error {
+func SetFractionReadinessSettings(fraction *model.Fraction, staminaVerySevere *uint, staminaSevere *uint, staminaRecommended *uint, moneyRecommended *uint, moneySevere *uint, moneyVerySevere *uint) error {
 	db := database.GetDb()
 
 	if err := db.Model(fraction).Update("StaminaVerySevereThreshold", staminaVerySevere).Error; (err != nil) {
@@ -75,12 +75,12 @@ func SetFractionReadinessSettings(fraction *model.Fraction, staminaVerySevere *u
 	if err := db.Model(fraction).Update("StaminaRecommendedThreshold", staminaRecommended).Error; (err != nil) {
 		return err
 	}
-	if err := db.Model(fraction).Update("StaminaIdealThreshold", staminaIdeal).Error; (err != nil) {
-		return err
-	}
 	if err := db.Model(fraction).Update("MoneyRecommendedThreshold", moneyRecommended).Error; (err != nil) {
 		return err
 	}
+	if err := db.Model(fraction).Update("MoneySevereThreshold", moneySevere).Error; (err != nil) {
+		return err
+	}
 
-	return db.Model(fraction).Update("MoneySevereThreshold", moneySevere).Error
+	return db.Model(fraction).Update("MoneyVerySevereThreshold", moneyVerySevere).Error
 }
