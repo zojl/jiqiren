@@ -100,6 +100,10 @@ func (p *Permissions) CanSetFractionMessage() bool {
 	return p.isTeamlead() || p.isDeputy()
 }
 
+func (p *Permissions) CanSetFractionSettings() bool {
+	return p.isTeamlead() || p.isDeputy()
+}
+
 func (p *Permissions) CanSetSquadTarget(squadId uint) bool {
 	if (p.isTeamlead() || p.isDeputy()) {
 		return true

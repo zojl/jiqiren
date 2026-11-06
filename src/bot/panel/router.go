@@ -55,6 +55,8 @@ func NewRouter() chi.Router {
 		r.Post("/fraction/token", handlers.SetFractionToken)
 		r.Get("/fraction/message", handlers.FractionMessageForm)
 		r.Post("/fraction/message", handlers.SetFractionMessage)
+		r.Get("/fraction/settings", handlers.FractionSettingsForm)
+		r.Post("/fraction/settings", handlers.SetFractionReadinessSettings)
 		r.Get("/fraction/budget", handlers.BudgetPage)
 		r.Get("/fraction/budget/actual", handlers.BudgetActual)
 		r.Get("/fraction/budget/chart", handlers.BudgetChart)

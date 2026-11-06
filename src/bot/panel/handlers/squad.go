@@ -118,7 +118,16 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	members, hiddenMembers, activeUserIds, membersErr := buildSquadMembers(squad, allFractions)
+	fraction := &model.Fraction{}
+	for i := range allFractions {
+		if (allFractions[i].Id == squad.FractionId) {
+			fraction = &allFractions[i]
+			break
+		}
+	}
+	thresholds := readiness.ThresholdsFor(fraction)
+
+	members, hiddenMembers, activeUserIds, membersErr := buildSquadMembers(squad, allFractions, thresholds)
 	if (membersErr != nil) {
 		http.Error(w, "Не удалось загрузить участников", http.StatusInternalServerError)
 		return
@@ -126,7 +135,7 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 
 	// Best-effort: a battle summary that fails to build (e.g. no battles
 	// yet) just doesn't show, it shouldn't break the rest of the page.
-	battleSummary, _ := buildBattleSummary(squad, activeUserIds, time.Now())
+	battleSummary, _ := buildBattleSummary(squad, activeUserIds, time.Now(), thresholds)
 
 	target := model.TargetNone
 	if (squad.Target != nil) {
@@ -168,7 +177,7 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 // natural TeamId is this squad: ones overridden elsewhere (reversible —
 // shown so they can be brought back) and ones silent for a month (shown
 // so it's clear where they went, not just silently dropped).
-func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squadMemberView, []squadHiddenMemberView, []uint, error) {
+func buildSquadMembers(squad *model.Team, allFractions []model.Fraction, thresholds readiness.Thresholds) ([]squadMemberView, []squadHiddenMemberView, []uint, error) {
 	profiles, err := repository.FindLatestProfilesForTeam(squad.Id)
 	if (err != nil) {
 		return nil, nil, nil, err
@@ -245,8 +254,8 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 		// fields instead of showing a stale good/bad verdict.
 		beforeLastBattle := profile.MessageDate.Before(lastBattle)
 
-		staminaLabel := staminaRating(profile.Stamina)
-		moneyLabel := moneyRating(profile.Money)
+		staminaLabel := readiness.StaminaRating(profile.Stamina, thresholds)
+		moneyLabel := readiness.MoneyRating(profile.Money, thresholds)
 		staminaClass := ratingClass(staminaLabel)
 		moneyClass := ratingClass(moneyLabel)
 		targetClass := "rating-bad"
@@ -325,7 +334,7 @@ type battleSummaryView struct {
 // squad's current main roster) using each player's profile as it stood
 // for that battle, not whatever they've since updated to — same window
 // as the contest-points calculation.
-func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time) (*battleSummaryView, error) {
+func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time, thresholds readiness.Thresholds) (*battleSummaryView, error) {
 	if (len(activeUserIds) == 0) {
 		return nil, nil
 	}
@@ -366,7 +375,7 @@ func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time) 
 
 	for _, userId := range activeUserIds {
 		battleProfile, hasProfile := battleProfileByUserId[userId]
-		if (hasProfile && isIdeallyPrepared(battleProfile, squad)) {
+		if (hasProfile && isIdeallyPrepared(battleProfile, squad, thresholds)) {
 			summary.IdealCount++
 		}
 
@@ -406,12 +415,12 @@ func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time) 
 }
 
 // isIdeallyPrepared reuses the same "отлично" thresholds already shown
-// per-player (staminaRating/moneyRating), plus a matching target.
-func isIdeallyPrepared(profile model.Profile, squad *model.Team) bool {
+// per-player (readiness.StaminaRating/MoneyRating), plus a matching target.
+func isIdeallyPrepared(profile model.Profile, squad *model.Team, thresholds readiness.Thresholds) bool {
 	return profile.TargetId != nil &&
 		readiness.TargetMatches(profile, squad) &&
-		staminaRating(profile.Stamina) == "отлично" &&
-		moneyRating(profile.Money) == "отлично"
+		readiness.StaminaRating(profile.Stamina, thresholds) == "отлично" &&
+		readiness.MoneyRating(profile.Money, thresholds) == "отлично"
 }
 
 func overrideSquadLabel(squadId uint) string {
@@ -458,28 +467,6 @@ func formatMskMoment(moment time.Time, now time.Time) string {
 	}
 
 	return sleepMsk.Format("02.01 15:04")
-}
-
-func staminaRating(stamina uint) string {
-	switch {
-	case stamina >= 250:
-		return "отлично"
-	case stamina >= 200:
-		return "хорошо"
-	default:
-		return "плохо"
-	}
-}
-
-func moneyRating(money uint) string {
-	switch {
-	case money <= 9:
-		return "отлично"
-	case money <= 100:
-		return "приемлемо"
-	default:
-		return "плохо"
-	}
 }
 
 func ratingClass(label string) string {

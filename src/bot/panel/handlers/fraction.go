@@ -7,6 +7,7 @@ import (
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/panel/auth"
 	"jiqiren/bot/panel/templates"
+	"jiqiren/bot/readiness"
 )
 
 type fractionPageData struct {
@@ -19,6 +20,12 @@ type fractionPageData struct {
 	CanSetToken        bool
 	Message            string
 	CanSetMessage       bool
+
+	StaminaSevere      uint
+	StaminaRecommended uint
+	MoneyRecommended   uint
+	MoneySevere        uint
+	CanSetSettings     bool
 }
 
 // FractionPage is "Команда" — the fraction-wide counterpart of a squad
@@ -48,6 +55,8 @@ func FractionPage(w http.ResponseWriter, r *http.Request) {
 		target = *fraction.Target
 	}
 
+	thresholds := readiness.ThresholdsFor(fraction)
+
 	templates.Render(w, r, "fraction_page", fractionPageData{
 		Name:              fraction.Name,
 		Icon:              fraction.Icon,
@@ -58,5 +67,11 @@ func FractionPage(w http.ResponseWriter, r *http.Request) {
 		CanSetToken:       permissions.CanSetFractionToken(),
 		Message:           fraction.Message,
 		CanSetMessage:     permissions.CanSetFractionMessage(),
+
+		StaminaSevere:      thresholds.StaminaSevere,
+		StaminaRecommended: thresholds.StaminaRecommended,
+		MoneyRecommended:   thresholds.MoneyRecommended,
+		MoneySevere:        thresholds.MoneySevere,
+		CanSetSettings:     permissions.CanSetFractionSettings(),
 	})
 }

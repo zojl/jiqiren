@@ -11,6 +11,7 @@ import (
 	"jiqiren/bot/database"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
+	"jiqiren/bot/readiness"
 )
 
 var regulars = [...]string {
@@ -83,7 +84,7 @@ func storeParsedProfile(parsedProfile *ProfileParseResult, senderId int, message
 	team := getTeam(parsedProfile, fraction)
 	target := getTarget(parsedProfile, fraction)
 	isProfileInserted := insertProfile(parsedProfile, user, fraction, team, target, messageTime)
-	return validateInsertedProfile(isProfileInserted, parsedProfile)
+	return validateInsertedProfile(isProfileInserted, parsedProfile, fraction)
 }
 
 func getFraction(parsedProfile *ProfileParseResult) *model.Fraction {
@@ -276,11 +277,13 @@ func parseProfile(messageText string) *ProfileParseResult {
 	return &parsedProfile
 }
 
-func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParseResult) *ProfileResponse {
+func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParseResult, fraction *model.Fraction) *ProfileResponse {
 	response := ProfileResponse{
 		IsInserted: isProfileInserted,
 		Messages: make([]string, 0, 5),
 	}
+
+	thresholds := readiness.ThresholdsFor(fraction)
 
 	if (len(parsedProfile.Target) == 0) {
 		response.Messages = append(response.Messages, "‼️Не выбрана цель на следующую битву! Не забудьте выбрать цель перед битвой.")
@@ -288,20 +291,19 @@ func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParse
 
 	if (len(parsedProfile.Money) > 0) {
 		money, _ := strconv.ParseUint(parsedProfile.Money, 10, 64)
-		level, _ := strconv.ParseUint(parsedProfile.Level, 10, 64)
-		if (money >= level*10) {
+		if (money > uint64(thresholds.MoneySevere)) {
 			response.Messages = append(response.Messages, "‼️Очень много денег! Не забудьте слить деньги в акции перед битвой.")
-		} else if (money >= 10) {
-			response.Messages = append(response.Messages, "⚠️Рекомендуется слить деньги до значения меньше 10 перед битвой.")
+		} else if (money > uint64(thresholds.MoneyRecommended)) {
+			response.Messages = append(response.Messages, fmt.Sprintf("⚠️Рекомендуется слить деньги до значения не выше %d перед битвой.", thresholds.MoneyRecommended))
 		}
 	}
 
-	if (len(parsedProfile.Money) > 0) {
+	if (len(parsedProfile.Stamina) > 0) {
 		stamina, _ := strconv.ParseUint(parsedProfile.Stamina, 10, 64)
-		if (stamina < 200) {
+		if (stamina < uint64(thresholds.StaminaSevere)) {
 			response.Messages = append(response.Messages, "‼️Мало выносливости! Не забудьте пополнить выносливость перед битвой.")
-		} else if (stamina < 250) {
-			response.Messages = append(response.Messages, "⚠️Рекомендуется пополнить выносливость до 250 перед битвой.")
+		} else if (stamina < uint64(thresholds.StaminaRecommended)) {
+			response.Messages = append(response.Messages, fmt.Sprintf("⚠️Рекомендуется пополнить выносливость до %d перед битвой.", thresholds.StaminaRecommended))
 		}
 	}
 
@@ -309,8 +311,6 @@ func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParse
 		hour, _ := strconv.ParseUint(parsedProfile.BeforeSleepHour, 10, 64)
 		if (hour < 24) {
 			response.Messages = append(response.Messages, "ℹ️Меньше 24 часов до сна, не забудьте отправить персонажа спать после битвы.")
-		} else if (hour < 12) {
-			response.Messages = append(response.Messages, "⚠️Меньше 12 часов до сна! Не проспите битву!")
 		}
 	}
 

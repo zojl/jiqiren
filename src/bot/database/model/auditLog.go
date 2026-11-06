@@ -11,6 +11,7 @@ const (
 	AuditActionSetSquadToken   AuditAction = "set_squad_token"
 	AuditActionSetFractionToken AuditAction = "set_fraction_token"
 	AuditActionSetFractionMessage AuditAction = "set_fraction_message"
+	AuditActionSetFractionSettings AuditAction = "set_fraction_settings"
 	AuditActionRenameSquad     AuditAction = "rename_squad"
 	AuditActionCreateSquad     AuditAction = "create_squad"
 	AuditActionDeleteSquad     AuditAction = "delete_squad"

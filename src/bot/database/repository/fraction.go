@@ -58,3 +58,23 @@ func SetFractionMessage(fraction *model.Fraction, message string) error {
 	db := database.GetDb()
 	return db.Model(fraction).Update("Message", message).Error
 }
+
+// SetFractionReadinessSettings writes all four thresholds in one go; a nil
+// pointer clears that column back to NULL (readiness.ThresholdsFor falls
+// back to its default), same "empty clears it" convention as the message
+// form's delete behavior.
+func SetFractionReadinessSettings(fraction *model.Fraction, staminaSevere *uint, staminaRecommended *uint, moneyRecommended *uint, moneySevere *uint) error {
+	db := database.GetDb()
+
+	if err := db.Model(fraction).Update("StaminaSevereThreshold", staminaSevere).Error; (err != nil) {
+		return err
+	}
+	if err := db.Model(fraction).Update("StaminaRecommendedThreshold", staminaRecommended).Error; (err != nil) {
+		return err
+	}
+	if err := db.Model(fraction).Update("MoneyRecommendedThreshold", moneyRecommended).Error; (err != nil) {
+		return err
+	}
+
+	return db.Model(fraction).Update("MoneySevereThreshold", moneySevere).Error
+}

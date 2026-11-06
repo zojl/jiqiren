@@ -21,6 +21,7 @@ var auditActionLabels = map[model.AuditAction]string{
 	model.AuditActionSetSquadToken:     "токен отряда",
 	model.AuditActionSetFractionToken:  "токен команды",
 	model.AuditActionSetFractionMessage: "сообщение команды",
+	model.AuditActionSetFractionSettings: "настройки профиля",
 	model.AuditActionRenameSquad:       "обновление отряда",
 	model.AuditActionCreateSquad:       "добавление отряда",
 	model.AuditActionDeleteSquad:       "удаление отряда",
