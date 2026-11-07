@@ -130,10 +130,10 @@ func handleHwForward(message object.MessagesMessage, parentMessage *object.Messa
 func buildProfileAckKeyboard(vkId int) *object.MessagesKeyboard {
 	keyboard := object.NewMessagesKeyboardInline()
 	keyboard.AddRow()
-	keyboard.AddTextButton(ProfileButtonLabel, nil, object.Primary)
+	keyboard.AddTextButton(ProfileButtonLabel, struct{}{}, object.Primary)
 
 	if _, err := repository.FindOneManagerByVkId(uint(vkId)); (err == nil) {
-		keyboard.AddTextButton(WebPanelButtonLabel, nil, object.Primary)
+		keyboard.AddTextButton(WebPanelButtonLabel, struct{}{}, object.Primary)
 	}
 
 	return keyboard
