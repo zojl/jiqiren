@@ -80,7 +80,7 @@
   <td>🛡️{{.Defense}}</td>
   <td>📡{{.Practice}} 💾{{.Theory}} 📱{{.Cunning}} 🔎{{.Wisdom}}</td>
   {{if $.CanManageMembers}}
-  <td>{{if .CanFreeze}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/freeze" onsubmit="return confirm('Заморозить игрока? Бот перестанет его пинговать до нового профиля или отчёта.');" class="inline"><button type="submit" title="заморозить, чтобы бот не пинговал">❄️</button></form>{{end}}{{if .IsOverride}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/remove" onsubmit="return confirm('Открепить от отряда?');" class="inline"><button type="submit" class="danger">✕</button></form>{{end}}</td>
+  <td>{{if .CanFreeze}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/freeze" onsubmit="return confirm('Заморозить игрока? Бот перестанет его пинговать до нового профиля или отчёта.');" class="inline"><button type="submit" class="icon-select-btn" title="заморозить, чтобы бот не пинговал">❄️</button></form>{{end}}{{if .IsOverride}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/remove" onsubmit="return confirm('Открепить от отряда?');" class="inline"><button type="submit" class="danger">✕</button></form>{{end}}</td>
   {{end}}
 </tr>
 {{if .HasReport}}
