@@ -24,6 +24,10 @@ type Params struct{
 }
 
 func (replyParams Params) Reply(text string, ) {
+	replyParams.ReplyWithKeyboard(text, nil)
+}
+
+func (replyParams Params) ReplyWithKeyboard(text string, keyboard *object.MessagesKeyboard) {
 	messageBuilder := params.NewMessagesSendBuilder()
 	messageBuilder.Message(text)
 	messageBuilder.RandomID(0)
@@ -37,6 +41,10 @@ func (replyParams Params) Reply(text string, ) {
 	jsonMessageRaw, _ := json.Marshal(forward)
 	jsonMessage := string(jsonMessageRaw)
 	messageBuilder.Forward(jsonMessage)
+
+	if (keyboard != nil) {
+		messageBuilder.Keyboard(keyboard.ToJSON())
+	}
 
 	_, err := replyParams.vk.MessagesSend(messageBuilder.Params)
 	if err != nil {

@@ -11,6 +11,18 @@ import (
 	"github.com/SevereCloud/vksdk/v2/events"
 )
 
+const ProfileButtonLabel = "🥷 Профиль"
+const WebPanelButtonLabel = "🌐 Веб-панель"
+
+// IsButtonCommand reports whether text is one of the keyboard button labels
+// attached to the profile-ack message (see buildProfileAckKeyboard in
+// plain.go) — those don't carry PREFIX, so the main dispatch loop needs this
+// check alongside its usual prefix check to route a button tap into
+// HandleCommand instead of HandlePlain.
+func IsButtonCommand(text string) bool {
+	return text == ProfileButtonLabel || text == WebPanelButtonLabel
+}
+
 func HandleCommand(messageObject *events.MessageNewObject, vk *api.VK) {
 	command := getCommand(messageObject, vk)
 	log.Printf("%+v\n", command)
@@ -27,7 +39,7 @@ func getCommand(messageObject *events.MessageNewObject, vk *api.VK) Command {
 		}
 	}
 
-	if isCommand(messageObject, []string{"login"}) {
+	if isCommand(messageObject, []string{"login"}) || messageObject.Message.Text == WebPanelButtonLabel {
 		return command.Login{
 			Message: messageObject,
 			Vk: vk,
@@ -41,7 +53,7 @@ func getCommand(messageObject *events.MessageNewObject, vk *api.VK) Command {
 		}
 	}
 
-	if isCommand(messageObject, []string{"profile", "профиль"}) {
+	if isCommand(messageObject, []string{"profile", "профиль"}) || messageObject.Message.Text == ProfileButtonLabel {
 		return command.Profile{
 			Message: messageObject,
 			Vk: vk,

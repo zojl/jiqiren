@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"jiqiren/bot/database/repository"
 	"jiqiren/bot/messageHandler/plain"
 	"jiqiren/bot/messageHandler/reply"
 
@@ -48,6 +49,13 @@ func handleHwForward(message object.MessagesMessage, parentMessage *object.Messa
 			for _, messageNote := range profileHandleResult.Messages {
 				message += "\n" + messageNote
 			}
+
+			isPrivate := parentMessage.PeerID == parentMessage.FromID
+			if (isPrivate) {
+				replyParams.ReplyWithKeyboard(message, buildProfileAckKeyboard(senderId))
+				return
+			}
+
 			replyParams.Reply(message)
 			return
 		}
@@ -114,6 +122,21 @@ func handleHwForward(message object.MessagesMessage, parentMessage *object.Messa
 	}
 
 	log.Println("bad message " + message.Text)
+}
+
+// buildProfileAckKeyboard attaches a "Профиль" button, mirroring /profile,
+// to every private-chat profile-ack reply, plus a "Веб-панель" button
+// mirroring /login for users with a managers table record.
+func buildProfileAckKeyboard(vkId int) *object.MessagesKeyboard {
+	keyboard := object.NewMessagesKeyboardInline()
+	keyboard.AddRow()
+	keyboard.AddTextButton(ProfileButtonLabel, nil, object.Primary)
+
+	if _, err := repository.FindOneManagerByVkId(uint(vkId)); (err == nil) {
+		keyboard.AddTextButton(WebPanelButtonLabel, nil, object.Primary)
+	}
+
+	return keyboard
 }
 
 func isProfileMessage(messageText string) bool {

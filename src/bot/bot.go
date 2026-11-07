@@ -43,7 +43,7 @@ func main() {
             log.Printf("%+v\n", obj)
         }
 
-        if (strings.HasPrefix(obj.Message.Text, prefix)) {
+        if (strings.HasPrefix(obj.Message.Text, prefix) || messageHandler.IsButtonCommand(obj.Message.Text)) {
             messageHandler.HandleCommand(&obj, vk)
         } else {
             messageHandler.HandlePlain(obj, vk)
