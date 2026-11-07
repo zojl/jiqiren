@@ -24,6 +24,7 @@ var regulars = [...]string {
 		`\S{0,2}` +
 		`(?P<Fraction>Huǒqiáng|Aegis|V-hack|Phantoms|NetKings|NHS)` +
 		`\)`,
+	`(?P<Status>[🔻⭕🔺💡🔹🔸])[a-zA-Z0-9а-яА-ЯёЁ ,_\-!?\$<>]{3,25}\s\(`,
 	`💻: (?P<Level>\d+)`,
 	`💻Уровень: (?P<Level>\d+)`,
 	`💻: \d+💎(?P<Prestige>\d+)`,
@@ -189,6 +190,7 @@ func insertProfile(
 	profile.MessageDate = messageTime
 
 	profile.Username = parsedProfile.Username
+	profile.Status = parsedProfile.Status
 	profile.Vkcoin, _ = strconv.ParseFloat(parsedProfile.Vkcoin, 10)
 	profile.Lead = getLeadType(parsedProfile.Lead)
 	profile.Way = getWayType(parsedProfile.Way)
@@ -355,6 +357,7 @@ func getCompiledRegulars () []*regexp.Regexp {
 
 type ProfileParseResult struct {
 	Username string
+	Status string
 	Squad string
 	Fraction string
 	Lead string

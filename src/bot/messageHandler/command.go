@@ -41,6 +41,13 @@ func getCommand(messageObject *events.MessageNewObject, vk *api.VK) Command {
 		}
 	}
 
+	if isCommand(messageObject, []string{"profile", "профиль"}) {
+		return command.Profile{
+			Message: messageObject,
+			Vk: vk,
+		}
+	}
+
 	return nil
 }
 
