@@ -22,6 +22,8 @@
   </div>
 </dl>
 
+{{template "goal_plan_section" .GoalPlan}}
+
 <h2>сообщение команды{{if .CanSetMessage}} <a class="icon-select-btn" href="/panel/fraction/message" title="редактировать">✎</a>{{end}}</h2>
 {{if .Message}}
 <p class="pre-line">{{.Message}}</p>

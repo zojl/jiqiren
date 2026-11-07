@@ -82,6 +82,20 @@ document.addEventListener("click", function (event) {
     });
 });
 
+// Goal plan form — "recurring" fields (end date) only make sense once the
+// "повторяется" radio is picked, so they're hidden until then.
+document.addEventListener("change", function (event) {
+  if (!event.target.matches(".goal-plan-form input[name='type']")) {
+    return;
+  }
+
+  var form = event.target.closest("form");
+  var recurringFields = form.querySelector("[data-type-fields='recurring']");
+  if (recurringFields) {
+    recurringFields.hidden = event.target.value !== "recurring";
+  }
+});
+
 // MSK is read as a fixed UTC+3 offset straight off the epoch, matching the
 // backend's treatment of Moscow time (no DST since 2014) rather than
 // whatever timezone the browser happens to be in.

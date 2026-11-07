@@ -1,0 +1,49 @@
+{{define "goal_plan_section"}}
+<h2>план целей</h2>
+<div class="goal-plan-row">
+  {{if .AddHref}}<a class="goal-card goal-card-add" href="{{.AddHref}}" title="добавить цель в план">+</a>{{end}}
+  {{range .Cards}}
+  <a class="goal-card{{if .HasError}} has-error{{end}}" href="{{.EditHref}}"{{if .ErrorText}} title="ошибка: {{.ErrorText}}"{{end}}>
+    <span class="goal-card-icon">{{.Icon}}</span>
+    {{range .Properties}}<span class="goal-card-prop" title="{{.Label}}">{{.Icon}}</span>{{end}}
+    <span class="goal-card-time">{{.Time}}</span>
+    {{if .Date}}<span class="goal-card-date">{{.Date}}</span>{{end}}
+  </a>
+  {{end}}
+  {{if and (not .Cards) (not .AddHref)}}<span class="hint">план пуст</span>{{end}}
+  {{if .MoreHref}}<a class="goal-card-more" href="{{.MoreHref}}">{{.MoreLabel}} →</a>{{end}}
+</div>
+{{end}}
+
+{{define "goal_plan_list"}}
+<h1>{{.Title}}</h1>
+
+{{if .CanManage}}
+<section class="actions">
+  <a class="btn btn-nav" href="{{.AddHref}}">+ цель</a>
+</section>
+{{end}}
+
+{{if .Goals}}
+<div class="goal-rows">
+{{range .Goals}}
+<div class="goal-row{{if .HasError}} has-error{{end}}">
+  <a class="goal-row-link" href="{{.EditHref}}"{{if .ErrorText}} title="ошибка: {{.ErrorText}}"{{end}}>
+    <span class="goal-row-icon">{{.TargetIcon}}</span>
+    <span class="goal-row-label">{{.TargetLabel}}</span>
+    <span class="goal-row-props">{{range .Properties}}<span class="goal-card-prop" title="{{.Label}}">{{.Icon}} {{.Label}}</span>{{end}}</span>
+    <span class="goal-row-time">{{.Time}} мск</span>
+    <span class="goal-row-date">{{.DateInfo}}{{if .Applied}} · выполнена{{end}}</span>
+  </a>
+  {{if $.CanManage}}
+  <form method="post" action="{{.DeleteHref}}" onsubmit="return confirm('Удалить цель из плана?');" class="inline"><button type="submit" class="danger">✕</button></form>
+  {{end}}
+</div>
+{{end}}
+</div>
+{{else}}
+<p class="hint">план пуст</p>
+{{end}}
+
+<a class="back" href="{{.BackHref}}">← назад</a>
+{{end}}

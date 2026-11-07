@@ -19,6 +19,7 @@ func GetAllModels() []interface{} {
 		AuditLog{},
 		ScheduledMessage{},
 		BudgetSnapshot{},
+		PlannedTarget{},
 	}
 }
 

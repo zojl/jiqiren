@@ -38,6 +38,12 @@ var auditActionLabels = map[model.AuditAction]string{
 	model.AuditActionDeleteSchedule:    "удаление рассылки",
 	model.AuditActionSetSquadOverride:   "переопределение отряда",
 	model.AuditActionClearSquadOverride: "снятие переопределения отряда",
+	model.AuditActionFreezePlayer:       "заморозка игрока",
+	model.AuditActionCreatePlannedTarget: "добавление цели в план",
+	model.AuditActionUpdatePlannedTarget: "обновление цели в плане",
+	model.AuditActionDeletePlannedTarget: "удаление цели из плана",
+	model.AuditActionApplyPlannedTarget:       "применение запланированной цели",
+	model.AuditActionApplyPlannedTargetFailed: "ошибка применения запланированной цели",
 }
 
 type auditLogView struct {

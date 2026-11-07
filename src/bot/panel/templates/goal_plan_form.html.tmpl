@@ -1,0 +1,43 @@
+{{define "goal_plan_form"}}
+<h1>{{if .IsEdit}}редактирование цели{{else}}новая цель в плане{{end}}</h1>
+
+{{if .HasError}}<p class="error">последняя ошибка применения: {{.ErrorText}}</p>{{end}}
+
+<form method="post" action="{{.Action}}" class="form goal-plan-form">
+  <label>цель
+    <select name="target">
+      {{range .TargetOptions}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Icon}} {{.Name}}</option>{{end}}
+    </select>
+  </label>
+
+  <div class="goal-type-row">
+    <label><input type="radio" name="type" value="once" {{if .TypeOnce}}checked{{end}}> разово</label>
+    <label><input type="radio" name="type" value="recurring" {{if .TypeRecurring}}checked{{end}}> повторяется ежедневно</label>
+  </div>
+
+  <label>дата<input type="date" name="start_date" value="{{.StartDate}}" required></label>
+  <p class="hint">для разовой цели — единственная дата срабатывания; для повторяющейся — дата первого срабатывания</p>
+
+  <div data-type-fields="recurring" {{if .TypeOnce}}hidden{{end}}>
+    <label>дата окончания (необязательно)<input type="date" name="end_date" value="{{.EndDate}}"></label>
+  </div>
+
+  <label>время (мск)<input type="time" name="time" value="{{.Time}}" required></label>
+
+  <label class="checkbox-label"><input type="checkbox" name="reserve" {{if .Reserve}}checked{{end}}> резервная — установится только если на этот момент цель ещё не задана</label>
+
+  {{if .IsSquad}}
+  <label>сообщение в чат отряда (необязательно)<textarea name="message" rows="3">{{.Message}}</textarea></label>
+  {{end}}
+
+  <button type="submit">сохранить</button>
+</form>
+
+{{if .IsEdit}}
+<form method="post" action="{{.DeleteHref}}" onsubmit="return confirm('Удалить цель из плана?');" class="inline">
+  <button type="submit" class="danger">удалить из плана</button>
+</form>
+{{end}}
+
+<a class="back" href="{{.BackHref}}">← назад</a>
+{{end}}
