@@ -29,6 +29,7 @@ const (
 	AuditActionDeleteSchedule      AuditAction = "delete_schedule"
 	AuditActionSetSquadOverride    AuditAction = "set_squad_override"
 	AuditActionClearSquadOverride  AuditAction = "clear_squad_override"
+	AuditActionFreezePlayer        AuditAction = "freeze_player"
 )
 
 // VkId is stored directly (not joined from Manager) so it survives the

@@ -29,6 +29,8 @@ type squadMemberView struct {
 	VkId uint
 	WayIcon string
 	Stale bool
+	Frozen bool
+	CanFreeze bool
 	LastSeen string
 
 	Level uint
@@ -191,9 +193,11 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction, thresho
 	users, _ := repository.FindUsersByIds(userIds)
 	vkIdByUserId := make(map[uint]uint, len(users))
 	overrideByUserId := make(map[uint]*uint, len(users))
+	frozenByUserId := make(map[uint]bool, len(users))
 	for _, user := range users {
 		vkIdByUserId[user.Id] = user.VkId
 		overrideByUserId[user.Id] = user.SquadOverrideId
+		frozenByUserId[user.Id] = user.Frozen
 	}
 
 	now := time.Now()
@@ -269,11 +273,16 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction, thresho
 			targetClass = "rating-stale"
 		}
 
+		stale := inactiveFor > inactiveStaleAfter
+		frozen := frozenByUserId[profile.UserId]
+
 		member := squadMemberView{
 			Name: profile.Username,
 			VkId: vkIdByUserId[profile.UserId],
 			WayIcon: wayIcon(profile.Way),
-			Stale: inactiveFor > inactiveStaleAfter,
+			Stale: stale,
+			Frozen: frozen,
+			CanFreeze: !frozen && !stale,
 			LastSeen: formatMskMoment(profile.MessageDate, now),
 			Level: profile.Level,
 			Practice: profile.Practice,
@@ -748,6 +757,47 @@ func RemoveSquadMemberOverride(w http.ResponseWriter, r *http.Request) {
 
 	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionClearSquadOverride,
 		fmt.Sprintf("vk%d: снято переопределение (отряд %s)", vkId, squad.Code))
+	http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+}
+
+// FreezeSquadMember excludes a player from the bot's missing-profile/
+// report/sleep reminder pings ahead of them actually going silent — for
+// an announced absence, say — without waiting out the natural staleness
+// window. Reversal is never manual: it clears the moment a fresh profile
+// or report comes in (see storeParsedProfile / HandleReport).
+func FreezeSquadMember(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanManageMembers(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	vkId, vkErr := strconv.ParseUint(chi.URLParam(r, "vk_id"), 10, 64)
+	if (vkErr != nil) {
+		http.Error(w, "Некорректный VK id", http.StatusBadRequest)
+		return
+	}
+
+	user := repository.FindOneUserByVkId(int(vkId))
+	if (user == nil) {
+		http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+		return
+	}
+
+	if setErr := repository.SetUserFrozen(user, true); (setErr != nil) {
+		http.Error(w, "Не удалось заморозить игрока", http.StatusInternalServerError)
+		return
+	}
+
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionFreezePlayer,
+		fmt.Sprintf("vk%d: заморожен (отряд %s)", vkId, squad.Code))
 	http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
 }
 

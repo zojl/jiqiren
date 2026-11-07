@@ -80,6 +80,9 @@ func HandleProfile(messageText string, senderId int, messageTime time.Time) *Pro
 
 func storeParsedProfile(parsedProfile *ProfileParseResult, senderId int, messageTime time.Time) *ProfileResponse {
 	user := repository.FindOrCreateUserByVkId(senderId)
+	if (user.Frozen) {
+		repository.SetUserFrozen(user, false)
+	}
 	fraction := getFraction(parsedProfile)
 	team := getTeam(parsedProfile, fraction)
 	target := getTarget(parsedProfile, fraction)

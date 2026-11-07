@@ -71,7 +71,7 @@
 <tr><th>игрок</th><th>выносл.</th><th>деньги</th><th>цель</th><th>сон (мск)</th><th>атк</th><th>деф</th><th>статы</th>{{if .CanManageMembers}}<th></th>{{end}}</tr>
 {{range .Members}}
 <tr>
-  <td>{{if .Stale}}❄️ {{end}}{{if .IsOverride}}↪ {{end}}<a href="/panel/players/{{.VkId}}">{{.WayIcon}}{{.Name}}({{.Level}})</a><a class="ext-link" href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener" title="открыть VK">↗</a> <span class="hint">{{.LastSeen}}</span></td>
+  <td>{{if or .Stale .Frozen}}❄️ {{end}}{{if .IsOverride}}↪ {{end}}<a href="/panel/players/{{.VkId}}">{{.WayIcon}}{{.Name}}({{.Level}})</a><a class="ext-link" href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener" title="открыть VK">↗</a> <span class="hint">{{.LastSeen}}</span></td>
   <td class="{{.StaminaClass}}">{{.Stamina}}</td>
   <td class="{{.MoneyClass}}">{{.Money}}</td>
   <td class="{{.TargetClass}}">{{.TargetLabel}}</td>
@@ -80,7 +80,7 @@
   <td>🛡️{{.Defense}}</td>
   <td>📡{{.Practice}} 💾{{.Theory}} 📱{{.Cunning}} 🔎{{.Wisdom}}</td>
   {{if $.CanManageMembers}}
-  <td>{{if .IsOverride}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/remove" onsubmit="return confirm('Открепить от отряда?');" class="inline"><button type="submit" class="danger">✕</button></form>{{end}}</td>
+  <td>{{if .CanFreeze}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/freeze" onsubmit="return confirm('Заморозить игрока? Бот перестанет его пинговать до нового профиля или отчёта.');" class="inline"><button type="submit" title="заморозить, чтобы бот не пинговал">❄️</button></form>{{end}}{{if .IsOverride}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/remove" onsubmit="return confirm('Открепить от отряда?');" class="inline"><button type="submit" class="danger">✕</button></form>{{end}}</td>
   {{end}}
 </tr>
 {{if .HasReport}}
