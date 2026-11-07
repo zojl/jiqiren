@@ -12,13 +12,13 @@
 {{else}}
 <div class="budget-grid">
   <section class="budget-block" data-budget-live{{if .IsToday}} data-live="true"{{end}} data-actual-url="/panel/fraction/budget/actual" data-has-diff-base="{{.LiveHasDiff}}" data-income-diff-base="{{.LiveIncomeDiffBase}}" data-contributions-diff-base="{{.LiveContributionsDiffBase}}">
-    <h2>текущие данные{{if .IsToday}} <button type="button" class="btn budget-refresh" title="обновить">⟳</button>{{end}} {{if .LiveAvailable}}<span class="hint" data-field="updatedAt">{{.LiveUpdatedAtLabel}} МСК</span>{{end}}</h2>
+    <h2>{{if .IsToday}}текущие данные{{else}}последние данные{{end}}{{if .IsToday}} <button type="button" class="btn budget-refresh" title="обновить">⟳</button>{{end}} {{if .LiveAvailable}}<span class="hint" data-field="updatedAt">{{.LiveUpdatedAtLabel}} МСК</span>{{end}}</h2>
     {{if .LiveAvailable}}
     <dl class="budget">
       <div class="budget-row"><dt>бюджет</dt><dd data-field="budget">{{.Live.Budget}}</dd></div>
-      <div class="budget-row"><dt>доход сегодня</dt><dd><span data-field="incomeToday">{{.Live.IncomeToday}}</span>{{if .LiveHasDiff}} <span class="hint" data-field="incomeDiff">({{.LiveIncomeDiffLabel}})</span>{{end}}</dd></div>
+      <div class="budget-row"><dt>доход за день</dt><dd><span data-field="incomeToday">{{.Live.IncomeToday}}</span>{{if .LiveHasDiff}} <span class="hint" data-field="incomeDiff">({{.LiveIncomeDiffLabel}})</span>{{end}}</dd></div>
       <div class="budget-row"><dt>доход всего</dt><dd data-field="incomeTotal">{{.Live.IncomeTotal}}</dd></div>
-      <div class="budget-row"><dt>донат сегодня</dt><dd><span data-field="contributionsToday">{{.Live.ContributionsToday}}</span>{{if .LiveHasDiff}} <span class="hint" data-field="contributionsDiff">({{.LiveContributionsDiffLabel}})</span>{{end}}</dd></div>
+      <div class="budget-row"><dt>донат за день</dt><dd><span data-field="contributionsToday">{{.Live.ContributionsToday}}</span>{{if .LiveHasDiff}} <span class="hint" data-field="contributionsDiff">({{.LiveContributionsDiffLabel}})</span>{{end}}</dd></div>
       <div class="budget-row"><dt>донат всего</dt><dd data-field="contributionsTotal">{{.Live.ContributionsTotal}}</dd></div>
     </dl>
     {{else}}
@@ -31,9 +31,9 @@
     {{if .BattleResultsAvailable}}
     <dl class="budget">
       <div class="budget-row"><dt>бюджет</dt><dd>{{.BattleResults.Budget}}</dd></div>
-      <div class="budget-row"><dt>доход сегодня</dt><dd>{{.BattleResults.IncomeToday}}</dd></div>
+      <div class="budget-row"><dt>доход за день</dt><dd>{{.BattleResults.IncomeToday}}</dd></div>
       <div class="budget-row"><dt>доход всего</dt><dd>{{.BattleResults.IncomeTotal}}</dd></div>
-      <div class="budget-row"><dt>донат сегодня</dt><dd>{{.BattleResults.ContributionsToday}}</dd></div>
+      <div class="budget-row"><dt>донат за день</dt><dd>{{.BattleResults.ContributionsToday}}</dd></div>
       <div class="budget-row"><dt>донат всего</dt><dd>{{.BattleResults.ContributionsTotal}}</dd></div>
     </dl>
     {{else}}
@@ -42,13 +42,13 @@
   </section>
 
   <section class="budget-block">
-    <h2>доход за вчера</h2>
+    <h2>{{if .IsToday}}данные за вчера{{else}}данные прошлого дня{{end}}</h2>
     {{if .YesterdayAvailable}}
     <dl class="budget">
       <div class="budget-row"><dt>бюджет</dt><dd>{{.YesterdayResults.Budget}}</dd></div>
-      <div class="budget-row"><dt>доход сегодня</dt><dd>{{.YesterdayResults.IncomeToday}}</dd></div>
+      <div class="budget-row"><dt>доход за день</dt><dd>{{.YesterdayResults.IncomeToday}}</dd></div>
       <div class="budget-row"><dt>доход всего</dt><dd>{{.YesterdayResults.IncomeTotal}}</dd></div>
-      <div class="budget-row"><dt>донат сегодня</dt><dd>{{.YesterdayResults.ContributionsToday}}</dd></div>
+      <div class="budget-row"><dt>донат за день</dt><dd>{{.YesterdayResults.ContributionsToday}}</dd></div>
       <div class="budget-row"><dt>донат всего</dt><dd>{{.YesterdayResults.ContributionsTotal}}</dd></div>
     </dl>
     {{else}}

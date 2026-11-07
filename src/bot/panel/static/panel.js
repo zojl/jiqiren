@@ -190,8 +190,8 @@ function mskTimeLabel(ms) {
   var updatedAtLabel = block.querySelector(".budget-chart-updated-at");
 
   var SERIES = [
-    { key: "incomeToday", label: "доход сегодня", color: "#39ff8f", on: true },
-    { key: "contributionsToday", label: "донат сегодня", color: "#e8c547", on: true },
+    { key: "incomeToday", label: "доход за день", color: "#39ff8f", on: true },
+    { key: "contributionsToday", label: "донат за день", color: "#e8c547", on: true },
     { key: "budget", label: "бюджет", color: "#5f8fff", on: false },
     { key: "incomeTotal", label: "доход всего", color: "#5fffe0", on: false },
     { key: "contributionsTotal", label: "донат всего", color: "#ff5fe0", on: false }
