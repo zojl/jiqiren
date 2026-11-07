@@ -88,6 +88,27 @@ func (p *Permissions) CanViewSquad(squadId uint) bool {
 	return p.isSquadLead() && p.ownsSquad(squadId)
 }
 
+// CanViewPlayer gates the player page. Teamlead/deputy see every player in
+// their own fraction; a squad lead sees a player only if their own squad is
+// either the natural (profile-reported) or effective (override) squad —
+// covering both captains while a player is mid-transfer between squads.
+func (p *Permissions) CanViewPlayer(fractionId uint, naturalSquadId *uint, effectiveSquadId *uint) bool {
+	if (p.manager == nil || p.manager.FractionId != fractionId) {
+		return false
+	}
+
+	if (p.isTeamlead() || p.isDeputy()) {
+		return true
+	}
+
+	if (!p.isSquadLead()) {
+		return false
+	}
+
+	return (naturalSquadId != nil && p.ownsSquad(*naturalSquadId)) ||
+		(effectiveSquadId != nil && p.ownsSquad(*effectiveSquadId))
+}
+
 func (p *Permissions) CanViewBalance() bool {
 	return p.isTeamlead() || p.isDeputy()
 }

@@ -71,7 +71,7 @@
 <tr><th>игрок</th><th>выносл.</th><th>деньги</th><th>цель</th><th>сон (мск)</th><th>атк</th><th>деф</th><th>статы</th>{{if .CanManageMembers}}<th></th>{{end}}</tr>
 {{range .Members}}
 <tr>
-  <td>{{if .Stale}}❄️ {{end}}{{if .IsOverride}}↪ {{end}}<a href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener">{{.WayIcon}}{{.Name}}({{.Level}})</a> <span class="hint">{{.LastSeen}}</span></td>
+  <td>{{if .Stale}}❄️ {{end}}{{if .IsOverride}}↪ {{end}}<a href="/panel/players/{{.VkId}}">{{.WayIcon}}{{.Name}}({{.Level}})</a> <a class="icon-select-btn" href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener" title="открыть VK">↗</a> <span class="hint">{{.LastSeen}}</span></td>
   <td class="{{.StaminaClass}}">{{.Stamina}}</td>
   <td class="{{.MoneyClass}}">{{.Money}}</td>
   <td class="{{.TargetClass}}">{{.TargetLabel}}</td>

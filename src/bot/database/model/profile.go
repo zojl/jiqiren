@@ -12,7 +12,9 @@ type Profile struct {
 	Lead uint
 	Way uint
 	Level uint
+	Prestige uint
 	Experience uint
+	ExperienceLimit uint
 	Money uint
 	Vkcoin float64 `gorm:"type:decimal(21,6);"`
 	Points uint

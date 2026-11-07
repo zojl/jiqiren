@@ -26,10 +26,10 @@ var regulars = [...]string {
 		`\)`,
 	`💻: (?P<Level>\d+)`,
 	`💻Уровень: (?P<Level>\d+)`,
-	//`💻: \d+💎(?P<Prestige>\d?);`,
-	//`💎Престиж: (?P<Prestige>\d?)`,
-	`💡: (?P<Experience>\d+)`,
-	`💡Опыт: (?P<Experience>\d+)`,
+	`💻: \d+💎(?P<Prestige>\d+)`,
+	`💎Престиж: (?P<Prestige>\d+)`,
+	`💡: (?P<Experience>\d+)/(?P<ExperienceLimit>\d+)`,
+	`💡Опыт: (?P<Experience>\d+) из (?P<ExperienceLimit>\d+)`,
 	`💵: (?P<Money>\d+)`,
 	`💵Деньги: (?P<Money>\d+)`,
 	`💸: (?P<Vkcoin>\d+\.?\d*)`,
@@ -144,8 +144,12 @@ func insertProfile(
 
 	val, _ = strconv.ParseUint(parsedProfile.Level, 10, 64)
 	profile.Level = uint(val)
+	val, _ = strconv.ParseUint(parsedProfile.Prestige, 10, 64)
+	profile.Prestige = uint(val)
 	val, _ = strconv.ParseUint(parsedProfile.Experience, 10, 64)
 	profile.Experience = uint(val)
+	val, _ = strconv.ParseUint(parsedProfile.ExperienceLimit, 10, 64)
+	profile.ExperienceLimit = uint(val)
 	val, _ = strconv.ParseUint(parsedProfile.Money, 10, 64)
 	profile.Money = uint(val)
 	val, _ = strconv.ParseUint(parsedProfile.Points, 10, 64)
@@ -353,7 +357,9 @@ type ProfileParseResult struct {
 	Lead string
 	Way string
 	Level string
+	Prestige string
 	Experience string
+	ExperienceLimit string
 	Money string
 	Vkcoin string
 	Points string
