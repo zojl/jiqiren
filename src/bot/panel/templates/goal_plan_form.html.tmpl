@@ -15,7 +15,7 @@
     <label><input type="radio" name="type" value="recurring" {{if .TypeRecurring}}checked{{end}}> повторяется ежедневно</label>
   </div>
 
-  <label>дата<input type="date" name="start_date" value="{{.StartDate}}" required></label>
+  <label>дата<input type="date" name="start_date" value="{{.StartDate}}" {{if .MinStartDate}}min="{{.MinStartDate}}"{{end}} required></label>
   <p class="hint">для разовой цели — единственная дата срабатывания; для повторяющейся — дата первого срабатывания</p>
 
   <div data-type-fields="recurring" {{if .TypeOnce}}hidden{{end}}>

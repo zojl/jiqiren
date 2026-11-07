@@ -48,6 +48,7 @@ type plannedTargetFormData struct {
 	TypeOnce      bool
 	TypeRecurring bool
 	StartDate     string
+	MinStartDate  string
 	EndDate       string
 	Time          string
 	Reserve       bool
@@ -360,8 +361,11 @@ func buildPlannedTargetRowView(target model.PlannedTarget, allFractions []model.
 	}
 }
 
+// goalPropertyView.Kind names which inline SVG the "goal_icon" template
+// partial should draw ("repeat" / "message" / "reserve") — properties are
+// rendered as site-colored SVG rather than emoji, see goal_plan_list.html.tmpl.
 type goalPropertyView struct {
-	Icon  string
+	Kind  string
 	Label string
 }
 
@@ -370,13 +374,13 @@ type goalPropertyView struct {
 func goalProperties(target model.PlannedTarget) []goalPropertyView {
 	properties := make([]goalPropertyView, 0, 3)
 	if (target.Type == model.PlannedTargetTypeRecurring) {
-		properties = append(properties, goalPropertyView{Icon: "🔁", Label: "повторяется"})
+		properties = append(properties, goalPropertyView{Kind: "repeat", Label: "повторяется"})
 	}
 	if (target.Message != "") {
-		properties = append(properties, goalPropertyView{Icon: "💬", Label: "с сообщением"})
+		properties = append(properties, goalPropertyView{Kind: "message", Label: "с сообщением"})
 	}
 	if (target.Reserve) {
-		properties = append(properties, goalPropertyView{Icon: "🛟", Label: "резервная"})
+		properties = append(properties, goalPropertyView{Kind: "reserve", Label: "резервная"})
 	}
 
 	return properties
@@ -461,12 +465,15 @@ func renderNewPlannedTargetForm(w http.ResponseWriter, r *http.Request, fraction
 		return
 	}
 
+	today := battletime.Today(time.Now()).Format(dateOnlyFormat)
+
 	templates.Render(w, r, "goal_plan_form", plannedTargetFormData{
 		Action:        action,
 		IsSquad:       isSquad,
 		TargetOptions: buildTargetIconOptions(allFractions, fractionId, model.TargetNone),
 		TypeOnce:      true,
-		StartDate:     battletime.Today(time.Now()).Format(dateOnlyFormat),
+		StartDate:     today,
+		MinStartDate:  today,
 		Time:          "18:00",
 		BackHref:      backPath,
 	})
@@ -568,12 +575,37 @@ func parsePlannedTargetForm(r *http.Request, isSquad bool) (*model.PlannedTarget
 	}, nil
 }
 
+// rollPlannedTargetStartDate enforces "no start date in the past" at
+// creation time — a start date before today (MSK) is rejected outright; a
+// start date of today whose hour:minute (MSK) has already gone by rolls
+// forward to tomorrow instead of being accepted as-is, since "today at a
+// time that's already passed" isn't a sensible first occurrence to create.
+func rollPlannedTargetStartDate(startDate time.Time, hour uint, minute uint, now time.Time) (time.Time, error) {
+	today := battletime.Today(now)
+	if (startDate.Before(today)) {
+		return time.Time{}, fmt.Errorf("Дата начала не может быть в прошлом")
+	}
+
+	if (startDate.Equal(today) && battletime.IsPastToday(hour, minute, now)) {
+		return startDate.AddDate(0, 0, 1), nil
+	}
+
+	return startDate, nil
+}
+
 func createPlannedTarget(w http.ResponseWriter, r *http.Request, permissions *auth.Permissions, fractionId uint, squadId *uint, isSquad bool, basePath string, auditDetails string) {
 	parsed, parseErr := parsePlannedTargetForm(r, isSquad)
 	if (parseErr != nil) {
 		http.Error(w, parseErr.Error(), http.StatusBadRequest)
 		return
 	}
+
+	startDate, startErr := rollPlannedTargetStartDate(parsed.StartDate, parsed.Hour, parsed.Minute, time.Now())
+	if (startErr != nil) {
+		http.Error(w, startErr.Error(), http.StatusBadRequest)
+		return
+	}
+	parsed.StartDate = startDate
 
 	parsed.FractionId = fractionId
 	parsed.SquadId = squadId

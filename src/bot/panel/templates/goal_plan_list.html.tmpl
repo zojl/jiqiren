@@ -1,11 +1,12 @@
-{{define "goal_plan_section"}}
-<h2>план целей</h2>
+{{define "goal_icon"}}{{if eq . "repeat"}}<svg class="goal-icon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14.5-4.5M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-14.5 4.5M4 20v-4h4"/></svg>{{else if eq . "message"}}<svg class="goal-icon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>{{else if eq . "reserve"}}<svg class="goal-icon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v5M12 16v5M3 12h5M16 12h5"/></svg>{{end}}{{end}}
+
+{{define "goal_plan_cards"}}
 <div class="goal-plan-row">
   {{if .AddHref}}<a class="goal-card goal-card-add" href="{{.AddHref}}" title="добавить цель в план">+</a>{{end}}
   {{range .Cards}}
   <a class="goal-card{{if .HasError}} has-error{{end}}" href="{{.EditHref}}"{{if .ErrorText}} title="ошибка: {{.ErrorText}}"{{end}}>
     <span class="goal-card-icon">{{.Icon}}</span>
-    {{range .Properties}}<span class="goal-card-prop" title="{{.Label}}">{{.Icon}}</span>{{end}}
+    {{range .Properties}}<span class="goal-card-prop" title="{{.Label}}">{{template "goal_icon" .Kind}}</span>{{end}}
     <span class="goal-card-time">{{.Time}}</span>
     {{if .Date}}<span class="goal-card-date">{{.Date}}</span>{{end}}
   </a>
@@ -13,6 +14,11 @@
   {{if and (not .Cards) (not .AddHref)}}<span class="hint">план пуст</span>{{end}}
   {{if .MoreHref}}<a class="goal-card-more" href="{{.MoreHref}}">{{.MoreLabel}} →</a>{{end}}
 </div>
+{{end}}
+
+{{define "goal_plan_section"}}
+<h2>план целей</h2>
+{{template "goal_plan_cards" .}}
 {{end}}
 
 {{define "goal_plan_list"}}
@@ -31,7 +37,7 @@
   <a class="goal-row-link" href="{{.EditHref}}"{{if .ErrorText}} title="ошибка: {{.ErrorText}}"{{end}}>
     <span class="goal-row-icon">{{.TargetIcon}}</span>
     <span class="goal-row-label">{{.TargetLabel}}</span>
-    <span class="goal-row-props">{{range .Properties}}<span class="goal-card-prop" title="{{.Label}}">{{.Icon}} {{.Label}}</span>{{end}}</span>
+    <span class="goal-row-props">{{range .Properties}}<span class="goal-card-prop" title="{{.Label}}">{{template "goal_icon" .Kind}} {{.Label}}</span>{{end}}</span>
     <span class="goal-row-time">{{.Time}} мск</span>
     <span class="goal-row-date">{{.DateInfo}}{{if .Applied}} · выполнена{{end}}</span>
   </a>

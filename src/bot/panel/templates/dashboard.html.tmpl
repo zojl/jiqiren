@@ -13,20 +13,25 @@
   {{end}}
 </div>
 
+{{template "goal_plan_cards" .GoalPlan}}
+
 <section class="squads">
   {{range .Squads}}
   <div class="squad-row">
-    <a class="squad-link" href="/panel/squads/{{.Code}}">{{.Code}} {{.Name}}</a>
-    {{if .CanSetTarget}}
-    <details class="target-picker" data-scope="squad" data-squad-id="{{.Id}}">
-      <summary class="icon-select-btn" title="цель отряда">{{.CurrentTargetIcon}}</summary>
-      <div class="target-menu">
-        {{range .TargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-target-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
-      </div>
-    </details>
-    {{else}}
-    <span class="icon" title="цель отряда">{{.CurrentTargetIcon}}</span>
-    {{end}}
+    <div class="squad-row-head">
+      <a class="squad-link" href="/panel/squads/{{.Code}}">{{.Code}} {{.Name}}</a>
+      {{if .CanSetTarget}}
+      <details class="target-picker" data-scope="squad" data-squad-id="{{.Id}}">
+        <summary class="icon-select-btn" title="цель отряда">{{.CurrentTargetIcon}}</summary>
+        <div class="target-menu">
+          {{range .TargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-target-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
+        </div>
+      </details>
+      {{else}}
+      <span class="icon" title="цель отряда">{{.CurrentTargetIcon}}</span>
+      {{end}}
+    </div>
+    {{template "goal_plan_cards" .GoalPlan}}
   </div>
   {{end}}
 </section>

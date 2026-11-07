@@ -104,11 +104,12 @@ h2 { font-size: 1em; margin-top: 32px; }
 
 .squad-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
 }
+
+.squad-row-head { display: flex; align-items: center; gap: 10px; }
 
 .btn, summary.btn {
   display: inline-block;
@@ -359,7 +360,8 @@ table.members tr.report-row td { padding-top: 0; padding-left: 28px; }
   min-width: 2em;
 }
 
-.goal-card-prop { opacity: 0.85; }
+.goal-card-prop { opacity: 0.85; display: inline-flex; align-items: center; gap: 4px; }
+.goal-icon { display: inline-block; vertical-align: -0.15em; flex: none; }
 .goal-card-time { color: var(--dim); }
 .goal-card-date { color: var(--dim); font-size: 0.9em; }
 

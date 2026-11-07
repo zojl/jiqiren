@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
@@ -23,6 +24,7 @@ type squadView struct {
 	CurrentTargetIcon string
 	TargetOptions []targetIconOption
 	CanSetTarget bool
+	GoalPlan goalPlanSectionData
 }
 
 type dashboardData struct {
@@ -33,6 +35,7 @@ type dashboardData struct {
 	CanSetFractionTarget bool
 	CanManageSquads bool
 	Squads []squadView
+	GoalPlan goalPlanSectionData
 }
 
 // Dashboard is the fraction-wide "Отряды" page — a plain squad lead has no
@@ -69,6 +72,13 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		fractionTarget = *fraction.Target
 	}
 
+	now := time.Now()
+
+	fractionGoalTargets, fractionGoalErr := repository.FindPlannedTargetsByFractionId(fraction.Id)
+	if (fractionGoalErr != nil) {
+		fractionGoalTargets = nil
+	}
+
 	data := dashboardData{
 		FractionName: fraction.Name,
 		FractionIcon: fraction.Icon,
@@ -76,6 +86,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		FractionTargetOptions: buildTargetIconOptions(allFractions, fraction.Id, fractionTarget),
 		CanSetFractionTarget: permissions.CanSetFractionTarget(),
 		CanManageSquads: permissions.CanManageSquads(),
+		GoalPlan: buildGoalPlanSection(fractionGoalTargets, now, allFractions, "/panel/fraction/goals", permissions.CanSetFractionTarget()),
 	}
 
 	squads, squadsErr := repository.FindTeamsByFractionId(fraction.Id)
@@ -90,6 +101,11 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 				target = *squad.Target
 			}
 
+			squadGoalTargets, squadGoalErr := repository.FindPlannedTargetsBySquadId(squad.Id)
+			if (squadGoalErr != nil) {
+				squadGoalTargets = nil
+			}
+
 			data.Squads = append(data.Squads, squadView{
 				Id: squad.Id,
 				Name: squad.Name,
@@ -97,6 +113,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 				CurrentTargetIcon: targetIcon(allFractions, squad.Target),
 				TargetOptions: buildTargetIconOptions(allFractions, fraction.Id, target),
 				CanSetTarget: permissions.CanSetSquadTarget(squad.Id),
+				GoalPlan: buildGoalPlanSection(squadGoalTargets, now, allFractions, "/panel/squads/"+squad.Code+"/goals", permissions.CanSetSquadTarget(squad.Id)),
 			})
 		}
 	}
