@@ -18,6 +18,7 @@ import (
 type playerProfileView struct {
 	MessageDate string
 	Username string
+	StatusIcon string
 	LeadIcon string
 	WayIcon string
 	FractionIcon string
@@ -179,6 +180,7 @@ func buildPlayerProfileView(profile model.Profile, allFractions []model.Fraction
 	view := playerProfileView{
 		MessageDate: formatMskMoment(profile.MessageDate, now),
 		Username: profile.Username,
+		StatusIcon: profile.Status,
 		LeadIcon: leadIcon(profile.Lead),
 		WayIcon: wayIcon(profile.Way),
 		FractionIcon: fractionIcon,
