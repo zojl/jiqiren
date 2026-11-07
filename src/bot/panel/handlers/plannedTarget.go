@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -19,18 +20,21 @@ import (
 )
 
 type plannedTargetRowView struct {
-	Id         uint
-	TargetIcon string
+	Id          uint
 	TargetLabel string
-	Properties []goalPropertyView
-	Time       string
-	DateInfo   string
-	Applied    bool
-	EditHref   string
-	DeleteHref string
-	HasError   bool
-	ErrorText  string
-	CanManage  bool
+	Properties  []goalPropertyView
+	Time        string
+	DateInfo    string
+	Completed   bool
+	EditHref    string
+	DeleteHref  string
+	HasError    bool
+	ErrorText   string
+	CanManage   bool
+
+	// sortMoment orders rows within their section (active vs. completed) —
+	// not rendered, see plannedTargetSortMoment.
+	sortMoment time.Time
 }
 
 type plannedTargetListData struct {
@@ -318,16 +322,23 @@ func renderPlannedTargetList(w http.ResponseWriter, r *http.Request, fractionId 
 		return
 	}
 
+	now := time.Now()
 	rows := make([]plannedTargetRowView, 0, len(targets))
 	completedRows := make([]plannedTargetRowView, 0, len(targets))
 	for _, target := range targets {
-		row := buildPlannedTargetRowView(target, allFractions, basePath, canManage)
-		if (row.Applied) {
+		row := buildPlannedTargetRowView(target, allFractions, basePath, canManage, now)
+		if (row.Completed) {
 			completedRows = append(completedRows, row)
 		} else {
 			rows = append(rows, row)
 		}
 	}
+
+	// Both sections read as one timeline, oldest to newest: completed
+	// goals ascending by when they last fired, then active ones ascending
+	// by when they're next due — so the page as a whole goes old → new.
+	sort.Slice(completedRows, func(i, j int) bool { return completedRows[i].sortMoment.Before(completedRows[j].sortMoment) })
+	sort.Slice(rows, func(i, j int) bool { return rows[i].sortMoment.Before(rows[j].sortMoment) })
 
 	templates.Render(w, r, "goal_plan_list", plannedTargetListData{
 		Title:          title,
@@ -339,7 +350,14 @@ func renderPlannedTargetList(w http.ResponseWriter, r *http.Request, fractionId 
 	})
 }
 
-func buildPlannedTargetRowView(target model.PlannedTarget, allFractions []model.Fraction, basePath string, canManage bool) plannedTargetRowView {
+// buildPlannedTargetRowView classifies a target as completed when it has
+// no next occurrence left (goalplan.NextOccurrence) — covers both a
+// one-time goal that already fired and a recurring goal past its end
+// date. Its sortMoment is the next due moment for an active entry, or
+// (for a completed one) the configured end date — the plan's own
+// StartDate for "once", EndDate for an expired "recurring" — paired with
+// the plan's time of day, since that's the moment it last actually fired.
+func buildPlannedTargetRowView(target model.PlannedTarget, allFractions []model.Fraction, basePath string, canManage bool, now time.Time) plannedTargetRowView {
 	targetValue := target.Target
 	moscow := battletime.Moscow
 
@@ -355,20 +373,42 @@ func buildPlannedTargetRowView(target model.PlannedTarget, allFractions []model.
 
 	id := strconv.FormatUint(uint64(target.Id), 10)
 
+	moment, hasNext := goalplan.NextOccurrence(target, now)
+	completed := !hasNext
+	if (!hasNext) {
+		moment = plannedTargetLastMoment(target)
+	}
+
 	return plannedTargetRowView{
 		Id:          target.Id,
-		TargetIcon:  targetIcon(allFractions, &targetValue),
 		TargetLabel: targetLabel(allFractions, &targetValue),
 		Properties:  goalProperties(target),
 		Time:        fmt.Sprintf("%02d:%02d", target.Hour, target.Minute),
 		DateInfo:    dateInfo,
-		Applied:     target.Type == model.PlannedTargetTypeOnce && target.LastAppliedDate != nil,
+		Completed:   completed,
 		EditHref:    basePath + "/" + id + "/edit",
 		DeleteHref:  basePath + "/" + id + "/delete",
 		HasError:    target.LastError != "",
 		ErrorText:   target.LastError,
 		CanManage:   canManage,
+		sortMoment:  moment,
 	}
+}
+
+// plannedTargetLastMoment is the moment a completed entry last fired,
+// going purely off its own configured fields rather than runtime
+// bookkeeping: for "once" that's its only StartDate, for an expired
+// "recurring" it's the EndDate — both paired with the plan's Hour:Minute.
+func plannedTargetLastMoment(target model.PlannedTarget) time.Time {
+	moscow := battletime.Moscow
+
+	dateComponent := target.StartDate
+	if (target.Type == model.PlannedTargetTypeRecurring && target.EndDate != nil) {
+		dateComponent = *target.EndDate
+	}
+
+	dateMsk := dateComponent.In(moscow)
+	return time.Date(dateMsk.Year(), dateMsk.Month(), dateMsk.Day(), int(target.Hour), int(target.Minute), 0, 0, moscow)
 }
 
 // goalPropertyView.Kind names which inline SVG the "goal_icon" template
