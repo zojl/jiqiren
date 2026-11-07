@@ -9,8 +9,11 @@
   <div class="budget-row"><dt>уровень</dt><dd>{{.Profile.Level}}{{if .Profile.Prestige}} 💎{{.Profile.Prestige}}{{end}}</dd></div>
   <div class="budget-row">
     <dt>💡 опыт</dt>
-    <dd>{{.Profile.Experience}}{{if .Profile.HasExperienceLimit}}/{{.Profile.ExperienceLimit}} <span class="hint">(до лвлапа {{.Profile.ExperienceNeeded}}, {{.Profile.ExperiencePercent}})</span>{{end}}</dd>
+    <dd>{{.Profile.Experience}}{{if .Profile.HasExperienceLimit}}/{{.Profile.ExperienceLimit}}{{end}}</dd>
   </div>
+  {{if .Profile.HasExperienceLimit}}
+  <div class="budget-row sub"><dt>до лвлапа</dt><dd>{{.Profile.ExperienceNeeded}} ({{.Profile.ExperiencePercent}})</dd></div>
+  {{end}}
   <div class="budget-row"><dt>💵 деньги</dt><dd>{{.Profile.Money}}</dd></div>
   <div class="budget-row"><dt>💸 VKCoin</dt><dd>{{.Profile.Vkcoin}}</dd></div>
   <div class="budget-row"><dt>📈 акции</dt><dd>{{.Profile.Stocks}}</dd></div>

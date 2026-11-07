@@ -178,6 +178,16 @@ button.danger { background: var(--danger); }
 .icon-select-btn::-webkit-details-marker { display: none; }
 .icon-select-btn:hover { border-color: var(--accent); }
 
+/* Plain "external link" arrow, Wikipedia-style — no border/background,
+   just a small muted glyph after the link text it belongs to. */
+.ext-link {
+  font-size: 0.75em;
+  color: var(--dim);
+  text-decoration: none;
+  vertical-align: text-top;
+}
+.ext-link:hover { color: var(--accent); }
+
 .target-menu {
   position: absolute;
   top: calc(100% + 4px);
