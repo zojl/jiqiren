@@ -7,6 +7,7 @@ import (
 	"jiqiren/bot/battletime"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
+	"jiqiren/bot/leveling"
 	"jiqiren/bot/messageHandler/reply"
 
 	"github.com/SevereCloud/vksdk/v2/api"
@@ -76,17 +77,12 @@ func profileHeaderLine(profile model.Profile) string {
 }
 
 func profileExperienceLine(profile model.Profile) string {
-	if (profile.ExperienceLimit == 0) {
+	progress := leveling.ProgressFor(profile.Level, uint64(profile.Experience))
+	if (!progress.Ok) {
 		return fmt.Sprintf("💡: %d", profile.Experience)
 	}
 
-	needed := uint(0)
-	if (profile.Experience < profile.ExperienceLimit) {
-		needed = profile.ExperienceLimit - profile.Experience
-	}
-	percent := float64(profile.Experience) / float64(profile.ExperienceLimit) * 100
-
-	return fmt.Sprintf("💡: %d (%.1f%%, осталось %d)", profile.Experience, percent, needed)
+	return fmt.Sprintf("💡: %d (%.1f%%, осталось %d)", profile.Experience, progress.Percent, progress.Remaining)
 }
 
 func leadIcon(lead uint) string {

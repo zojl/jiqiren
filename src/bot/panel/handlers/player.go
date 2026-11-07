@@ -9,6 +9,7 @@ import (
 	"jiqiren/bot/audit"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
+	"jiqiren/bot/leveling"
 	"jiqiren/bot/panel/auth"
 	"jiqiren/bot/panel/templates"
 
@@ -29,10 +30,9 @@ type playerProfileView struct {
 	Level uint
 	Prestige uint
 	Experience uint
-	ExperienceLimit uint
 	ExperienceNeeded uint
 	ExperiencePercent string
-	HasExperienceLimit bool
+	HasExperienceProgress bool
 
 	Money uint
 	Vkcoin string
@@ -191,7 +191,6 @@ func buildPlayerProfileView(profile model.Profile, allFractions []model.Fraction
 		Level: profile.Level,
 		Prestige: profile.Prestige,
 		Experience: profile.Experience,
-		ExperienceLimit: profile.ExperienceLimit,
 
 		Money: profile.Money,
 		Vkcoin: fmt.Sprintf("%.2f", profile.Vkcoin),
@@ -217,14 +216,11 @@ func buildPlayerProfileView(profile model.Profile, allFractions []model.Fraction
 		view.SleepAt = formatMskMoment(*profile.SleepAt, now)
 	}
 
-	// ExperienceLimit is 0 for profiles stored before this field existed
-	// (or if the message didn't carry it) — nothing to divide by then.
-	if (profile.ExperienceLimit > 0) {
-		view.HasExperienceLimit = true
-		if (profile.Experience < profile.ExperienceLimit) {
-			view.ExperienceNeeded = profile.ExperienceLimit - profile.Experience
-		}
-		view.ExperiencePercent = fmt.Sprintf("%.1f%%", float64(profile.Experience)/float64(profile.ExperienceLimit)*100)
+	progress := leveling.ProgressFor(profile.Level, uint64(profile.Experience))
+	if (progress.Ok) {
+		view.HasExperienceProgress = true
+		view.ExperienceNeeded = uint(progress.Remaining)
+		view.ExperiencePercent = fmt.Sprintf("%.1f%%", progress.Percent)
 	}
 
 	return view
