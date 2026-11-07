@@ -124,16 +124,22 @@ func handleHwForward(message object.MessagesMessage, parentMessage *object.Messa
 	log.Println("bad message " + message.Text)
 }
 
-// buildProfileAckKeyboard attaches a "Профиль" button, mirroring /profile,
-// to every private-chat profile-ack reply, plus a "Веб-панель" button
-// mirroring /login for users with a managers table record.
+const profileButtonLabel = "🥷 Профиль"
+const webPanelButtonLabel = "🌐 Веб-панель"
+
+// buildProfileAckKeyboard replaces the chat's input-area keyboard (not an
+// inline keyboard under the message) with a "Профиль" button, equivalent to
+// /profile, plus a "Веб-панель" button equivalent to /login for users with a
+// managers table record. Buttons are callback-type: the tap is routed by
+// HandleMessageEvent through the button's payload, not by resending the
+// visible label as a chat message.
 func buildProfileAckKeyboard(vkId int) *object.MessagesKeyboard {
-	keyboard := object.NewMessagesKeyboardInline()
+	keyboard := object.NewMessagesKeyboard(false)
 	keyboard.AddRow()
-	keyboard.AddTextButton(ProfileButtonLabel, struct{}{}, object.Primary)
+	keyboard.AddCallbackButton(profileButtonLabel, map[string]string{"cmd": "profile"}, object.Primary)
 
 	if _, err := repository.FindOneManagerByVkId(uint(vkId)); (err == nil) {
-		keyboard.AddTextButton(WebPanelButtonLabel, struct{}{}, object.Primary)
+		keyboard.AddCallbackButton(webPanelButtonLabel, map[string]string{"cmd": "login"}, object.Primary)
 	}
 
 	return keyboard

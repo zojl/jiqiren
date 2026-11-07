@@ -43,11 +43,19 @@ func main() {
             log.Printf("%+v\n", obj)
         }
 
-        if (strings.HasPrefix(obj.Message.Text, prefix) || messageHandler.IsButtonCommand(obj.Message.Text)) {
+        if (strings.HasPrefix(obj.Message.Text, prefix)) {
             messageHandler.HandleCommand(&obj, vk)
         } else {
             messageHandler.HandlePlain(obj, vk)
         }
+    })
+
+    cb.MessageEvent(func(_ context.Context, obj events.MessageEventObject) {
+        if (os.Getenv("ENV") == "dev") {
+            log.Printf("%+v\n", obj)
+        }
+
+        messageHandler.HandleMessageEvent(obj, vk)
     })
 
     mux := http.NewServeMux()
