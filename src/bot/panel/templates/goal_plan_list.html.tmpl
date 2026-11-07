@@ -21,6 +21,21 @@
 {{template "goal_plan_cards" .}}
 {{end}}
 
+{{define "goal_plan_row"}}
+<div class="goal-row{{if .HasError}} has-error{{end}}">
+  <a class="goal-row-link" href="{{.EditHref}}"{{if .ErrorText}} title="ошибка: {{.ErrorText}}"{{end}}>
+    <span class="goal-row-icon">{{.TargetIcon}}</span>
+    <span class="goal-row-label">{{.TargetLabel}}</span>
+    <span class="goal-row-props">{{range .Properties}}<span class="goal-card-prop" title="{{.Label}}">{{template "goal_icon" .Kind}} {{.Label}}</span>{{end}}</span>
+    <span class="goal-row-time">{{.Time}} мск</span>
+    <span class="goal-row-date">{{.DateInfo}}{{if .Applied}} · выполнена{{end}}</span>
+  </a>
+  {{if .CanManage}}
+  <form method="post" action="{{.DeleteHref}}" onsubmit="return confirm('Удалить цель из плана?');" class="inline"><button type="submit" class="danger">✕</button></form>
+  {{end}}
+</div>
+{{end}}
+
 {{define "goal_plan_list"}}
 <h1>{{.Title}}</h1>
 
@@ -32,23 +47,19 @@
 
 {{if .Goals}}
 <div class="goal-rows">
-{{range .Goals}}
-<div class="goal-row{{if .HasError}} has-error{{end}}">
-  <a class="goal-row-link" href="{{.EditHref}}"{{if .ErrorText}} title="ошибка: {{.ErrorText}}"{{end}}>
-    <span class="goal-row-icon">{{.TargetIcon}}</span>
-    <span class="goal-row-label">{{.TargetLabel}}</span>
-    <span class="goal-row-props">{{range .Properties}}<span class="goal-card-prop" title="{{.Label}}">{{template "goal_icon" .Kind}} {{.Label}}</span>{{end}}</span>
-    <span class="goal-row-time">{{.Time}} мск</span>
-    <span class="goal-row-date">{{.DateInfo}}{{if .Applied}} · выполнена{{end}}</span>
-  </a>
-  {{if $.CanManage}}
-  <form method="post" action="{{.DeleteHref}}" onsubmit="return confirm('Удалить цель из плана?');" class="inline"><button type="submit" class="danger">✕</button></form>
-  {{end}}
+{{range .Goals}}{{template "goal_plan_row" .}}{{end}}
 </div>
-{{end}}
-</div>
-{{else}}
+{{else if not .CompletedGoals}}
 <p class="hint">план пуст</p>
+{{end}}
+
+{{if .CompletedGoals}}
+<details class="hidden-members">
+  <summary class="btn btn-wide">показать выполненные ({{len .CompletedGoals}})</summary>
+  <div class="goal-rows">
+  {{range .CompletedGoals}}{{template "goal_plan_row" .}}{{end}}
+  </div>
+</details>
 {{end}}
 
 <a class="back" href="{{.BackHref}}">← назад</a>

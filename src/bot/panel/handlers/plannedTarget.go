@@ -30,14 +30,16 @@ type plannedTargetRowView struct {
 	DeleteHref string
 	HasError   bool
 	ErrorText  string
+	CanManage  bool
 }
 
 type plannedTargetListData struct {
-	Title     string
-	AddHref   string
-	BackHref  string
-	CanManage bool
-	Goals     []plannedTargetRowView
+	Title          string
+	AddHref        string
+	BackHref       string
+	CanManage      bool
+	Goals          []plannedTargetRowView
+	CompletedGoals []plannedTargetRowView
 }
 
 type plannedTargetFormData struct {
@@ -317,20 +319,27 @@ func renderPlannedTargetList(w http.ResponseWriter, r *http.Request, fractionId 
 	}
 
 	rows := make([]plannedTargetRowView, 0, len(targets))
+	completedRows := make([]plannedTargetRowView, 0, len(targets))
 	for _, target := range targets {
-		rows = append(rows, buildPlannedTargetRowView(target, allFractions, basePath))
+		row := buildPlannedTargetRowView(target, allFractions, basePath, canManage)
+		if (row.Applied) {
+			completedRows = append(completedRows, row)
+		} else {
+			rows = append(rows, row)
+		}
 	}
 
 	templates.Render(w, r, "goal_plan_list", plannedTargetListData{
-		Title:     title,
-		AddHref:   basePath + "/new",
-		BackHref:  backPath,
-		CanManage: canManage,
-		Goals:     rows,
+		Title:          title,
+		AddHref:        basePath + "/new",
+		BackHref:       backPath,
+		CanManage:      canManage,
+		Goals:          rows,
+		CompletedGoals: completedRows,
 	})
 }
 
-func buildPlannedTargetRowView(target model.PlannedTarget, allFractions []model.Fraction, basePath string) plannedTargetRowView {
+func buildPlannedTargetRowView(target model.PlannedTarget, allFractions []model.Fraction, basePath string, canManage bool) plannedTargetRowView {
 	targetValue := target.Target
 	moscow := battletime.Moscow
 
@@ -358,6 +367,7 @@ func buildPlannedTargetRowView(target model.PlannedTarget, allFractions []model.
 		DeleteHref:  basePath + "/" + id + "/delete",
 		HasError:    target.LastError != "",
 		ErrorText:   target.LastError,
+		CanManage:   canManage,
 	}
 }
 
