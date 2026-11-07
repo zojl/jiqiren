@@ -34,6 +34,16 @@ func Today(now time.Time) time.Time {
 	return time.Date(nowMsk.Year(), nowMsk.Month(), nowMsk.Day(), 0, 0, 0, 0, time.UTC)
 }
 
+// BattleToday returns the calendar day (same UTC-midnight representation
+// as Today) of the most recently started battle cycle — "today" in the
+// battle-cycle sense the budget page means by it: the cycle spans 18:00
+// MSK through 17:59:59 MSK the next calendar day, so e.g. at 00:30 MSK on
+// the 5th, BattleToday is still the 4th (that cycle is still running —
+// the 5th's own battle hasn't happened yet), not the plain calendar date.
+func BattleToday(now time.Time) time.Time {
+	return Today(Last(now))
+}
+
 // IsPastToday reports whether an hour:minute (MSK) has already gone by
 // today.
 func IsPastToday(hour uint, minute uint, now time.Time) bool {
@@ -41,4 +51,29 @@ func IsPastToday(hour uint, minute uint, now time.Time) bool {
 	sendMoment := time.Date(nowMsk.Year(), nowMsk.Month(), nowMsk.Day(), int(hour), int(minute), 0, 0, Moscow)
 
 	return nowMsk.After(sendMoment)
+}
+
+const (
+	preBattleOffset  = -2 * time.Minute
+	postBattleOffset = 3 * time.Minute
+)
+
+// BattleAt returns the battle moment (18:00 MSK) for the MSK calendar day
+// that date falls on.
+func BattleAt(date time.Time) time.Time {
+	dateMsk := date.In(Moscow)
+	return time.Date(dateMsk.Year(), dateMsk.Month(), dateMsk.Day(), 18, 0, 0, 0, Moscow)
+}
+
+// PreBattleAnchor is the moment (~17:58 MSK) right before the battle on
+// date's calendar day, used to capture the budget state that the next
+// battle is about to settle.
+func PreBattleAnchor(date time.Time) time.Time {
+	return BattleAt(date).Add(preBattleOffset)
+}
+
+// PostBattleAnchor is the moment (~18:03 MSK) right after the battle on
+// date's calendar day, once its results have settled.
+func PostBattleAnchor(date time.Time) time.Time {
+	return BattleAt(date).Add(postBattleOffset)
 }

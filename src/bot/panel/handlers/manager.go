@@ -77,7 +77,7 @@ func ManagerList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	templates.Render(w, "manager_list", managerListData{
+	templates.Render(w, r, "manager_list", managerListData{
 		Managers: views,
 		Squads: buildSquadOptions(squads, nil),
 	})
@@ -145,7 +145,7 @@ func EditManagerForm(w http.ResponseWriter, r *http.Request) {
 		accountType = string(*manager.AccountType)
 	}
 
-	templates.Render(w, "manager_form", managerFormData{
+	templates.Render(w, r, "manager_form", managerFormData{
 		Action: "/panel/managers/" + strconv.FormatUint(uint64(manager.VkId), 10) + "/edit",
 		VkId: manager.VkId,
 		AccountType: accountType,

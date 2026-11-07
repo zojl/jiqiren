@@ -1,6 +1,12 @@
 {{define "squad_page"}}
-<h1>{{.Code}} {{.Name}} {{if .CanRename}}<a class="icon" href="/panel/squads/{{.Code}}/rename" title="редактировать">✎</a>{{end}}</h1>
+<h1>{{.Code}} {{.Name}}</h1>
+
+<h2>настройки</h2>
 <dl class="budget">
+  <div class="budget-row">
+    <dt>название</dt>
+    <dd>{{.Name}} {{if .CanRename}}<a class="icon-select-btn" href="/panel/squads/{{.Code}}/rename" title="переименовать">✎</a>{{end}}</dd>
+  </div>
   <div class="budget-row">
     <dt>цель</dt>
     <dd>
@@ -20,8 +26,8 @@
     <dt>чат отряда</dt>
     <dd>
       {{if .ChatName}}
-      {{.ChatName}}
-      {{if .CanUnbindChat}}<form method="post" action="/panel/squads/{{.Code}}/unbind-chat" onsubmit="return confirm('Отвязать чат?');" class="inline"><button type="submit" class="danger">✕</button></form>{{end}}
+      <span title="{{.ChatNameFull}}">{{.ChatName}}</span>
+      {{if .CanUnbindChat}}<form method="post" action="/panel/squads/{{.Code}}/unbind-chat" onsubmit="return confirm('Отвязать чат?');" class="inline"><button type="submit" class="danger" title="отвязать">✕</button></form>{{end}}
       {{else}}
       не привязан
       {{end}}
@@ -29,9 +35,13 @@
   </div>
   <div class="budget-row">
     <dt>токен</dt>
-    <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="icon" href="/panel/squads/{{.Code}}/token" title="токен отряда">🗝</a>{{end}}</dd>
+    <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="icon-select-btn" href="/panel/squads/{{.Code}}/token" title="токен отряда">🗝</a>{{end}}</dd>
   </div>
 </dl>
+
+{{if .CanViewSchedule}}
+<a class="btn btn-nav" href="/panel/squads/{{.Code}}/schedule">рассылки</a>
+{{end}}
 
 {{if .BattleSummary}}
 <details class="battle-summary">
@@ -54,12 +64,6 @@
 </details>
 {{end}}
 
-{{if .CanViewSchedule}}
-<section class="actions">
-  <a class="btn" href="/panel/squads/{{.Code}}/schedule">рассылки</a>
-</section>
-{{end}}
-
 <h2>участники</h2>
 {{if .Members}}
 <div class="table-scroll">
@@ -67,7 +71,7 @@
 <tr><th>игрок</th><th>выносл.</th><th>деньги</th><th>цель</th><th>сон (мск)</th><th>атк</th><th>деф</th><th>статы</th>{{if .CanManageMembers}}<th></th>{{end}}</tr>
 {{range .Members}}
 <tr>
-  <td>{{if .Stale}}❄️ {{end}}{{if .IsOverride}}↪ {{end}}<a href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener">{{.WayIcon}}{{.Name}}({{.Level}})</a> <span class="hint">{{.LastSeen}}</span></td>
+  <td>{{if or .Stale .Frozen}}❄️ {{end}}{{if .IsOverride}}↪ {{end}}<a href="/panel/players/{{.VkId}}">{{.WayIcon}}{{.Name}}({{.Level}})</a><a class="ext-link" href="https://vk.com/id{{.VkId}}" target="_blank" rel="noopener" title="открыть VK">↗</a> <span class="hint">{{.LastSeen}}</span></td>
   <td class="{{.StaminaClass}}">{{.Stamina}}</td>
   <td class="{{.MoneyClass}}">{{.Money}}</td>
   <td class="{{.TargetClass}}">{{.TargetLabel}}</td>
@@ -76,7 +80,7 @@
   <td>🛡️{{.Defense}}</td>
   <td>📡{{.Practice}} 💾{{.Theory}} 📱{{.Cunning}} 🔎{{.Wisdom}}</td>
   {{if $.CanManageMembers}}
-  <td>{{if .IsOverride}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/remove" onsubmit="return confirm('Открепить от отряда?');" class="inline"><button type="submit" class="danger">✕</button></form>{{end}}</td>
+  <td>{{if .CanFreeze}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/freeze" onsubmit="return confirm('Заморозить игрока? Бот перестанет его пинговать до нового профиля или отчёта.');" class="inline"><button type="submit" class="icon-select-btn" title="заморозить, чтобы бот не пинговал">❄️</button></form>{{end}}{{if .IsOverride}}<form method="post" action="/panel/squads/{{$.Code}}/members/{{.VkId}}/remove" onsubmit="return confirm('Открепить от отряда?');" class="inline"><button type="submit" class="danger">✕</button></form>{{end}}</td>
   {{end}}
 </tr>
 {{if .HasReport}}
@@ -92,8 +96,9 @@
 {{end}}
 
 {{if .CanManageMembers}}
+<h2>добавить участника</h2>
 <form method="post" action="/panel/squads/{{.Code}}/members" class="form">
-  <label>добавить участника (vk id)<input type="text" name="vk_id" required></label>
+  <label>vk id<input type="text" name="vk_id" required></label>
   <button type="submit">добавить</button>
 </form>
 {{end}}

@@ -1,0 +1,59 @@
+{{define "player_page"}}
+<h1>{{.Profile.LeadIcon}}{{.Profile.Username}} ({{.Profile.Level}} ур.{{if .Profile.Prestige}} 💎{{.Profile.Prestige}}{{end}})</h1>
+
+<dl class="budget">
+  <div class="budget-row"><dt>обновлён</dt><dd>{{.Profile.MessageDate}}</dd></div>
+  <div class="budget-row"><dt>путь</dt><dd>{{if .Profile.WayIcon}}{{.Profile.WayIcon}}{{else}}—{{end}}</dd></div>
+  <div class="budget-row"><dt>фракция</dt><dd>{{.Profile.FractionIcon}} {{.Profile.FractionName}}</dd></div>
+  <div class="budget-row"><dt>отряд</dt><dd>{{.Profile.SquadLabel}}{{if .Profile.TransferNote}} <span class="hint">({{.Profile.TransferNote}})</span>{{end}}</dd></div>
+  <div class="budget-row"><dt>уровень</dt><dd>{{.Profile.Level}}{{if .Profile.Prestige}} 💎{{.Profile.Prestige}}{{end}}</dd></div>
+  <div class="budget-row">
+    <dt>💡 опыт</dt>
+    <dd>{{.Profile.Experience}}{{if .Profile.HasExperienceLimit}}/{{.Profile.ExperienceLimit}}{{end}}</dd>
+  </div>
+  {{if .Profile.HasExperienceLimit}}
+  <div class="budget-row sub"><dt>до лвлапа</dt><dd>{{.Profile.ExperienceNeeded}} ({{.Profile.ExperiencePercent}})</dd></div>
+  {{end}}
+  <div class="budget-row"><dt>💵 деньги</dt><dd>{{.Profile.Money}}</dd></div>
+  <div class="budget-row"><dt>💸 VKCoin</dt><dd>{{.Profile.Vkcoin}}</dd></div>
+  <div class="budget-row"><dt>📈 акции</dt><dd>{{.Profile.Stocks}}</dd></div>
+  <div class="budget-row"><dt>🔋 выносливость</dt><dd>{{.Profile.Stamina}}</dd></div>
+  <div class="budget-row"><dt>⚔️ цель</dt><dd>{{.Profile.TargetLabel}}</dd></div>
+  <div class="budget-row"><dt>🛌 до сна (мск)</dt><dd>{{.Profile.SleepAt}}</dd></div>
+  <div class="budget-row"><dt>🔥 мотивация</dt><dd>{{.Profile.Motivation}}/{{.Profile.MotivationLimit}}</dd></div>
+  <div class="budget-row"><dt>🔘 поинты</dt><dd>{{.Profile.Points}}</dd></div>
+  <div class="budget-row"><dt>💳 биткоины</dt><dd>{{.Profile.Bitcoins}}</dd></div>
+  <div class="budget-row"><dt>💿 радиодетали</dt><dd>{{.Profile.Disks}}</dd></div>
+  <div class="budget-row"><dt>📄 страницы</dt><dd>{{.Profile.Pages}}</dd></div>
+  <div class="budget-row"><dt>💽 микрочипы</dt><dd>{{.Profile.Chips}}</dd></div>
+  <div class="budget-row"><dt>📑 инструкции</dt><dd>{{.Profile.Instructions}}</dd></div>
+  <div class="budget-row"><dt>📡 практика</dt><dd>{{.Profile.Practice}}</dd></div>
+  <div class="budget-row"><dt>💾 теория</dt><dd>{{.Profile.Theory}}</dd></div>
+  <div class="budget-row"><dt>📱 хитрость</dt><dd>{{.Profile.Cunning}}</dd></div>
+  <div class="budget-row"><dt>🔎 мудрость</dt><dd>{{.Profile.Wisdom}}</dd></div>
+</dl>
+
+{{if .BestAttack}}
+<h2>лучшие показатели атаки</h2>
+<dl class="budget">
+  <div class="budget-row"><dt>зафиксировано</dt><dd>{{.BestAttack.MessageDate}}</dd></div>
+  <div class="budget-row"><dt>никнейм</dt><dd>{{.BestAttack.Username}}</dd></div>
+  <div class="budget-row"><dt>статы</dt><dd>📡{{.BestAttack.Practice}} 💾{{.BestAttack.Theory}} 📱{{.BestAttack.Cunning}} 🔎{{.BestAttack.Wisdom}}</dd></div>
+  <div class="budget-row"><dt>⚔️ атака</dt><dd>{{.BestAttack.Attack}}</dd></div>
+  <div class="budget-row"><dt>🛡️ защита</dt><dd>{{.BestAttack.Defense}}</dd></div>
+</dl>
+{{end}}
+
+{{if .BestDefense}}
+<h2>лучшие показатели защиты</h2>
+<dl class="budget">
+  <div class="budget-row"><dt>зафиксировано</dt><dd>{{.BestDefense.MessageDate}}</dd></div>
+  <div class="budget-row"><dt>никнейм</dt><dd>{{.BestDefense.Username}}</dd></div>
+  <div class="budget-row"><dt>статы</dt><dd>📡{{.BestDefense.Practice}} 💾{{.BestDefense.Theory}} 📱{{.BestDefense.Cunning}} 🔎{{.BestDefense.Wisdom}}</dd></div>
+  <div class="budget-row"><dt>⚔️ атака</dt><dd>{{.BestDefense.Attack}}</dd></div>
+  <div class="budget-row"><dt>🛡️ защита</dt><dd>{{.BestDefense.Defense}}</dd></div>
+</dl>
+{{end}}
+
+<a class="back" href="{{.BackHref}}">{{.BackLabel}}</a>
+{{end}}

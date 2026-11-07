@@ -1,0 +1,51 @@
+{{define "fraction_page"}}
+<h1>{{.Icon}} {{.Name}}</h1>
+<dl class="budget">
+  <div class="budget-row">
+    <dt>цель</dt>
+    <dd>
+      {{if .CanSetTarget}}
+      <details class="target-picker" data-scope="fraction">
+        <summary class="icon-select-btn" title="цель команды">{{.CurrentTargetIcon}}</summary>
+        <div class="target-menu">
+          {{range .TargetOptions}}<button type="button" class="target-option{{if .Selected}} selected{{end}}" data-value="{{.Value}}" data-target-icon="{{.Icon}}">{{.Icon}} {{.Name}}</button>{{end}}
+        </div>
+      </details>
+      {{else}}
+      {{.CurrentTargetIcon}}
+      {{end}}
+    </dd>
+  </div>
+  <div class="budget-row">
+    <dt>токен</dt>
+    <dd>{{if .HasToken}}установлен{{else}}не задан{{end}} {{if .CanSetToken}}<a class="icon-select-btn" href="/panel/fraction/token" title="токен команды">🗝</a>{{end}}</dd>
+  </div>
+</dl>
+
+<h2>сообщение команды{{if .CanSetMessage}} <a class="icon-select-btn" href="/panel/fraction/message" title="редактировать">✎</a>{{end}}</h2>
+{{if .Message}}
+<p class="pre-line">{{.Message}}</p>
+{{else}}
+<p class="hint">не задано</p>
+{{end}}
+
+<h2>настройки профиля{{if .CanSetSettings}} <a class="icon-select-btn" href="/panel/fraction/settings" title="редактировать">✎</a>{{end}}</h2>
+
+<div class="settings-group">
+  <div class="settings-group-label">деньги</div>
+  <div class="threshold-row">
+    <span class="threshold-field" title="очень много — требование слить"><span class="threshold-icon">‼️</span>{{.MoneyVerySevere}}</span>
+    <span class="threshold-field" title="много — требование слить"><span class="threshold-icon">❗</span>{{.MoneySevere}}</span>
+    <span class="threshold-field" title="рекомендуется слить"><span class="threshold-icon">⚠️</span>{{.MoneyRecommended}}</span>
+  </div>
+</div>
+
+<div class="settings-group">
+  <div class="settings-group-label">выносливость</div>
+  <div class="threshold-row">
+    <span class="threshold-field" title="очень мало — требование пополнить"><span class="threshold-icon">‼️</span>{{.StaminaVerySevere}}</span>
+    <span class="threshold-field" title="мало — требование пополнить"><span class="threshold-icon">❗</span>{{.StaminaSevere}}</span>
+    <span class="threshold-field" title="рекомендуется пополнить"><span class="threshold-icon">⚠️</span>{{.StaminaRecommended}}</span>
+  </div>
+</div>
+{{end}}

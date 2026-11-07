@@ -85,6 +85,41 @@ func FindProfilesByUserIdsForBattleDate(userIds []uint, battleDate time.Time) ([
 	return profiles, nil
 }
 
+// FindBestAttackProfile returns the profile snapshot, across the player's
+// entire history, with the highest ⚔️ attack power — practice*2 +
+// cunning*3, the same formula the squad page's battle summary uses.
+func FindBestAttackProfile(userId uint) (*model.Profile, error) {
+	db := database.GetDb()
+	profile := model.Profile{}
+
+	err := db.Where("user_id = ?", userId).
+		Order("(practice * 2 + cunning * 3) DESC").
+		First(&profile).Error
+
+	if (err != nil) {
+		return nil, fmt.Errorf("No profiles associated with user id: %d", userId)
+	}
+
+	return &profile, nil
+}
+
+// FindBestDefenseProfile mirrors FindBestAttackProfile for 🛡️ defense power
+// — theory*2 + wisdom*3.
+func FindBestDefenseProfile(userId uint) (*model.Profile, error) {
+	db := database.GetDb()
+	profile := model.Profile{}
+
+	err := db.Where("user_id = ?", userId).
+		Order("(theory * 2 + wisdom * 3) DESC").
+		First(&profile).Error
+
+	if (err != nil) {
+		return nil, fmt.Errorf("No profiles associated with user id: %d", userId)
+	}
+
+	return &profile, nil
+}
+
 func FindLastProfileByVkId(vkId uint) (*model.Profile, error) {
 	db := database.GetDb()
 	profile := model.Profile{}

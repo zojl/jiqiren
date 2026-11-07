@@ -1,0 +1,28 @@
+{{define "settings_form"}}
+<h1>настройки профиля</h1>
+<form method="post" action="{{.Action}}" class="form settings-form">
+  <div class="settings-group">
+    <h2>деньги</h2>
+    <p class="hint">выше первого порога — очень много денег, требование слить; выше второго — много денег, требование слить; выше третьего — рекомендация слить</p>
+    <div class="threshold-row">
+      <label class="threshold-field" title="очень много — требование слить"><span class="threshold-icon">‼️</span><input type="number" name="money_very_severe" value="{{.MoneyVerySevere}}" placeholder="{{.DefaultMoneyVerySevere}}" min="0"></label>
+      <label class="threshold-field" title="много — требование слить"><span class="threshold-icon">❗</span><input type="number" name="money_severe" value="{{.MoneySevere}}" placeholder="{{.DefaultMoneySevere}}" min="0"></label>
+      <label class="threshold-field" title="рекомендуется слить"><span class="threshold-icon">⚠️</span><input type="number" name="money_recommended" value="{{.MoneyRecommended}}" placeholder="{{.DefaultMoneyRecommended}}" min="0"></label>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <h2>выносливость</h2>
+    <p class="hint">ниже первого порога — очень мало выносливости, требование пополнить; ниже второго — мало выносливости, требование пополнить; ниже третьего — рекомендация пополнить (до 250)</p>
+    <div class="threshold-row">
+      <label class="threshold-field" title="очень мало — требование пополнить"><span class="threshold-icon">‼️</span><input type="number" name="stamina_very_severe" value="{{.StaminaVerySevere}}" placeholder="{{.DefaultStaminaVerySevere}}" min="0"></label>
+      <label class="threshold-field" title="мало — требование пополнить"><span class="threshold-icon">❗</span><input type="number" name="stamina_severe" value="{{.StaminaSevere}}" placeholder="{{.DefaultStaminaSevere}}" min="0"></label>
+      <label class="threshold-field" title="рекомендуется пополнить"><span class="threshold-icon">⚠️</span><input type="number" name="stamina_recommended" value="{{.StaminaRecommended}}" placeholder="{{.DefaultStaminaRecommended}}" min="0"></label>
+    </div>
+  </div>
+
+  <button type="submit">сохранить</button>
+</form>
+<p class="hint">пустое поле — использовать значение по умолчанию</p>
+<a class="back" href="/panel/fraction">← назад</a>
+{{end}}

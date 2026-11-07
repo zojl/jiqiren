@@ -42,6 +42,7 @@ func NewRouter() chi.Router {
 
 		r.Post("/squads/{code}/members", handlers.AddSquadMemberOverride)
 		r.Post("/squads/{code}/members/{vk_id}/remove", handlers.RemoveSquadMemberOverride)
+		r.Post("/squads/{code}/members/{vk_id}/freeze", handlers.FreezeSquadMember)
 
 		r.Get("/squads/{code}/schedule", handlers.SquadSchedule)
 		r.Get("/squads/{code}/schedule/new", handlers.NewScheduledMessageForm)
@@ -50,9 +51,18 @@ func NewRouter() chi.Router {
 		r.Post("/squads/{code}/schedule/{id}/edit", handlers.EditScheduledMessage)
 		r.Post("/squads/{code}/schedule/{id}/delete", handlers.DeleteScheduledMessage)
 
+		r.Get("/players/{vk_id}", handlers.PlayerPage)
+
+		r.Get("/fraction", handlers.FractionPage)
 		r.Get("/fraction/token", handlers.FractionTokenForm)
 		r.Post("/fraction/token", handlers.SetFractionToken)
-		r.Get("/fraction/budget", handlers.FractionBudget)
+		r.Get("/fraction/message", handlers.FractionMessageForm)
+		r.Post("/fraction/message", handlers.SetFractionMessage)
+		r.Get("/fraction/settings", handlers.FractionSettingsForm)
+		r.Post("/fraction/settings", handlers.SetFractionReadinessSettings)
+		r.Get("/fraction/budget", handlers.BudgetPage)
+		r.Get("/fraction/budget/actual", handlers.BudgetActual)
+		r.Get("/fraction/budget/chart", handlers.BudgetChart)
 
 		r.Get("/managers", handlers.ManagerList)
 		r.Post("/managers", handlers.CreateManager)

@@ -15,9 +15,11 @@ const silentAfter = 7 * 24 * time.Hour
 
 // activeSquadProfiles returns each current member's latest profile —
 // effective squad (model.Profile.EffectiveSquadId: a manual override wins
-// over the profile's own TeamId) matching this one, skipping anyone
-// who's left or gone silent for a week — plus a UserId → VkId lookup for
-// building mentions.
+// over the profile's own TeamId) matching this one, skipping anyone who's
+// left, gone silent for a week, or been manually frozen (model.User.Frozen
+// — a pre-emptive version of the same silence exclusion, for a player who
+// announced an absence before going quiet long enough to trigger it) —
+// plus a UserId → VkId lookup for building mentions.
 func activeSquadProfiles(squad *model.Team, now time.Time) ([]model.Profile, map[uint]uint, error) {
 	profiles, err := repository.FindLatestProfilesForTeam(squad.Id)
 	if (err != nil) {
@@ -32,9 +34,11 @@ func activeSquadProfiles(squad *model.Team, now time.Time) ([]model.Profile, map
 	users, _ := repository.FindUsersByIds(candidateIds)
 	vkIdByUserId := make(map[uint]uint, len(users))
 	overrideByUserId := make(map[uint]*uint, len(users))
+	frozenByUserId := make(map[uint]bool, len(users))
 	for _, user := range users {
 		vkIdByUserId[user.Id] = user.VkId
 		overrideByUserId[user.Id] = user.SquadOverrideId
+		frozenByUserId[user.Id] = user.Frozen
 	}
 
 	active := make([]model.Profile, 0, len(profiles))
@@ -45,6 +49,10 @@ func activeSquadProfiles(squad *model.Team, now time.Time) ([]model.Profile, map
 		}
 
 		if (now.Sub(profile.MessageDate) > silentAfter) {
+			continue
+		}
+
+		if (frozenByUserId[profile.UserId]) {
 			continue
 		}
 

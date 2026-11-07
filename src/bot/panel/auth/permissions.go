@@ -8,29 +8,32 @@ import (
 
 // Permissions is the single place permission logic lives — handlers call its
 // methods instead of re-deriving role checks. Zero-trust: every method
-// defaults to false unless explicitly granted below.
+// defaults to false unless explicitly granted below. It wraps the manager
+// row fetched fresh from the database for this request (see
+// RequireAuth/ManagerFromContext) rather than anything read out of the
+// session cookie, so a revoked or changed role takes effect immediately.
 type Permissions struct {
-	claims *Claims
+	manager *model.Manager
 }
 
-func NewPermissions(claims *Claims) *Permissions {
-	return &Permissions{claims: claims}
+func NewPermissions(manager *model.Manager) *Permissions {
+	return &Permissions{manager: manager}
 }
 
 func PermissionsFromRequest(r *http.Request) *Permissions {
-	return NewPermissions(ClaimsFromContext(r))
+	return NewPermissions(ManagerFromContext(r))
 }
 
 func (p *Permissions) ManagerId() uint {
-	return p.claims.ManagerId
+	return p.manager.Id
 }
 
 func (p *Permissions) FractionId() uint {
-	return p.claims.FractionId
+	return p.manager.FractionId
 }
 
 func (p *Permissions) hasRole(accountType model.AccountType) bool {
-	return p.claims != nil && p.claims.AccountType != nil && model.AccountType(*p.claims.AccountType) == accountType
+	return p.manager != nil && p.manager.AccountType != nil && *p.manager.AccountType == accountType
 }
 
 func (p *Permissions) isTeamlead() bool {
@@ -46,15 +49,32 @@ func (p *Permissions) isSquadLead() bool {
 }
 
 func (p *Permissions) ownsSquad(squadId uint) bool {
-	return p.claims != nil && p.claims.SquadId != nil && *p.claims.SquadId == squadId
+	return p.manager != nil && p.manager.SquadId != nil && *p.manager.SquadId == squadId
 }
 
-func (p *Permissions) CanViewTargets() bool {
-	if (p.isTeamlead() || p.isDeputy()) {
-		return true
+// CanViewDashboard gates the "Отряды" page (the fraction-wide squad list) —
+// a plain squad lead has no fraction-wide view, they land on "Мой отряд"
+// instead (see HomeSquadId).
+func (p *Permissions) CanViewDashboard() bool {
+	return p.isTeamlead() || p.isDeputy()
+}
+
+// CanViewFraction gates the "Команда" page. Viewing is bundled for
+// teamlead/deputy alike; within the page, editing the target vs. the token
+// is still gated separately (CanSetFractionTarget / CanSetFractionToken).
+func (p *Permissions) CanViewFraction() bool {
+	return p.isTeamlead() || p.isDeputy()
+}
+
+// OwnSquadId returns the manager's personally assigned squad, if any,
+// regardless of role — unlike HomeSquadId this isn't restricted to plain
+// squad leads, since a deputy can also be assigned to a specific squad.
+func (p *Permissions) OwnSquadId() (uint, bool) {
+	if (p.manager == nil || p.manager.SquadId == nil) {
+		return 0, false
 	}
 
-	return p.isSquadLead() && p.claims.SquadId != nil
+	return *p.manager.SquadId, true
 }
 
 // CanViewSquad gates whether a specific squad's target is shown at all.
@@ -68,11 +88,40 @@ func (p *Permissions) CanViewSquad(squadId uint) bool {
 	return p.isSquadLead() && p.ownsSquad(squadId)
 }
 
+// CanViewPlayer gates the player page. Teamlead/deputy see every player in
+// their own fraction; a squad lead sees a player only if their own squad is
+// either the natural (profile-reported) or effective (override) squad —
+// covering both captains while a player is mid-transfer between squads.
+func (p *Permissions) CanViewPlayer(fractionId uint, naturalSquadId *uint, effectiveSquadId *uint) bool {
+	if (p.manager == nil || p.manager.FractionId != fractionId) {
+		return false
+	}
+
+	if (p.isTeamlead() || p.isDeputy()) {
+		return true
+	}
+
+	if (!p.isSquadLead()) {
+		return false
+	}
+
+	return (naturalSquadId != nil && p.ownsSquad(*naturalSquadId)) ||
+		(effectiveSquadId != nil && p.ownsSquad(*effectiveSquadId))
+}
+
 func (p *Permissions) CanViewBalance() bool {
 	return p.isTeamlead() || p.isDeputy()
 }
 
 func (p *Permissions) CanSetFractionTarget() bool {
+	return p.isTeamlead() || p.isDeputy()
+}
+
+func (p *Permissions) CanSetFractionMessage() bool {
+	return p.isTeamlead() || p.isDeputy()
+}
+
+func (p *Permissions) CanSetFractionSettings() bool {
 	return p.isTeamlead() || p.isDeputy()
 }
 
@@ -148,15 +197,15 @@ func (p *Permissions) CanManageMembers(squadId uint) bool {
 // HomeSquadId returns the squad a plain squad lead should land on by
 // default — they have no fraction-wide view, so their "home" is their own
 // squad page rather than the dashboard. Teamlead/deputy always get the
-// full dashboard, even if a SquadId happens to be set on their claims.
+// full dashboard, even if a SquadId happens to be set on their row.
 func (p *Permissions) HomeSquadId() (uint, bool) {
 	if (p.isTeamlead() || p.isDeputy() || !p.isSquadLead()) {
 		return 0, false
 	}
 
-	if (p.claims.SquadId == nil) {
+	if (p.manager.SquadId == nil) {
 		return 0, false
 	}
 
-	return *p.claims.SquadId, true
+	return *p.manager.SquadId, true
 }

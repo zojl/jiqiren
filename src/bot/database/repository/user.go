@@ -34,6 +34,11 @@ func SetUserSquadOverride(user *model.User, squadId *uint) error {
 	return db.Model(user).Update("SquadOverrideId", squadId).Error
 }
 
+func SetUserFrozen(user *model.User, frozen bool) error {
+	db := database.GetDb()
+	return db.Model(user).Update("Frozen", frozen).Error
+}
+
 func FindOrCreateUserByVkId(vkId int) *model.User  {
 	user := FindOneUserByVkId(vkId)
 	if (user != nil) {

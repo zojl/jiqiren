@@ -2,18 +2,21 @@ package hackerwars
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
 const (
-	SetTargetKey  = "466F2FFC"
-	TeamBudgetKey = "6CDF1466"
-	baseURL       = "https://aegis.hackerwars.ru"
+	SetTargetKey   = "466F2FFC"
+	TeamBudgetKey  = "6CDF1466"
+	TeamMessageKey = "CAFB4FEE"
+	baseURL        = "https://aegis.hackerwars.ru"
 )
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
@@ -48,6 +51,25 @@ func SetTarget(token string, source string, target uint) error {
 	return err
 }
 
+// SetTeamMessage sets (or, with an empty message, clears) the team's
+// profile message. The endpoint is write-only — there is no API to read
+// the message back, which is why a copy must be kept in our own database.
+func SetTeamMessage(token string, team string, message string) error {
+	values := url.Values{}
+	values.Set("key", TeamMessageKey)
+	values.Set("token", token)
+	values.Set("team", team)
+
+	if (message == "") {
+		values.Set("delete", "1")
+	} else {
+		values.Set("message", message)
+	}
+
+	_, err := doGet("/team_message/", values)
+	return err
+}
+
 func GetTeamBudget(token string) (*Budget, error) {
 	values := url.Values{}
 	values.Set("key", TeamBudgetKey)
@@ -66,12 +88,25 @@ func GetTeamBudget(token string) (*Budget, error) {
 	return &budget, nil
 }
 
+// redactToken strips the literal token value out of an error's text — the
+// standard library's http.Client.Get wraps request failures (DNS, timeout,
+// connection refused, ...) in a *url.Error whose Error() includes the full
+// request URL, token query param and all, and that text can end up shown
+// to a user in the panel.
+func redactToken(err error, token string) error {
+	if (err == nil || token == "") {
+		return err
+	}
+
+	return errors.New(strings.ReplaceAll(err.Error(), token, "***"))
+}
+
 func doGet(path string, values url.Values) ([]byte, error) {
 	requestUrl := baseURL + path + "?" + values.Encode()
 
 	resp, err := httpClient.Get(requestUrl)
 	if err != nil {
-		return nil, fmt.Errorf("hackerwars request failed: %w", err)
+		return nil, fmt.Errorf("hackerwars request failed: %w", redactToken(err, values.Get("token")))
 	}
 	defer resp.Body.Close()
 
