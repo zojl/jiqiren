@@ -51,12 +51,12 @@ func NewRouter() chi.Router {
 		r.Post("/squads/{code}/schedule/{id}/edit", handlers.EditScheduledMessage)
 		r.Post("/squads/{code}/schedule/{id}/delete", handlers.DeleteScheduledMessage)
 
-		r.Get("/squads/{code}/goals", handlers.SquadPlannedTargetList)
-		r.Get("/squads/{code}/goals/new", handlers.NewSquadPlannedTargetForm)
-		r.Post("/squads/{code}/goals", handlers.CreateSquadPlannedTarget)
-		r.Get("/squads/{code}/goals/{id}/edit", handlers.EditSquadPlannedTargetForm)
-		r.Post("/squads/{code}/goals/{id}/edit", handlers.EditSquadPlannedTarget)
-		r.Post("/squads/{code}/goals/{id}/delete", handlers.DeleteSquadPlannedTarget)
+		r.Get("/squads/{code}/targets", handlers.SquadPlannedTargetList)
+		r.Get("/squads/{code}/targets/new", handlers.NewSquadPlannedTargetForm)
+		r.Post("/squads/{code}/targets", handlers.CreateSquadPlannedTarget)
+		r.Get("/squads/{code}/targets/{id}/edit", handlers.EditSquadPlannedTargetForm)
+		r.Post("/squads/{code}/targets/{id}/edit", handlers.EditSquadPlannedTarget)
+		r.Post("/squads/{code}/targets/{id}/delete", handlers.DeleteSquadPlannedTarget)
 
 		r.Get("/players/{vk_id}", handlers.PlayerPage)
 
@@ -71,12 +71,12 @@ func NewRouter() chi.Router {
 		r.Get("/fraction/budget/actual", handlers.BudgetActual)
 		r.Get("/fraction/budget/chart", handlers.BudgetChart)
 
-		r.Get("/fraction/goals", handlers.FractionPlannedTargetList)
-		r.Get("/fraction/goals/new", handlers.NewFractionPlannedTargetForm)
-		r.Post("/fraction/goals", handlers.CreateFractionPlannedTarget)
-		r.Get("/fraction/goals/{id}/edit", handlers.EditFractionPlannedTargetForm)
-		r.Post("/fraction/goals/{id}/edit", handlers.EditFractionPlannedTarget)
-		r.Post("/fraction/goals/{id}/delete", handlers.DeleteFractionPlannedTarget)
+		r.Get("/fraction/targets", handlers.FractionPlannedTargetList)
+		r.Get("/fraction/targets/new", handlers.NewFractionPlannedTargetForm)
+		r.Post("/fraction/targets", handlers.CreateFractionPlannedTarget)
+		r.Get("/fraction/targets/{id}/edit", handlers.EditFractionPlannedTargetForm)
+		r.Post("/fraction/targets/{id}/edit", handlers.EditFractionPlannedTarget)
+		r.Post("/fraction/targets/{id}/delete", handlers.DeleteFractionPlannedTarget)
 
 		r.Get("/managers", handlers.ManagerList)
 		r.Post("/managers", handlers.CreateManager)

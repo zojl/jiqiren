@@ -30,7 +30,7 @@ type fractionPageData struct {
 	MoneyVerySevere    uint
 	CanSetSettings     bool
 
-	GoalPlan goalPlanSectionData
+	TargetPlan targetPlanSectionData
 }
 
 // FractionPage is "Команда" — the fraction-wide counterpart of a squad
@@ -62,11 +62,11 @@ func FractionPage(w http.ResponseWriter, r *http.Request) {
 
 	thresholds := readiness.ThresholdsFor(fraction)
 
-	goalTargets, goalErr := repository.FindPlannedTargetsByFractionId(fraction.Id)
-	if (goalErr != nil) {
-		goalTargets = nil
+	plannedTargets, plannedTargetsErr := repository.FindPlannedTargetsByFractionId(fraction.Id)
+	if (plannedTargetsErr != nil) {
+		plannedTargets = nil
 	}
-	goalPlan := buildGoalPlanSection(goalTargets, time.Now(), allFractions, "/panel/fraction/goals", permissions.CanSetFractionTarget())
+	targetPlan := buildTargetPlanSection(plannedTargets, time.Now(), allFractions, "/panel/fraction/targets", permissions.CanSetFractionTarget())
 
 	templates.Render(w, r, "fraction_page", fractionPageData{
 		Name:              fraction.Name,
@@ -87,6 +87,6 @@ func FractionPage(w http.ResponseWriter, r *http.Request) {
 		MoneyVerySevere:    thresholds.MoneyVerySevere,
 		CanSetSettings:     permissions.CanSetFractionSettings(),
 
-		GoalPlan: goalPlan,
+		TargetPlan: targetPlan,
 	})
 }

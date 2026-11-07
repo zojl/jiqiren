@@ -1,0 +1,65 @@
+{{define "target_plan_icon"}}{{if eq . "repeat"}}<svg class="target-plan-icon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14.5-4.5M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-14.5 4.5M4 20v-4h4"/></svg>{{else if eq . "message"}}<svg class="target-plan-icon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>{{else if eq . "reserve"}}<svg class="target-plan-icon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v5M12 16v5M3 12h5M16 12h5"/></svg>{{end}}{{end}}
+
+{{define "target_plan_cards"}}
+<div class="target-plan-row">
+  {{if .AddHref}}<a class="target-plan-card target-plan-card-add" href="{{.AddHref}}" title="добавить цель в план">+</a>{{end}}
+  {{range .Cards}}
+  <a class="target-plan-card{{if .HasError}} has-error{{end}}" href="{{.EditHref}}"{{if .ErrorText}} title="ошибка: {{.ErrorText}}"{{end}}>
+    <span class="target-plan-card-icon">{{.Icon}}</span>
+    {{range .Properties}}<span class="target-plan-card-prop" title="{{.Label}}">{{template "target_plan_icon" .Kind}}</span>{{end}}
+    <span class="target-plan-card-time">{{.Time}}</span>
+    {{if .Date}}<span class="target-plan-card-date">{{.Date}}</span>{{end}}
+  </a>
+  {{end}}
+  {{if and (not .Cards) (not .AddHref)}}<span class="hint">план пуст</span>{{end}}
+  {{if .MoreHref}}<a class="target-plan-card-more" href="{{.MoreHref}}">{{.MoreLabel}} →</a>{{end}}
+</div>
+{{end}}
+
+{{define "target_plan_section"}}
+<h2>план целей</h2>
+{{template "target_plan_cards" .}}
+{{end}}
+
+{{define "target_plan_row"}}
+<div class="target-plan-entry{{if .HasError}} has-error{{end}}">
+  <a class="target-plan-entry-link" href="{{.EditHref}}"{{if .ErrorText}} title="ошибка: {{.ErrorText}}"{{end}}>
+    <span class="target-plan-entry-label">{{.TargetLabel}}</span>
+    <span class="target-plan-entry-props">{{range .Properties}}<span class="target-plan-card-prop" title="{{.Label}}">{{template "target_plan_icon" .Kind}} {{.Label}}</span>{{end}}</span>
+    <span class="target-plan-entry-time">{{.Time}} мск</span>
+    <span class="target-plan-entry-date">{{.DateInfo}}{{if .Completed}} · выполнена{{end}}</span>
+  </a>
+  {{if .CanManage}}
+  <form method="post" action="{{.DeleteHref}}" onsubmit="return confirm('Удалить цель из плана?');" class="inline"><button type="submit" class="danger">✕</button></form>
+  {{end}}
+</div>
+{{end}}
+
+{{define "target_plan_list"}}
+<h1>{{.Title}}</h1>
+
+{{if .CanManage}}
+<section class="actions">
+  <a class="btn btn-nav" href="{{.AddHref}}">+ цель</a>
+</section>
+{{end}}
+
+{{if .CompletedEntries}}
+<details class="hidden-members">
+  <summary class="btn btn-wide">показать выполненные ({{len .CompletedEntries}})</summary>
+  <div class="target-plan-rows">
+  {{range .CompletedEntries}}{{template "target_plan_row" .}}{{end}}
+  </div>
+</details>
+{{end}}
+
+{{if .Entries}}
+<div class="target-plan-rows">
+{{range .Entries}}{{template "target_plan_row" .}}{{end}}
+</div>
+{{else if not .CompletedEntries}}
+<p class="hint">план пуст</p>
+{{end}}
+
+<a class="back" href="{{.BackHref}}">← назад</a>
+{{end}}

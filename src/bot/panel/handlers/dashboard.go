@@ -24,7 +24,7 @@ type squadView struct {
 	CurrentTargetIcon string
 	TargetOptions []targetIconOption
 	CanSetTarget bool
-	GoalPlan goalPlanSectionData
+	TargetPlan targetPlanSectionData
 }
 
 type dashboardData struct {
@@ -35,7 +35,7 @@ type dashboardData struct {
 	CanSetFractionTarget bool
 	CanManageSquads bool
 	Squads []squadView
-	GoalPlan goalPlanSectionData
+	TargetPlan targetPlanSectionData
 }
 
 // Dashboard is the fraction-wide "Отряды" page — a plain squad lead has no
@@ -74,9 +74,9 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 
-	fractionGoalTargets, fractionGoalErr := repository.FindPlannedTargetsByFractionId(fraction.Id)
-	if (fractionGoalErr != nil) {
-		fractionGoalTargets = nil
+	fractionPlannedTargets, fractionTargetsErr := repository.FindPlannedTargetsByFractionId(fraction.Id)
+	if (fractionTargetsErr != nil) {
+		fractionPlannedTargets = nil
 	}
 
 	data := dashboardData{
@@ -86,7 +86,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		FractionTargetOptions: buildTargetIconOptions(allFractions, fraction.Id, fractionTarget),
 		CanSetFractionTarget: permissions.CanSetFractionTarget(),
 		CanManageSquads: permissions.CanManageSquads(),
-		GoalPlan: buildGoalPlanSection(fractionGoalTargets, now, allFractions, "/panel/fraction/goals", permissions.CanSetFractionTarget()),
+		TargetPlan: buildTargetPlanSection(fractionPlannedTargets, now, allFractions, "/panel/fraction/targets", permissions.CanSetFractionTarget()),
 	}
 
 	squads, squadsErr := repository.FindTeamsByFractionId(fraction.Id)
@@ -101,9 +101,9 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 				target = *squad.Target
 			}
 
-			squadGoalTargets, squadGoalErr := repository.FindPlannedTargetsBySquadId(squad.Id)
-			if (squadGoalErr != nil) {
-				squadGoalTargets = nil
+			squadPlannedTargets, squadTargetsErr := repository.FindPlannedTargetsBySquadId(squad.Id)
+			if (squadTargetsErr != nil) {
+				squadPlannedTargets = nil
 			}
 
 			data.Squads = append(data.Squads, squadView{
@@ -113,7 +113,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 				CurrentTargetIcon: targetIcon(allFractions, squad.Target),
 				TargetOptions: buildTargetIconOptions(allFractions, fraction.Id, target),
 				CanSetTarget: permissions.CanSetSquadTarget(squad.Id),
-				GoalPlan: buildGoalPlanSection(squadGoalTargets, now, allFractions, "/panel/squads/"+squad.Code+"/goals", permissions.CanSetSquadTarget(squad.Id)),
+				TargetPlan: buildTargetPlanSection(squadPlannedTargets, now, allFractions, "/panel/squads/"+squad.Code+"/targets", permissions.CanSetSquadTarget(squad.Id)),
 			})
 		}
 	}

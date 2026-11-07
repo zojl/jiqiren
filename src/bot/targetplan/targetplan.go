@@ -1,8 +1,8 @@
-// Package goalplan computes when a model.PlannedTarget should next fire —
+// Package targetplan computes when a model.PlannedTarget should next fire —
 // shared by the scheduler (deciding whether it's due right now) and the
-// panel (sorting the upcoming-goals preview), so the two never drift apart
+// panel (sorting the upcoming-targets preview), so the two never drift apart
 // on what "next" means.
-package goalplan
+package targetplan
 
 import (
 	"sort"

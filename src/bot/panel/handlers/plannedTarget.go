@@ -12,9 +12,9 @@ import (
 	"jiqiren/bot/battletime"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
-	"jiqiren/bot/goalplan"
 	"jiqiren/bot/panel/auth"
 	"jiqiren/bot/panel/templates"
+	"jiqiren/bot/targetplan"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -22,7 +22,7 @@ import (
 type plannedTargetRowView struct {
 	Id          uint
 	TargetLabel string
-	Properties  []goalPropertyView
+	Properties  []targetPlanPropertyView
 	Time        string
 	DateInfo    string
 	Completed   bool
@@ -42,8 +42,8 @@ type plannedTargetListData struct {
 	AddHref        string
 	BackHref       string
 	CanManage      bool
-	Goals          []plannedTargetRowView
-	CompletedGoals []plannedTargetRowView
+	Entries          []plannedTargetRowView
+	CompletedEntries []plannedTargetRowView
 }
 
 type plannedTargetFormData struct {
@@ -83,7 +83,7 @@ func SquadPlannedTargetList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePath := "/panel/squads/" + squad.Code + "/goals"
+	basePath := "/panel/squads/" + squad.Code + "/targets"
 	renderPlannedTargetList(w, r, squad.FractionId, &squad.Id, "план целей · "+squad.Code+" "+squad.Name,
 		basePath, "/panel/squads/"+squad.Code, permissions.CanSetSquadTarget(squad.Id))
 }
@@ -102,7 +102,7 @@ func NewSquadPlannedTargetForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePath := "/panel/squads/" + squad.Code + "/goals"
+	basePath := "/panel/squads/" + squad.Code + "/targets"
 	renderNewPlannedTargetForm(w, r, squad.FractionId, basePath, true, basePath)
 }
 
@@ -120,7 +120,7 @@ func CreateSquadPlannedTarget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePath := "/panel/squads/" + squad.Code + "/goals"
+	basePath := "/panel/squads/" + squad.Code + "/targets"
 	createPlannedTarget(w, r, permissions, squad.FractionId, &squad.Id, true, basePath,
 		fmt.Sprintf("отряд %s: добавлена цель в план", squad.Code))
 }
@@ -139,7 +139,7 @@ func EditSquadPlannedTargetForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePath := "/panel/squads/" + squad.Code + "/goals"
+	basePath := "/panel/squads/" + squad.Code + "/targets"
 	renderEditPlannedTargetForm(w, r, target, basePath, true, basePath)
 }
 
@@ -157,7 +157,7 @@ func EditSquadPlannedTarget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePath := "/panel/squads/" + squad.Code + "/goals"
+	basePath := "/panel/squads/" + squad.Code + "/targets"
 	updatePlannedTarget(w, r, permissions, target, true, basePath,
 		fmt.Sprintf("отряд %s: обновлена цель в плане", squad.Code))
 }
@@ -176,7 +176,7 @@ func DeleteSquadPlannedTarget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePath := "/panel/squads/" + squad.Code + "/goals"
+	basePath := "/panel/squads/" + squad.Code + "/targets"
 	deletePlannedTarget(w, r, permissions, target, basePath,
 		fmt.Sprintf("отряд %s: удалена цель из плана", squad.Code))
 }
@@ -210,7 +210,7 @@ func FractionPlannedTargetList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderPlannedTargetList(w, r, permissions.FractionId(), nil, "план целей команды",
-		"/panel/fraction/goals", "/panel/fraction", permissions.CanSetFractionTarget())
+		"/panel/fraction/targets", "/panel/fraction", permissions.CanSetFractionTarget())
 }
 
 func NewFractionPlannedTargetForm(w http.ResponseWriter, r *http.Request) {
@@ -220,7 +220,7 @@ func NewFractionPlannedTargetForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePath := "/panel/fraction/goals"
+	basePath := "/panel/fraction/targets"
 	renderNewPlannedTargetForm(w, r, permissions.FractionId(), basePath, false, basePath)
 }
 
@@ -231,7 +231,7 @@ func CreateFractionPlannedTarget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePath := "/panel/fraction/goals"
+	basePath := "/panel/fraction/targets"
 	createPlannedTarget(w, r, permissions, permissions.FractionId(), nil, false, basePath,
 		"фракция: добавлена цель в план")
 }
@@ -249,7 +249,7 @@ func EditFractionPlannedTargetForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePath := "/panel/fraction/goals"
+	basePath := "/panel/fraction/targets"
 	renderEditPlannedTargetForm(w, r, target, basePath, false, basePath)
 }
 
@@ -266,7 +266,7 @@ func EditFractionPlannedTarget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePath := "/panel/fraction/goals"
+	basePath := "/panel/fraction/targets"
 	updatePlannedTarget(w, r, permissions, target, false, basePath, "фракция: обновлена цель в плане")
 }
 
@@ -283,7 +283,7 @@ func DeleteFractionPlannedTarget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	basePath := "/panel/fraction/goals"
+	basePath := "/panel/fraction/targets"
 	deletePlannedTarget(w, r, permissions, target, basePath, "фракция: удалена цель из плана")
 }
 
@@ -335,24 +335,24 @@ func renderPlannedTargetList(w http.ResponseWriter, r *http.Request, fractionId 
 	}
 
 	// Both sections read as one timeline, oldest to newest: completed
-	// goals ascending by when they last fired, then active ones ascending
+	// entries ascending by when they last fired, then active ones ascending
 	// by when they're next due — so the page as a whole goes old → new.
 	sort.Slice(completedRows, func(i, j int) bool { return completedRows[i].sortMoment.Before(completedRows[j].sortMoment) })
 	sort.Slice(rows, func(i, j int) bool { return rows[i].sortMoment.Before(rows[j].sortMoment) })
 
-	templates.Render(w, r, "goal_plan_list", plannedTargetListData{
+	templates.Render(w, r, "target_plan_list", plannedTargetListData{
 		Title:          title,
 		AddHref:        basePath + "/new",
 		BackHref:       backPath,
 		CanManage:      canManage,
-		Goals:          rows,
-		CompletedGoals: completedRows,
+		Entries:          rows,
+		CompletedEntries: completedRows,
 	})
 }
 
-// buildPlannedTargetRowView classifies a target as completed when it has
-// no next occurrence left (goalplan.NextOccurrence) — covers both a
-// one-time goal that already fired and a recurring goal past its end
+// buildPlannedTargetRowView classifies an entry as completed when it has
+// no next occurrence left (targetplan.NextOccurrence) — covers both a
+// one-time target that already fired and a recurring target past its end
 // date. Its sortMoment is the next due moment for an active entry, or
 // (for a completed one) the configured end date — the plan's own
 // StartDate for "once", EndDate for an expired "recurring" — paired with
@@ -373,7 +373,7 @@ func buildPlannedTargetRowView(target model.PlannedTarget, allFractions []model.
 
 	id := strconv.FormatUint(uint64(target.Id), 10)
 
-	moment, hasNext := goalplan.NextOccurrence(target, now)
+	moment, hasNext := targetplan.NextOccurrence(target, now)
 	completed := !hasNext
 	if (!hasNext) {
 		moment = plannedTargetLastMoment(target)
@@ -382,7 +382,7 @@ func buildPlannedTargetRowView(target model.PlannedTarget, allFractions []model.
 	return plannedTargetRowView{
 		Id:          target.Id,
 		TargetLabel: targetLabel(allFractions, &targetValue),
-		Properties:  goalProperties(target),
+		Properties:  targetPlanProperties(target),
 		Time:        fmt.Sprintf("%02d:%02d", target.Hour, target.Minute),
 		DateInfo:    dateInfo,
 		Completed:   completed,
@@ -411,34 +411,34 @@ func plannedTargetLastMoment(target model.PlannedTarget) time.Time {
 	return time.Date(dateMsk.Year(), dateMsk.Month(), dateMsk.Day(), int(target.Hour), int(target.Minute), 0, 0, moscow)
 }
 
-// goalPropertyView.Kind names which inline SVG the "goal_icon" template
+// targetPlanPropertyView.Kind names which inline SVG the "target_plan_icon" template
 // partial should draw ("repeat" / "message" / "reserve") — properties are
-// rendered as site-colored SVG rather than emoji, see goal_plan_list.html.tmpl.
-type goalPropertyView struct {
+// rendered as site-colored SVG rather than emoji, see target_plan_list.html.tmpl.
+type targetPlanPropertyView struct {
 	Kind  string
 	Label string
 }
 
-// goalProperties lists the active badge-worthy properties of a planned
+// targetPlanProperties lists the active badge-worthy properties of a planned
 // target, shared by both the compact card and the full-width row.
-func goalProperties(target model.PlannedTarget) []goalPropertyView {
-	properties := make([]goalPropertyView, 0, 3)
+func targetPlanProperties(target model.PlannedTarget) []targetPlanPropertyView {
+	properties := make([]targetPlanPropertyView, 0, 3)
 	if (target.Type == model.PlannedTargetTypeRecurring) {
-		properties = append(properties, goalPropertyView{Kind: "repeat", Label: "повторяется"})
+		properties = append(properties, targetPlanPropertyView{Kind: "repeat", Label: "повторяется"})
 	}
 	if (target.Message != "") {
-		properties = append(properties, goalPropertyView{Kind: "message", Label: "с сообщением"})
+		properties = append(properties, targetPlanPropertyView{Kind: "message", Label: "с сообщением"})
 	}
 	if (target.Reserve) {
-		properties = append(properties, goalPropertyView{Kind: "reserve", Label: "резервная"})
+		properties = append(properties, targetPlanPropertyView{Kind: "reserve", Label: "резервная"})
 	}
 
 	return properties
 }
 
-type goalCardView struct {
+type targetPlanCardView struct {
 	Icon       string
-	Properties []goalPropertyView
+	Properties []targetPlanPropertyView
 	Time       string
 	Date       string
 	EditHref   string
@@ -446,26 +446,26 @@ type goalCardView struct {
 	ErrorText  string
 }
 
-type goalPlanSectionData struct {
-	Cards     []goalCardView
+type targetPlanSectionData struct {
+	Cards     []targetPlanCardView
 	AddHref   string
 	MoreHref  string
 	MoreLabel string
 	HasAny    bool
 }
 
-// buildGoalPlanSection is the compact "план целей" block embedded on both
+// buildTargetPlanSection is the compact "план целей" block embedded on both
 // the squad and fraction pages: up to 3 nearest upcoming cards (reserve
 // entries included even though they might not actually fire — see
-// goalplan.NextOccurrence), plus a trailing link to the full list worded
+// targetplan.NextOccurrence), plus a trailing link to the full list worded
 // depending on whether anything beyond those 3 exists.
-func buildGoalPlanSection(targets []model.PlannedTarget, now time.Time, allFractions []model.Fraction, basePath string, canManage bool) goalPlanSectionData {
+func buildTargetPlanSection(targets []model.PlannedTarget, now time.Time, allFractions []model.Fraction, basePath string, canManage bool) targetPlanSectionData {
 	const previewLimit = 3
 
-	upcoming := goalplan.BuildUpcoming(targets, now, previewLimit)
+	upcoming := targetplan.BuildUpcoming(targets, now, previewLimit)
 	moscow := battletime.Moscow
 
-	cards := make([]goalCardView, 0, len(upcoming))
+	cards := make([]targetPlanCardView, 0, len(upcoming))
 	for _, entry := range upcoming {
 		targetValue := entry.Target.Target
 		id := strconv.FormatUint(uint64(entry.Target.Id), 10)
@@ -475,9 +475,9 @@ func buildGoalPlanSection(targets []model.PlannedTarget, now time.Time, allFract
 			date = entry.Moment.In(moscow).Format("02.01")
 		}
 
-		cards = append(cards, goalCardView{
+		cards = append(cards, targetPlanCardView{
 			Icon:       targetIcon(allFractions, &targetValue),
-			Properties: goalProperties(entry.Target),
+			Properties: targetPlanProperties(entry.Target),
 			Time:       entry.Moment.In(moscow).Format("15:04"),
 			Date:       date,
 			EditHref:   basePath + "/" + id + "/edit",
@@ -486,7 +486,7 @@ func buildGoalPlanSection(targets []model.PlannedTarget, now time.Time, allFract
 		})
 	}
 
-	section := goalPlanSectionData{
+	section := targetPlanSectionData{
 		Cards:  cards,
 		HasAny: len(targets) > 0,
 	}
@@ -517,7 +517,7 @@ func renderNewPlannedTargetForm(w http.ResponseWriter, r *http.Request, fraction
 
 	today := battletime.Today(time.Now()).Format(dateOnlyFormat)
 
-	templates.Render(w, r, "goal_plan_form", plannedTargetFormData{
+	templates.Render(w, r, "target_plan_form", plannedTargetFormData{
 		Action:        action,
 		IsSquad:       isSquad,
 		TargetOptions: buildTargetIconOptions(allFractions, fractionId, model.TargetNone),
@@ -544,7 +544,7 @@ func renderEditPlannedTargetForm(w http.ResponseWriter, r *http.Request, target 
 
 	id := strconv.FormatUint(uint64(target.Id), 10)
 
-	templates.Render(w, r, "goal_plan_form", plannedTargetFormData{
+	templates.Render(w, r, "target_plan_form", plannedTargetFormData{
 		Action:        basePath + "/" + id + "/edit",
 		IsEdit:        true,
 		IsSquad:       isSquad,

@@ -1,16 +1,16 @@
-{{define "goal_plan_form"}}
+{{define "target_plan_form"}}
 <h1>{{if .IsEdit}}редактирование цели{{else}}новая цель в плане{{end}}</h1>
 
 {{if .HasError}}<p class="error">последняя ошибка применения: {{.ErrorText}}</p>{{end}}
 
-<form method="post" action="{{.Action}}" class="form goal-plan-form">
+<form method="post" action="{{.Action}}" class="form target-plan-form">
   <label>цель
     <select name="target">
       {{range .TargetOptions}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Icon}} {{.Name}}</option>{{end}}
     </select>
   </label>
 
-  <div class="goal-type-row">
+  <div class="target-plan-type-row">
     <label><input type="radio" name="type" value="once" {{if .TypeOnce}}checked{{end}}> разово</label>
     <label><input type="radio" name="type" value="recurring" {{if .TypeRecurring}}checked{{end}}> повторяется ежедневно</label>
   </div>

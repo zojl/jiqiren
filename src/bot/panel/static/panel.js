@@ -82,10 +82,10 @@ document.addEventListener("click", function (event) {
     });
 });
 
-// Goal plan form — "recurring" fields (end date) only make sense once the
+// Target plan form — "recurring" fields (end date) only make sense once the
 // "повторяется" radio is picked, so they're hidden until then.
 document.addEventListener("change", function (event) {
-  if (!event.target.matches(".goal-plan-form input[name='type']")) {
+  if (!event.target.matches(".target-plan-form input[name='type']")) {
     return;
   }
 

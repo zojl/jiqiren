@@ -86,8 +86,8 @@ h2 { font-size: 1em; margin-top: 32px; }
 
 .row-sep { width: 1px; height: 1.5em; background: var(--border); flex: none; }
 
-.goal-plan-inline { flex: 1 1 auto; min-width: 0; }
-.goal-plan-inline .goal-plan-row { margin-top: 0; }
+.target-plan-inline { flex: 1 1 auto; min-width: 0; }
+.target-plan-inline .target-plan-row { margin-top: 0; }
 
 .hidden-members { margin-top: 20px; }
 .hidden-members table.list { margin-top: 8px; }
@@ -343,9 +343,9 @@ table.members tr.report-row td { padding-top: 0; padding-left: 28px; }
   .budget-block, .budget-chart-block { grid-column: span 1; }
 }
 
-.goal-plan-row { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.target-plan-row { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 
-.goal-card {
+.target-plan-card {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -355,33 +355,33 @@ table.members tr.report-row td { padding-top: 0; padding-left: 28px; }
   color: var(--fg);
   padding: 6px 10px;
 }
-.goal-card:hover { border-color: var(--accent); text-decoration: none; }
-.goal-card.has-error { border-color: var(--danger); }
+.target-plan-card:hover { border-color: var(--accent); text-decoration: none; }
+.target-plan-card.has-error { border-color: var(--danger); }
 
-.goal-card-add {
+.target-plan-card-add {
   font-size: 1.1em;
   font-weight: bold;
   justify-content: center;
   min-width: 2em;
 }
 
-.goal-card-prop { opacity: 0.85; display: inline-flex; align-items: center; gap: 4px; }
-.goal-icon { display: inline-block; vertical-align: -0.15em; flex: none; }
-.goal-card-time { color: var(--dim); }
-.goal-card-date { color: var(--dim); font-size: 0.9em; }
+.target-plan-card-prop { opacity: 0.85; display: inline-flex; align-items: center; gap: 4px; }
+.target-plan-icon { display: inline-block; vertical-align: -0.15em; flex: none; }
+.target-plan-card-time { color: var(--dim); }
+.target-plan-card-date { color: var(--dim); font-size: 0.9em; }
 
-.goal-card-more {
+.target-plan-card-more {
   display: flex;
   align-items: center;
   color: var(--dim);
   margin-left: auto;
   padding: 6px 2px;
 }
-.goal-card-more:hover { color: var(--accent); text-decoration: none; }
+.target-plan-card-more:hover { color: var(--accent); text-decoration: none; }
 
-.goal-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.target-plan-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 
-.goal-row {
+.target-plan-entry {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -389,9 +389,9 @@ table.members tr.report-row td { padding-top: 0; padding-left: 28px; }
   border-radius: 2px;
   padding: 8px 12px;
 }
-.goal-row.has-error { border-color: var(--danger); }
+.target-plan-entry.has-error { border-color: var(--danger); }
 
-.goal-row-link {
+.target-plan-entry-link {
   display: flex;
   flex: 1;
   align-items: center;
@@ -400,12 +400,12 @@ table.members tr.report-row td { padding-top: 0; padding-left: 28px; }
   color: var(--fg);
   min-width: 0;
 }
-.goal-row-link:hover { text-decoration: none; }
-.goal-row-link:hover .goal-row-label { text-decoration: underline; }
+.target-plan-entry-link:hover { text-decoration: none; }
+.target-plan-entry-link:hover .target-plan-entry-label { text-decoration: underline; }
 
-.goal-row-props { display: flex; gap: 8px; color: var(--dim); flex-wrap: wrap; }
-.goal-row-time, .goal-row-date { color: var(--dim); white-space: nowrap; }
+.target-plan-entry-props { display: flex; gap: 8px; color: var(--dim); flex-wrap: wrap; }
+.target-plan-entry-time, .target-plan-entry-date { color: var(--dim); white-space: nowrap; }
 
-.goal-type-row { display: flex; gap: 16px; flex-direction: row; }
-.goal-type-row label { flex-direction: row; align-items: center; gap: 6px; color: var(--fg); }
+.target-plan-type-row { display: flex; gap: 16px; flex-direction: row; }
+.target-plan-type-row label { flex-direction: row; align-items: center; gap: 6px; color: var(--fg); }
 .checkbox-label { flex-direction: row; align-items: center; gap: 6px; }

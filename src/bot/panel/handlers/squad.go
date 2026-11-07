@@ -95,7 +95,7 @@ type squadPageData struct {
 	Members []squadMemberView
 	HiddenMembers []squadHiddenMemberView
 	BattleSummary *battleSummaryView
-	GoalPlan goalPlanSectionData
+	TargetPlan targetPlanSectionData
 }
 
 func SquadPage(w http.ResponseWriter, r *http.Request) {
@@ -149,11 +149,11 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 
 	chatName := squadChatLabel(squad)
 
-	goalTargets, goalErr := repository.FindPlannedTargetsBySquadId(squad.Id)
-	if (goalErr != nil) {
-		goalTargets = nil
+	plannedTargets, plannedTargetsErr := repository.FindPlannedTargetsBySquadId(squad.Id)
+	if (plannedTargetsErr != nil) {
+		plannedTargets = nil
 	}
-	goalPlan := buildGoalPlanSection(goalTargets, time.Now(), allFractions, "/panel/squads/"+squad.Code+"/goals", permissions.CanSetSquadTarget(squad.Id))
+	targetPlan := buildTargetPlanSection(plannedTargets, time.Now(), allFractions, "/panel/squads/"+squad.Code+"/targets", permissions.CanSetSquadTarget(squad.Id))
 
 	templates.Render(w, r, "squad_page", squadPageData{
 		Id: squad.Id,
@@ -175,7 +175,7 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		Members: members,
 		HiddenMembers: hiddenMembers,
 		BattleSummary: battleSummary,
-		GoalPlan: goalPlan,
+		TargetPlan: targetPlan,
 	})
 }
 

@@ -10,7 +10,7 @@ import (
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
 	"jiqiren/bot/external/hackerwars"
-	"jiqiren/bot/goalplan"
+	"jiqiren/bot/targetplan"
 )
 
 // tickPlannedTargets applies every due planned target — squad- and
@@ -27,7 +27,7 @@ func tickPlannedTargets(now time.Time) {
 	for i := range targets {
 		target := targets[i]
 
-		moment, ok := goalplan.NextOccurrence(target, now)
+		moment, ok := targetplan.NextOccurrence(target, now)
 		if (!ok || now.Before(moment)) {
 			continue
 		}
