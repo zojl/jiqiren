@@ -29,6 +29,8 @@ type squadMemberView struct {
 	VkId uint
 	WayIcon string
 	Stale bool
+	Frozen bool
+	CanFreeze bool
 	LastSeen string
 
 	Level uint
@@ -78,6 +80,7 @@ type squadPageData struct {
 	Name string
 	Code string
 	ChatName string
+	ChatNameFull string
 	CanUnbindChat bool
 	TargetLabel string
 	CurrentTargetIcon string
@@ -108,13 +111,25 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionViewSquad,
+		fmt.Sprintf("просмотр отряда %s «%s»", squad.Code, squad.Name))
+
 	allFractions, fractionsErr := repository.FindAllFractions()
 	if (fractionsErr != nil) {
 		http.Error(w, "Ошибка загрузки фракций", http.StatusInternalServerError)
 		return
 	}
 
-	members, hiddenMembers, activeUserIds, membersErr := buildSquadMembers(squad, allFractions)
+	fraction := &model.Fraction{}
+	for i := range allFractions {
+		if (allFractions[i].Id == squad.FractionId) {
+			fraction = &allFractions[i]
+			break
+		}
+	}
+	thresholds := readiness.ThresholdsFor(fraction)
+
+	members, hiddenMembers, activeUserIds, membersErr := buildSquadMembers(squad, allFractions, thresholds)
 	if (membersErr != nil) {
 		http.Error(w, "Не удалось загрузить участников", http.StatusInternalServerError)
 		return
@@ -122,7 +137,7 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 
 	// Best-effort: a battle summary that fails to build (e.g. no battles
 	// yet) just doesn't show, it shouldn't break the rest of the page.
-	battleSummary, _ := buildBattleSummary(squad, activeUserIds, time.Now())
+	battleSummary, _ := buildBattleSummary(squad, activeUserIds, time.Now(), thresholds)
 
 	target := model.TargetNone
 	if (squad.Target != nil) {
@@ -131,11 +146,14 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 
 	homeSquadId, isHome := permissions.HomeSquadId()
 
-	templates.Render(w, "squad_page", squadPageData{
+	chatName := squadChatLabel(squad)
+
+	templates.Render(w, r, "squad_page", squadPageData{
 		Id: squad.Id,
 		Name: squad.Name,
 		Code: squad.Code,
-		ChatName: squadChatLabel(squad),
+		ChatName: truncateLabel(chatName, 18),
+		ChatNameFull: chatName,
 		CanUnbindChat: squad.ChatId != nil && permissions.CanRenameSquad(squad.Id),
 		TargetLabel: targetLabel(allFractions, squad.Target),
 		CurrentTargetIcon: targetIcon(allFractions, squad.Target),
@@ -161,7 +179,7 @@ func SquadPage(w http.ResponseWriter, r *http.Request) {
 // natural TeamId is this squad: ones overridden elsewhere (reversible —
 // shown so they can be brought back) and ones silent for a month (shown
 // so it's clear where they went, not just silently dropped).
-func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squadMemberView, []squadHiddenMemberView, []uint, error) {
+func buildSquadMembers(squad *model.Team, allFractions []model.Fraction, thresholds readiness.Thresholds) ([]squadMemberView, []squadHiddenMemberView, []uint, error) {
 	profiles, err := repository.FindLatestProfilesForTeam(squad.Id)
 	if (err != nil) {
 		return nil, nil, nil, err
@@ -175,9 +193,11 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 	users, _ := repository.FindUsersByIds(userIds)
 	vkIdByUserId := make(map[uint]uint, len(users))
 	overrideByUserId := make(map[uint]*uint, len(users))
+	frozenByUserId := make(map[uint]bool, len(users))
 	for _, user := range users {
 		vkIdByUserId[user.Id] = user.VkId
 		overrideByUserId[user.Id] = user.SquadOverrideId
+		frozenByUserId[user.Id] = user.Frozen
 	}
 
 	now := time.Now()
@@ -238,12 +258,12 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 		// fields instead of showing a stale good/bad verdict.
 		beforeLastBattle := profile.MessageDate.Before(lastBattle)
 
-		staminaLabel := staminaRating(profile.Stamina)
-		moneyLabel := moneyRating(profile.Money)
+		staminaLabel := readiness.StaminaRating(profile.Stamina, thresholds)
+		moneyLabel := readiness.MoneyRating(profile.Money, thresholds)
 		staminaClass := ratingClass(staminaLabel)
 		moneyClass := ratingClass(moneyLabel)
 		targetClass := "rating-bad"
-		if (readiness.TargetMatches(profile, squad)) {
+		if (readiness.TargetMatches(profile, squad, nil)) {
 			targetClass = "rating-good"
 		}
 
@@ -253,11 +273,16 @@ func buildSquadMembers(squad *model.Team, allFractions []model.Fraction) ([]squa
 			targetClass = "rating-stale"
 		}
 
+		stale := inactiveFor > inactiveStaleAfter
+		frozen := frozenByUserId[profile.UserId]
+
 		member := squadMemberView{
 			Name: profile.Username,
 			VkId: vkIdByUserId[profile.UserId],
 			WayIcon: wayIcon(profile.Way),
-			Stale: inactiveFor > inactiveStaleAfter,
+			Stale: stale,
+			Frozen: frozen,
+			CanFreeze: !frozen && !stale,
 			LastSeen: formatMskMoment(profile.MessageDate, now),
 			Level: profile.Level,
 			Practice: profile.Practice,
@@ -318,7 +343,7 @@ type battleSummaryView struct {
 // squad's current main roster) using each player's profile as it stood
 // for that battle, not whatever they've since updated to — same window
 // as the contest-points calculation.
-func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time) (*battleSummaryView, error) {
+func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time, thresholds readiness.Thresholds) (*battleSummaryView, error) {
 	if (len(activeUserIds) == 0) {
 		return nil, nil
 	}
@@ -359,7 +384,7 @@ func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time) 
 
 	for _, userId := range activeUserIds {
 		battleProfile, hasProfile := battleProfileByUserId[userId]
-		if (hasProfile && isIdeallyPrepared(battleProfile, squad)) {
+		if (hasProfile && isIdeallyPrepared(battleProfile, squad, thresholds)) {
 			summary.IdealCount++
 		}
 
@@ -399,12 +424,16 @@ func buildBattleSummary(squad *model.Team, activeUserIds []uint, now time.Time) 
 }
 
 // isIdeallyPrepared reuses the same "отлично" thresholds already shown
-// per-player (staminaRating/moneyRating), plus a matching target.
-func isIdeallyPrepared(profile model.Profile, squad *model.Team) bool {
+// per-player (readiness.StaminaRating/MoneyRating), plus a matching target.
+// Stamina uses the stricter Ideal cutoff here, not the StaminaRating/
+// "отлично" color threshold — a player can read as green in the table
+// (>= StaminaRecommended) without being fully topped-up enough to count
+// toward this tile.
+func isIdeallyPrepared(profile model.Profile, squad *model.Team, thresholds readiness.Thresholds) bool {
 	return profile.TargetId != nil &&
-		readiness.TargetMatches(profile, squad) &&
-		staminaRating(profile.Stamina) == "отлично" &&
-		moneyRating(profile.Money) == "отлично"
+		readiness.TargetMatches(profile, squad, nil) &&
+		profile.Stamina >= thresholds.StaminaIdeal &&
+		readiness.MoneyRating(profile.Money, thresholds) == "отлично"
 }
 
 func overrideSquadLabel(squadId uint) string {
@@ -453,28 +482,6 @@ func formatMskMoment(moment time.Time, now time.Time) string {
 	return sleepMsk.Format("02.01 15:04")
 }
 
-func staminaRating(stamina uint) string {
-	switch {
-	case stamina >= 250:
-		return "отлично"
-	case stamina >= 200:
-		return "хорошо"
-	default:
-		return "плохо"
-	}
-}
-
-func moneyRating(money uint) string {
-	switch {
-	case money <= 9:
-		return "отлично"
-	case money <= 100:
-		return "приемлемо"
-	default:
-		return "плохо"
-	}
-}
-
 func ratingClass(label string) string {
 	switch (label) {
 	case "отлично", "хорошо":
@@ -501,6 +508,17 @@ func wayIcon(way uint) string {
 	}
 }
 
+
+// truncateLabel cuts label to at most max runes (not bytes — chat names
+// are frequently Cyrillic), appending an ellipsis when it had to.
+func truncateLabel(label string, max int) string {
+	runes := []rune(label)
+	if (len(runes) <= max) {
+		return label
+	}
+
+	return string(runes[:max]) + "…"
+}
 
 // squadChatLabel falls back to the raw chat id when a chat is bound but
 // its title wasn't captured (e.g. bound before this field existed).
@@ -541,7 +559,7 @@ func NewSquadForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templates.Render(w, "squad_form", squadFormData{Action: "/panel/squads", ShowCodeFields: true})
+	templates.Render(w, r, "squad_form", squadFormData{Action: "/panel/squads", ShowCodeFields: true})
 }
 
 func CreateSquad(w http.ResponseWriter, r *http.Request) {
@@ -587,7 +605,7 @@ func RenameSquadForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templates.Render(w, "squad_form", squadFormData{
+	templates.Render(w, r, "squad_form", squadFormData{
 		Action: "/panel/squads/" + squad.Code + "/rename",
 		Name: squad.Name,
 	})
@@ -739,6 +757,47 @@ func RemoveSquadMemberOverride(w http.ResponseWriter, r *http.Request) {
 
 	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionClearSquadOverride,
 		fmt.Sprintf("vk%d: снято переопределение (отряд %s)", vkId, squad.Code))
+	http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+}
+
+// FreezeSquadMember excludes a player from the bot's missing-profile/
+// report/sleep reminder pings ahead of them actually going silent — for
+// an announced absence, say — without waiting out the natural staleness
+// window. Reversal is never manual: it clears the moment a fresh profile
+// or report comes in (see storeParsedProfile / HandleReport).
+func FreezeSquadMember(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanManageMembers(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	vkId, vkErr := strconv.ParseUint(chi.URLParam(r, "vk_id"), 10, 64)
+	if (vkErr != nil) {
+		http.Error(w, "Некорректный VK id", http.StatusBadRequest)
+		return
+	}
+
+	user := repository.FindOneUserByVkId(int(vkId))
+	if (user == nil) {
+		http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
+		return
+	}
+
+	if setErr := repository.SetUserFrozen(user, true); (setErr != nil) {
+		http.Error(w, "Не удалось заморозить игрока", http.StatusInternalServerError)
+		return
+	}
+
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionFreezePlayer,
+		fmt.Sprintf("vk%d: заморожен (отряд %s)", vkId, squad.Code))
 	http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
 }
 

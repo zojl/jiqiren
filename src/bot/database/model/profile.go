@@ -5,6 +5,7 @@ import "time"
 type Profile struct {
 	Id uint `gorm:"primaryKey"`
 	Username string
+	Status string
 	TeamId *uint `gorm:"null"`
 	Team Team `gorm:"foreignKey:TeamId"`
 	FractionId uint
@@ -12,6 +13,7 @@ type Profile struct {
 	Lead uint
 	Way uint
 	Level uint
+	Prestige uint
 	Experience uint
 	Money uint
 	Vkcoin float64 `gorm:"type:decimal(21,6);"`

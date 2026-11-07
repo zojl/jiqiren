@@ -11,6 +11,7 @@ import (
 	"jiqiren/bot/database"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
+	"jiqiren/bot/readiness"
 )
 
 var regulars = [...]string {
@@ -23,10 +24,11 @@ var regulars = [...]string {
 		`\S{0,2}` +
 		`(?P<Fraction>Huǒqiáng|Aegis|V-hack|Phantoms|NetKings|NHS)` +
 		`\)`,
-	`💻: (?P<Level>\d+)`,
+	`(?P<Status>[🔻⭕🔺💡🔹🔸])[a-zA-Z0-9а-яА-ЯёЁ ,_\-!?\$<>]{3,25}\s\(`,
+	`💻: (?P<Level>\d+)(?:💎\d+)?;`,
 	`💻Уровень: (?P<Level>\d+)`,
-	//`💻: \d+💎(?P<Prestige>\d?);`,
-	//`💎Престиж: (?P<Prestige>\d?)`,
+	`💻: \d+💎(?P<Prestige>\d+)`,
+	`💎Престиж: (?P<Prestige>\d+)`,
 	`💡: (?P<Experience>\d+)`,
 	`💡Опыт: (?P<Experience>\d+)`,
 	`💵: (?P<Money>\d+)`,
@@ -65,7 +67,8 @@ var regulars = [...]string {
 	`🔋Выносливость: (?P<Stamina>\d+)`,
 	`\n⚔: (?P<Target>[🔐💠🚧🎭🈵🔱🇺🇸]{1,2})`,
 	`Занятие:\n[А-Яа-я ⚔]*(?P<Target>[🔐💠🚧🎭🈵🔱🇺🇸]{1,2})`,
-	`(?:До 🛌:|🛌До сна осталось:) (?P<BeforeSleepHour>\d{1,2}) (?:ч\.|час.{0,2})(?: и)? (?P<BeforeSleepMinute>\d{1,2}) (?:мин\.|минут.?)`,
+	`(?:До 🛌:|🛌До сна осталось:) (?P<BeforeSleepHour>\d{1,2}) (?:ч\.|час.{0,2})(?:(?: и)? (?P<BeforeSleepMinute>\d{1,2}) (?:мин\.|минут.?))?`,
+	`(?:До 🛌:|🛌До сна осталось:) (?P<BeforeSleepMinute>\d{1,2}) (?:мин\.|минут.?)`,
 }
 
 var compiledRegulars = make([]*regexp.Regexp, len(regulars), len(regulars))
@@ -78,11 +81,14 @@ func HandleProfile(messageText string, senderId int, messageTime time.Time) *Pro
 
 func storeParsedProfile(parsedProfile *ProfileParseResult, senderId int, messageTime time.Time) *ProfileResponse {
 	user := repository.FindOrCreateUserByVkId(senderId)
+	if (user.Frozen) {
+		repository.SetUserFrozen(user, false)
+	}
 	fraction := getFraction(parsedProfile)
 	team := getTeam(parsedProfile, fraction)
 	target := getTarget(parsedProfile, fraction)
-	isProfileInserted := insertProfile(parsedProfile, user, fraction, team, target, messageTime)
-	return validateInsertedProfile(isProfileInserted, parsedProfile)
+	profile, isProfileInserted := insertProfile(parsedProfile, user, fraction, team, target, messageTime)
+	return validateInsertedProfile(isProfileInserted, parsedProfile, profile, team, fraction)
 }
 
 func getFraction(parsedProfile *ProfileParseResult) *model.Fraction {
@@ -134,7 +140,7 @@ func insertProfile(
 	team *model.Team,
 	target *model.Fraction,
 	messageTime time.Time,
-) bool {
+) (model.Profile, bool) {
 	var (
 		profile model.Profile
 		val uint64
@@ -142,6 +148,8 @@ func insertProfile(
 
 	val, _ = strconv.ParseUint(parsedProfile.Level, 10, 64)
 	profile.Level = uint(val)
+	val, _ = strconv.ParseUint(parsedProfile.Prestige, 10, 64)
+	profile.Prestige = uint(val)
 	val, _ = strconv.ParseUint(parsedProfile.Experience, 10, 64)
 	profile.Experience = uint(val)
 	val, _ = strconv.ParseUint(parsedProfile.Money, 10, 64)
@@ -180,6 +188,7 @@ func insertProfile(
 	profile.MessageDate = messageTime
 
 	profile.Username = parsedProfile.Username
+	profile.Status = parsedProfile.Status
 	profile.Vkcoin, _ = strconv.ParseFloat(parsedProfile.Vkcoin, 10)
 	profile.Lead = getLeadType(parsedProfile.Lead)
 	profile.Way = getWayType(parsedProfile.Way)
@@ -206,7 +215,7 @@ func insertProfile(
 	db := database.GetDb()
 	db.Create(&profile)
 
-	return profile.Id != 0
+	return profile, profile.Id != 0
 }
 
 func getLeadType(icon string) uint {
@@ -275,32 +284,39 @@ func parseProfile(messageText string) *ProfileParseResult {
 	return &parsedProfile
 }
 
-func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParseResult) *ProfileResponse {
+func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParseResult, profile model.Profile, team *model.Team, fraction *model.Fraction) *ProfileResponse {
 	response := ProfileResponse{
 		IsInserted: isProfileInserted,
 		Messages: make([]string, 0, 5),
 	}
 
-	if (len(parsedProfile.Target) == 0) {
+	thresholds := readiness.ThresholdsFor(fraction)
+
+	if (profile.TargetId == nil) {
 		response.Messages = append(response.Messages, "‼️Не выбрана цель на следующую битву! Не забудьте выбрать цель перед битвой.")
+	} else if (!readiness.TargetMatches(profile, team, fraction)) {
+		response.Messages = append(response.Messages, "❗Выбрана неправильная цель на следующую битву! Не забудьте сменить цель перед битвой.")
 	}
 
 	if (len(parsedProfile.Money) > 0) {
 		money, _ := strconv.ParseUint(parsedProfile.Money, 10, 64)
-		level, _ := strconv.ParseUint(parsedProfile.Level, 10, 64)
-		if (money >= level*10) {
-			response.Messages = append(response.Messages, "‼️Очень много денег! Не забудьте слить деньги в акции перед битвой.")
-		} else if (money >= 10) {
-			response.Messages = append(response.Messages, "⚠️Рекомендуется слить деньги до значения меньше 10 перед битвой.")
+		if (money >= uint64(thresholds.MoneyVerySevere)) {
+			response.Messages = append(response.Messages, "‼️Очень много денег! Обязательно слейте деньги в акции перед битвой.")
+		} else if (money >= uint64(thresholds.MoneySevere)) {
+			response.Messages = append(response.Messages, "❗Много денег! Не забудьте слить деньги в акции перед битвой.")
+		} else if (money > uint64(thresholds.MoneyRecommended)) {
+			response.Messages = append(response.Messages, fmt.Sprintf("⚠️Рекомендуется слить деньги до значения не выше %d перед битвой.", thresholds.MoneyRecommended))
 		}
 	}
 
-	if (len(parsedProfile.Money) > 0) {
+	if (len(parsedProfile.Stamina) > 0) {
 		stamina, _ := strconv.ParseUint(parsedProfile.Stamina, 10, 64)
-		if (stamina < 200) {
-			response.Messages = append(response.Messages, "‼️Мало выносливости! Не забудьте пополнить выносливость перед битвой.")
-		} else if (stamina < 250) {
-			response.Messages = append(response.Messages, "⚠️Рекомендуется пополнить выносливость до 250 перед битвой.")
+		if (stamina < uint64(thresholds.StaminaVerySevere)) {
+			response.Messages = append(response.Messages, "‼️Очень мало выносливости! Обязательно пополните выносливость перед битвой.")
+		} else if (stamina < uint64(thresholds.StaminaSevere)) {
+			response.Messages = append(response.Messages, "❗Мало выносливости! Не забудьте пополнить выносливость перед битвой.")
+		} else if (stamina < uint64(thresholds.StaminaRecommended)) {
+			response.Messages = append(response.Messages, fmt.Sprintf("⚠️Рекомендуется пополнить выносливость до %d перед битвой.", thresholds.StaminaIdeal))
 		}
 	}
 
@@ -308,8 +324,6 @@ func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParse
 		hour, _ := strconv.ParseUint(parsedProfile.BeforeSleepHour, 10, 64)
 		if (hour < 24) {
 			response.Messages = append(response.Messages, "ℹ️Меньше 24 часов до сна, не забудьте отправить персонажа спать после битвы.")
-		} else if (hour < 12) {
-			response.Messages = append(response.Messages, "⚠️Меньше 12 часов до сна! Не проспите битву!")
 		}
 	}
 
@@ -341,11 +355,13 @@ func getCompiledRegulars () []*regexp.Regexp {
 
 type ProfileParseResult struct {
 	Username string
+	Status string
 	Squad string
 	Fraction string
 	Lead string
 	Way string
 	Level string
+	Prestige string
 	Experience string
 	Money string
 	Vkcoin string

@@ -1,0 +1,9 @@
+{{define "message_form"}}
+<h1>сообщение команды</h1>
+<form method="post" action="{{.Action}}" class="form">
+  <label>текст<textarea name="message" rows="6">{{.Message}}</textarea></label>
+  <button type="submit">сохранить</button>
+</form>
+<p class="hint">пустой текст снимает сообщение</p>
+<a class="back" href="/panel/fraction">← назад</a>
+{{end}}

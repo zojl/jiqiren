@@ -39,6 +39,10 @@ func HandleReport(messageText string, senderId int, messageTime time.Time) *Repo
 
 	response.IsUserExist = true
 
+	if (user.Frozen) {
+		repository.SetUserFrozen(user, false)
+	}
+
 	date := parseDate(parsedReport.Date)
 
 	reportsCount := repository.CountReportsByUserAndDate(senderId, date)
