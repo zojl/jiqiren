@@ -61,6 +61,15 @@ var Schemes = []Scheme{
 	{Id: "one", Label: "One",
 		Day:   Preview{Bg: "#fafafa", Accent: "#4078f2", Warn: "#c18401", Danger: "#e45649"},
 		Night: Preview{Bg: "#282c34", Accent: "#61afef", Warn: "#e5c07b", Danger: "#e06c75"}},
+	{Id: "crimson", Label: "Багровый",
+		Day:   Preview{Bg: "#fdf2f2", Accent: "#c81d25", Warn: "#a9791a", Danger: "#b00020"},
+		Night: Preview{Bg: "#190b0c", Accent: "#e5484d", Warn: "#e8a23c", Danger: "#ff6b6b"}},
+	{Id: "blueorange", Label: "Сине-оранжевый",
+		Day:   Preview{Bg: "#eef5fb", Accent: "#1f6fb8", Warn: "#d9720a", Danger: "#c43d3d"},
+		Night: Preview{Bg: "#0a1420", Accent: "#2f8fe0", Warn: "#ff8c1a", Danger: "#ff5f5f"}},
+	{Id: "oldglory", Label: "Old Glory",
+		Day:   Preview{Bg: "#fbfbfd", Accent: "#b22234", Warn: "#b8860b", Danger: "#8e1b1b"},
+		Night: Preview{Bg: "#1b1b3a", Accent: "#b22234", Warn: "#ffcc33", Danger: "#ff5a5a"}},
 }
 
 func IsValidMode(id string) bool {

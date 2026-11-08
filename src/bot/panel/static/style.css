@@ -856,3 +856,139 @@ html[data-scheme="one"][data-mode="night"] {
   }
 }
 
+
+html[data-scheme="crimson"] {
+  --bg: #fdf2f2;
+  --surface: #f6dede;
+  --fg: #4a1316;
+  --dim: #8a5a5a;
+  --accent: #c81d25;
+  --accent-fg: #fff5f5;
+  --border: #e3c0c0;
+  --danger: #b00020;
+  --warn: #a9791a;
+  --night-bg: #190b0c;
+  --night-surface: #241214;
+  --night-fg: #f3dcdc;
+  --night-dim: #8f6a6a;
+  --night-accent: #e5484d;
+  --night-accent-fg: #1a0506;
+  --night-border: #3d1a1c;
+  --night-danger: #ff6b6b;
+  --night-warn: #e8a23c;
+}
+html[data-scheme="crimson"][data-mode="night"] {
+  --bg: var(--night-bg);
+  --surface: var(--night-surface);
+  --fg: var(--night-fg);
+  --dim: var(--night-dim);
+  --accent: var(--night-accent);
+  --accent-fg: var(--night-accent-fg);
+  --border: var(--night-border);
+  --danger: var(--night-danger);
+  --warn: var(--night-warn);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-scheme="crimson"][data-mode="auto"] {
+    --bg: var(--night-bg);
+    --surface: var(--night-surface);
+    --fg: var(--night-fg);
+    --dim: var(--night-dim);
+    --accent: var(--night-accent);
+    --accent-fg: var(--night-accent-fg);
+    --border: var(--night-border);
+    --danger: var(--night-danger);
+    --warn: var(--night-warn);
+  }
+}
+
+html[data-scheme="blueorange"] {
+  --bg: #eef5fb;
+  --surface: #dcebf7;
+  --fg: #10263b;
+  --dim: #51738c;
+  --accent: #1f6fb8;
+  --accent-fg: #f5faff;
+  --border: #c3dbee;
+  --danger: #c43d3d;
+  --warn: #d9720a;
+  --night-bg: #0a1420;
+  --night-surface: #11202f;
+  --night-fg: #d7e6f5;
+  --night-dim: #5f7f99;
+  --night-accent: #2f8fe0;
+  --night-accent-fg: #f5faff;
+  --night-border: #1c3346;
+  --night-danger: #ff5f5f;
+  --night-warn: #ff8c1a;
+}
+html[data-scheme="blueorange"][data-mode="night"] {
+  --bg: var(--night-bg);
+  --surface: var(--night-surface);
+  --fg: var(--night-fg);
+  --dim: var(--night-dim);
+  --accent: var(--night-accent);
+  --accent-fg: var(--night-accent-fg);
+  --border: var(--night-border);
+  --danger: var(--night-danger);
+  --warn: var(--night-warn);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-scheme="blueorange"][data-mode="auto"] {
+    --bg: var(--night-bg);
+    --surface: var(--night-surface);
+    --fg: var(--night-fg);
+    --dim: var(--night-dim);
+    --accent: var(--night-accent);
+    --accent-fg: var(--night-accent-fg);
+    --border: var(--night-border);
+    --danger: var(--night-danger);
+    --warn: var(--night-warn);
+  }
+}
+
+html[data-scheme="oldglory"] {
+  --bg: #fbfbfd;
+  --surface: #e9e9f2;
+  --fg: #1b1b3a;
+  --dim: #5a5a86;
+  --accent: #b22234;
+  --accent-fg: #ffffff;
+  --border: #c7c7dc;
+  --danger: #8e1b1b;
+  --warn: #b8860b;
+  --night-bg: #1b1b3a;
+  --night-surface: #242452;
+  --night-fg: #f2f2f7;
+  --night-dim: #8d8dc0;
+  --night-accent: #b22234;
+  --night-accent-fg: #ffffff;
+  --night-border: #33336a;
+  --night-danger: #ff5a5a;
+  --night-warn: #ffcc33;
+}
+html[data-scheme="oldglory"][data-mode="night"] {
+  --bg: var(--night-bg);
+  --surface: var(--night-surface);
+  --fg: var(--night-fg);
+  --dim: var(--night-dim);
+  --accent: var(--night-accent);
+  --accent-fg: var(--night-accent-fg);
+  --border: var(--night-border);
+  --danger: var(--night-danger);
+  --warn: var(--night-warn);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-scheme="oldglory"][data-mode="auto"] {
+    --bg: var(--night-bg);
+    --surface: var(--night-surface);
+    --fg: var(--night-fg);
+    --dim: var(--night-dim);
+    --accent: var(--night-accent);
+    --accent-fg: var(--night-accent-fg);
+    --border: var(--night-border);
+    --danger: var(--night-danger);
+    --warn: var(--night-warn);
+  }
+}
+
