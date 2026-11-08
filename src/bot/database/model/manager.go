@@ -20,4 +20,6 @@ type Manager struct {
 	AccountType *AccountType `gorm:"null;size:16"`
 	LoginCode *string `gorm:"null;size:6"`
 	LoginCodeExpiresAt *time.Time `gorm:"null"`
+	ThemeMode *string `gorm:"null;size:8"`
+	ColorScheme *string `gorm:"null;size:16"`
 }

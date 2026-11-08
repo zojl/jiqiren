@@ -1,0 +1,30 @@
+{{define "theme_settings_form"}}
+<h1>тема оформления</h1>
+<form method="post" action="/panel/settings/theme" class="form settings-form">
+  <div class="settings-group">
+    <h2>режим</h2>
+    <div class="theme-mode-row">
+      {{range .Modes}}
+      <label class="checkbox-label"><input type="radio" name="mode" value="{{.Id}}"{{if eq .Id $.Mode}} checked{{end}}> {{.Label}}</label>
+      {{end}}
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <h2>цветовая схема</h2>
+    <div class="theme-scheme-grid">
+      {{range .Schemes}}
+      <label class="theme-scheme-option{{if eq .Id $.Scheme}} selected{{end}}">
+        <input type="radio" name="scheme" value="{{.Id}}"{{if eq .Id $.Scheme}} checked{{end}}>
+        <span class="theme-scheme-swatch" style="background:{{.Swatch}}"></span>
+        {{.Label}}
+      </label>
+      {{end}}
+    </div>
+  </div>
+
+  <button type="submit">сохранить</button>
+</form>
+<p class="hint">«авто» переключает день/ночь по настройкам устройства/браузера</p>
+<a class="back" href="/panel">← назад</a>
+{{end}}

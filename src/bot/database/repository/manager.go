@@ -86,3 +86,11 @@ func ClearManagerLoginCode(manager *model.Manager) error {
 		"login_code_expires_at": nil,
 	}).Error
 }
+
+func SetManagerTheme(manager *model.Manager, mode string, scheme string) error {
+	db := database.GetDb()
+	return db.Model(manager).Updates(map[string]interface{}{
+		"theme_mode": mode,
+		"color_scheme": scheme,
+	}).Error
+}

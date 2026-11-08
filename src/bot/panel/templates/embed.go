@@ -25,6 +25,17 @@ type NavItem struct {
 // every page without every call site building it by hand.
 var BuildNav func(r *http.Request) []NavItem
 
+// Theme is the resolved data-mode/data-scheme pair for the <html> tag.
+type Theme struct {
+	Mode   string
+	Scheme string
+}
+
+// BuildTheme is set by the handlers package at init time, mirroring BuildNav
+// — it resolves the current manager's theme preference (default on a nil/
+// pre-auth manager) without templates importing auth/database itself.
+var BuildTheme func(r *http.Request) Theme
+
 // Render executes the named page template, then wraps its output in the
 // shared layout together with the request's nav. Page templates must each
 // use a unique {{define}} name (layout.html.tmpl is the only template
@@ -41,10 +52,16 @@ func Render(w http.ResponseWriter, r *http.Request, name string, data interface{
 		nav = BuildNav(r)
 	}
 
+	theme := Theme{Mode: "night", Scheme: "hacker"}
+	if (BuildTheme != nil) {
+		theme = BuildTheme(r)
+	}
+
 	layoutData := struct {
-		Body template.HTML
-		Nav  []NavItem
-	}{Body: template.HTML(body.String()), Nav: nav}
+		Body  template.HTML
+		Nav   []NavItem
+		Theme Theme
+	}{Body: template.HTML(body.String()), Nav: nav, Theme: theme}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := parsed.ExecuteTemplate(w, "layout", layoutData); err != nil {

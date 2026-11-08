@@ -51,5 +51,7 @@ func buildNav(r *http.Request) []templates.NavItem {
 		items = append(items, templates.NavItem{Label: "Логи", Href: "/panel/audit", Active: path == "/audit"})
 	}
 
+	items = append(items, templates.NavItem{Label: "Тема", Href: "/panel/settings/theme", Active: strings.HasPrefix(path, "/settings/theme")})
+
 	return items
 }

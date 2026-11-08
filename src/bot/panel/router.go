@@ -85,6 +85,9 @@ func NewRouter() chi.Router {
 		r.Post("/managers/{vk_id}/delete", handlers.DeleteManager)
 
 		r.Get("/audit", handlers.AuditLog)
+
+		r.Get("/settings/theme", handlers.ThemeSettingsForm)
+		r.Post("/settings/theme", handlers.SetManagerTheme)
 	})
 
 	return r
