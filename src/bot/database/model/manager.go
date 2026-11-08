@@ -22,4 +22,5 @@ type Manager struct {
 	LoginCodeExpiresAt *time.Time `gorm:"null"`
 	ThemeMode *string `gorm:"null;size:8"`
 	ColorScheme *string `gorm:"null;size:16"`
+	SessionId *string `gorm:"null;size:64"`
 }

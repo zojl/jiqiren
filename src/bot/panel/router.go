@@ -86,8 +86,9 @@ func NewRouter() chi.Router {
 
 		r.Get("/audit", handlers.AuditLog)
 
-		r.Get("/settings/theme", handlers.ThemeSettingsForm)
+		r.Get("/settings", handlers.SettingsIndex)
 		r.Post("/settings/theme", handlers.SetManagerTheme)
+		r.Post("/settings/sessions/end-all", handlers.EndAllSessions)
 	})
 
 	return r

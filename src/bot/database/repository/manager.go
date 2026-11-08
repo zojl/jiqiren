@@ -94,3 +94,16 @@ func SetManagerTheme(manager *model.Manager, mode string, scheme string) error {
 		"color_scheme": scheme,
 	}).Error
 }
+
+// SetManagerSessionId persists a new session identifier and, since JWT
+// issuance needs it immediately after, also updates it on the in-memory
+// manager — a plain db.Model(...).Updates(map) call wouldn't write it back.
+func SetManagerSessionId(manager *model.Manager, sessionId string) error {
+	db := database.GetDb()
+	if err := db.Model(manager).Update("session_id", sessionId).Error; (err != nil) {
+		return err
+	}
+
+	manager.SessionId = &sessionId
+	return nil
+}

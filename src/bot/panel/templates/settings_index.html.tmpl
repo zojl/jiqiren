@@ -1,0 +1,40 @@
+{{define "settings_index"}}
+<h1>настройки</h1>
+
+<div class="settings-group">
+  <h2>тема оформления</h2>
+  <form method="post" action="/panel/settings/theme" class="form settings-form">
+    <div class="theme-mode-row">
+      {{range .Modes}}
+      <label class="checkbox-label"><input type="radio" name="mode" value="{{.Id}}"{{if eq .Id $.ThemeMode}} checked{{end}}> {{.Label}}</label>
+      {{end}}
+    </div>
+
+    <div class="theme-scheme-grid">
+      {{range .Schemes}}
+      <label class="theme-scheme-option">
+        <input type="radio" name="scheme" value="{{.Id}}"{{if eq .Id $.ColorScheme}} checked{{end}}>
+        <span class="theme-scheme-preview">
+          <span class="theme-scheme-bar" title="день" style="background: linear-gradient(to right, {{.Day.Bg}} 0% 25%, {{.Day.Accent}} 25% 50%, {{.Day.Warn}} 50% 75%, {{.Day.Danger}} 75% 100%)"></span>
+          <span class="theme-scheme-bar" title="ночь" style="background: linear-gradient(to right, {{.Night.Bg}} 0% 25%, {{.Night.Accent}} 25% 50%, {{.Night.Warn}} 50% 75%, {{.Night.Danger}} 75% 100%)"></span>
+        </span>
+        <span class="theme-scheme-name">{{.Label}}</span>
+      </label>
+      {{end}}
+    </div>
+
+    <button type="submit">сохранить тему</button>
+  </form>
+  <p class="hint">«авто» переключает день/ночь по настройкам устройства/браузера</p>
+</div>
+
+<div class="settings-group">
+  <h2>сессии</h2>
+  <p class="hint">завершает все активные входы на всех устройствах — после этого придётся заново получить ссылку входа через /login везде, кроме этого браузера.</p>
+  <form method="post" action="/panel/settings/sessions/end-all">
+    <button type="submit" class="danger">завершить все сессии</button>
+  </form>
+</div>
+
+<a class="back" href="/panel">← назад</a>
+{{end}}

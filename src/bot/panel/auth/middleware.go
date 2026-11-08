@@ -33,6 +33,12 @@ func RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
+		if (manager.SessionId == nil || claims.SessionId != *manager.SessionId) {
+			ClearSession(w)
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+
 		RenewIfNeeded(w, claims)
 
 		ctx := context.WithValue(r.Context(), managerContextKey, manager)

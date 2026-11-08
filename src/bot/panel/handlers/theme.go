@@ -18,25 +18,6 @@ func buildTheme(r *http.Request) templates.Theme {
 	return templates.Theme{Mode: mode, Scheme: scheme}
 }
 
-type themeSettingsFormData struct {
-	Mode    string
-	Scheme  string
-	Modes   []theme.Mode
-	Schemes []theme.Scheme
-}
-
-func ThemeSettingsForm(w http.ResponseWriter, r *http.Request) {
-	manager := auth.ManagerFromContext(r)
-	mode, scheme := theme.Resolve(manager)
-
-	templates.Render(w, r, "theme_settings_form", themeSettingsFormData{
-		Mode:    mode,
-		Scheme:  scheme,
-		Modes:   theme.Modes,
-		Schemes: theme.Schemes,
-	})
-}
-
 func SetManagerTheme(w http.ResponseWriter, r *http.Request) {
 	manager := auth.ManagerFromContext(r)
 
@@ -52,5 +33,5 @@ func SetManagerTheme(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/panel/settings/theme", http.StatusFound)
+	http.Redirect(w, r, "/panel/settings", http.StatusFound)
 }
