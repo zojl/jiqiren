@@ -208,8 +208,8 @@ function mskTimeLabel(ms) {
   }
 
   var seriesColors = isDarkMode()
-    ? { incomeToday: "#39ff8f", contributionsToday: "#e8c547", budget: "#5f8fff", incomeTotal: "#5fffe0", contributionsTotal: "#ff5fe0" }
-    : { incomeToday: "#1f8a46", contributionsToday: "#a9791a", budget: "#2452b8", incomeTotal: "#0e7d72", contributionsTotal: "#b8318f" };
+    ? { incomeToday: "#39ff8f", contributionsToday: "#e8c547", budget: "#5f8fff", incomeTotal: "#ff7a5f", contributionsTotal: "#ff5fe0" }
+    : { incomeToday: "#1f8a46", contributionsToday: "#a9791a", budget: "#2452b8", incomeTotal: "#b8391f", contributionsTotal: "#b8318f" };
 
   var SERIES = [
     { key: "incomeToday", label: "доход за день", color: seriesColors.incomeToday, on: true },
