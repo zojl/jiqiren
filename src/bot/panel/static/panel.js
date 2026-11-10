@@ -189,13 +189,43 @@ function mskTimeLabel(ms) {
   var canvas = block.querySelector(".budget-chart-canvas");
   var updatedAtLabel = block.querySelector(".budget-chart-updated-at");
 
+  // The series' own hues are a fixed pair of palettes (not per-scheme) picked
+  // for contrast against a light vs. a dark page background — the bright
+  // night set goes washed-out and unreadable on a light/day background,
+  // so pick by the mode actually in effect (resolving "auto" the same way
+  // the CSS does) rather than one fixed palette for every mode.
+  function isDarkMode() {
+    var mode = document.documentElement.getAttribute("data-mode");
+    if (mode === "night") {
+      return true;
+    }
+
+    if (mode === "day") {
+      return false;
+    }
+
+    return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+
+  var seriesColors = isDarkMode()
+    ? { incomeToday: "#39ff8f", contributionsToday: "#e8c547", budget: "#5f8fff", incomeTotal: "#5fffe0", contributionsTotal: "#ff5fe0" }
+    : { incomeToday: "#1f8a46", contributionsToday: "#a9791a", budget: "#2452b8", incomeTotal: "#0e7d72", contributionsTotal: "#b8318f" };
+
   var SERIES = [
-    { key: "incomeToday", label: "доход за день", color: "#39ff8f", on: true },
-    { key: "contributionsToday", label: "донат за день", color: "#e8c547", on: true },
-    { key: "budget", label: "бюджет", color: "#5f8fff", on: false },
-    { key: "incomeTotal", label: "доход всего", color: "#5fffe0", on: false },
-    { key: "contributionsTotal", label: "донат всего", color: "#ff5fe0", on: false }
+    { key: "incomeToday", label: "доход за день", color: seriesColors.incomeToday, on: true },
+    { key: "contributionsToday", label: "донат за день", color: seriesColors.contributionsToday, on: true },
+    { key: "budget", label: "бюджет", color: seriesColors.budget, on: false },
+    { key: "incomeTotal", label: "доход всего", color: seriesColors.incomeTotal, on: false },
+    { key: "contributionsTotal", label: "донат всего", color: seriesColors.contributionsTotal, on: false }
   ];
+
+  // Structural lines (gridlines/guides) use currentColor off the inherited
+  // --fg so they stay legible under any scheme/mode automatically; the
+  // background-colored ring around hover dots and the error text need the
+  // theme's actual resolved colors, read once from the live CSS variables.
+  var themeStyle = getComputedStyle(document.documentElement);
+  var themeBg = (themeStyle.getPropertyValue("--bg") || "#0a0d0a").trim();
+  var themeDanger = (themeStyle.getPropertyValue("--danger") || "#ff5f5f").trim();
 
   function buildLegend() {
     SERIES.forEach(function (series) {
@@ -267,13 +297,13 @@ function mskTimeLabel(ms) {
 
     var parts = [];
 
-    parts.push('<line x1="' + padding.left + '" y1="' + (height - padding.bottom) + '" x2="' + (width - padding.right) + '" y2="' + (height - padding.bottom) + '" stroke="#1d2e20" />');
+    parts.push('<line x1="' + padding.left + '" y1="' + (height - padding.bottom) + '" x2="' + (width - padding.right) + '" y2="' + (height - padding.bottom) + '" stroke="currentColor" opacity="0.3" />');
 
     var yTicks = 4;
     for (var i = 0; i <= yTicks; i++) {
       var value = minValue + (maxValue - minValue) * i / yTicks;
       var yy = scaleY(value);
-      parts.push('<line x1="' + padding.left + '" y1="' + yy + '" x2="' + (width - padding.right) + '" y2="' + yy + '" stroke="#1d2e20" stroke-dasharray="2,3" />');
+      parts.push('<line x1="' + padding.left + '" y1="' + yy + '" x2="' + (width - padding.right) + '" y2="' + yy + '" stroke="currentColor" opacity="0.2" stroke-dasharray="2,3" />');
       parts.push('<text x="' + (padding.left - 8) + '" y="' + yy + '" text-anchor="end" dominant-baseline="middle" font-size="11" fill="currentColor" opacity="0.6">' + Math.round(value) + "</text>");
     }
 
@@ -298,9 +328,9 @@ function mskTimeLabel(ms) {
       });
     });
 
-    parts.push('<g class="hover-guide" style="display:none"><line class="hover-line" x1="0" y1="' + padding.top + '" x2="0" y2="' + (height - padding.bottom) + '" stroke="#5f8f6f" stroke-dasharray="3,3" />' +
+    parts.push('<g class="hover-guide" style="display:none"><line class="hover-line" x1="0" y1="' + padding.top + '" x2="0" y2="' + (height - padding.bottom) + '" stroke="currentColor" opacity="0.5" stroke-dasharray="3,3" />' +
       activeSeries.map(function (series) {
-        return '<circle class="hover-dot" data-key="' + series.key + '" r="4" fill="' + series.color + '" stroke="#0a0d0a" stroke-width="1.5" />';
+        return '<circle class="hover-dot" data-key="' + series.key + '" r="4" fill="' + series.color + '" stroke="' + themeBg + '" stroke-width="1.5" />';
       }).join("") + "</g>");
 
     parts.push('<rect class="hover-capture" x="' + padding.left + '" y="' + padding.top + '" width="' + plotWidth + '" height="' + plotHeight + '" fill="transparent" />');
@@ -395,7 +425,7 @@ function mskTimeLabel(ms) {
       .then(function (response) { return response.json(); })
       .then(function (json) {
         if (json.error) {
-          svg.innerHTML = '<text x="' + (width / 2) + '" y="' + (height / 2) + '" text-anchor="middle" fill="#ff5f5f">' + json.error + "</text>";
+          svg.innerHTML = '<text x="' + (width / 2) + '" y="' + (height / 2) + '" text-anchor="middle" fill="' + themeDanger + '">' + json.error + "</text>";
           return;
         }
 
@@ -412,7 +442,7 @@ function mskTimeLabel(ms) {
         }
       })
       .catch(function () {
-        svg.innerHTML = '<text x="' + (width / 2) + '" y="' + (height / 2) + '" text-anchor="middle" fill="#ff5f5f">не удалось загрузить график</text>';
+        svg.innerHTML = '<text x="' + (width / 2) + '" y="' + (height / 2) + '" text-anchor="middle" fill="' + themeDanger + '">не удалось загрузить график</text>';
       });
   }
 
