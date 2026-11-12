@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
@@ -28,6 +29,8 @@ type fractionPageData struct {
 	MoneySevere        uint
 	MoneyVerySevere    uint
 	CanSetSettings     bool
+
+	TargetPlan targetPlanSectionData
 }
 
 // FractionPage is "Команда" — the fraction-wide counterpart of a squad
@@ -59,6 +62,12 @@ func FractionPage(w http.ResponseWriter, r *http.Request) {
 
 	thresholds := readiness.ThresholdsFor(fraction)
 
+	plannedTargets, plannedTargetsErr := repository.FindPlannedTargetsByFractionId(fraction.Id)
+	if (plannedTargetsErr != nil) {
+		plannedTargets = nil
+	}
+	targetPlan := buildTargetPlanSection(plannedTargets, time.Now(), allFractions, "/panel/fraction/targets", permissions.CanSetFractionTarget())
+
 	templates.Render(w, r, "fraction_page", fractionPageData{
 		Name:              fraction.Name,
 		Icon:              fraction.Icon,
@@ -77,5 +86,7 @@ func FractionPage(w http.ResponseWriter, r *http.Request) {
 		MoneySevere:        thresholds.MoneySevere,
 		MoneyVerySevere:    thresholds.MoneyVerySevere,
 		CanSetSettings:     permissions.CanSetFractionSettings(),
+
+		TargetPlan: targetPlan,
 	})
 }

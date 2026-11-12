@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"jiqiren/bot/database/repository"
 	"jiqiren/bot/messageHandler/plain"
 	"jiqiren/bot/messageHandler/reply"
 
@@ -48,6 +49,13 @@ func handleHwForward(message object.MessagesMessage, parentMessage *object.Messa
 			for _, messageNote := range profileHandleResult.Messages {
 				message += "\n" + messageNote
 			}
+
+			isPrivate := parentMessage.PeerID == parentMessage.FromID
+			if (isPrivate) {
+				replyParams.ReplyWithKeyboard(message, buildProfileAckKeyboard(senderId))
+				return
+			}
+
 			replyParams.Reply(message)
 			return
 		}
@@ -114,6 +122,27 @@ func handleHwForward(message object.MessagesMessage, parentMessage *object.Messa
 	}
 
 	log.Println("bad message " + message.Text)
+}
+
+const profileButtonLabel = "🥷 Профиль"
+const webPanelButtonLabel = "🌐 Веб-панель"
+
+// buildProfileAckKeyboard replaces the chat's input-area keyboard (not an
+// inline keyboard under the message) with a "Профиль" button, equivalent to
+// /profile, plus a "Веб-панель" button equivalent to /login for users with a
+// managers table record. Buttons are callback-type: the tap is routed by
+// HandleMessageEvent through the button's payload, not by resending the
+// visible label as a chat message.
+func buildProfileAckKeyboard(vkId int) *object.MessagesKeyboard {
+	keyboard := object.NewMessagesKeyboard(false)
+	keyboard.AddRow()
+	keyboard.AddCallbackButton(profileButtonLabel, map[string]string{"cmd": "profile"}, object.Primary)
+
+	if _, err := repository.FindOneManagerByVkId(uint(vkId)); (err == nil) {
+		keyboard.AddCallbackButton(webPanelButtonLabel, map[string]string{"cmd": "login"}, object.Primary)
+	}
+
+	return keyboard
 }
 
 func isProfileMessage(messageText string) bool {

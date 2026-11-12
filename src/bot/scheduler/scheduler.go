@@ -46,6 +46,7 @@ func tick() {
 	nowMsk := now.In(moscow)
 
 	tickBudgetSnapshots(nowMsk)
+	tickPlannedTargets(now)
 
 	messages, err := repository.FindAllScheduledMessages()
 	if (err != nil) {

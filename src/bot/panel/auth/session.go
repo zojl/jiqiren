@@ -1,11 +1,14 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 	"os"
 	"time"
 
 	"jiqiren/bot/database/model"
+	"jiqiren/bot/database/repository"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -18,10 +21,57 @@ func signingKey() []byte {
 	return []byte(os.Getenv("JWT_SECRET"))
 }
 
-func sessionClaimsFromManagerId(managerId uint) *SessionClaims {
+func generateSessionId() (string, error) {
+	buf := make([]byte, 24)
+	if _, err := rand.Read(buf); (err != nil) {
+		return "", err
+	}
+
+	return hex.EncodeToString(buf), nil
+}
+
+// ensureSessionId returns manager's current session id, lazily generating
+// and persisting one on first use (e.g. the very first login after this
+// field was introduced) rather than requiring a separate backfill.
+func ensureSessionId(manager *model.Manager) (string, error) {
+	if (manager.SessionId != nil) {
+		return *manager.SessionId, nil
+	}
+
+	sessionId, err := generateSessionId()
+	if (err != nil) {
+		return "", err
+	}
+
+	if err := repository.SetManagerSessionId(manager, sessionId); (err != nil) {
+		return "", err
+	}
+
+	return sessionId, nil
+}
+
+// RotateSessionId replaces manager's session id with a freshly generated
+// one, invalidating every cookie issued against the old value — the
+// "завершить все сессии" action. Callers still need IssueSession
+// afterwards to keep the current device logged in under the new id.
+func RotateSessionId(manager *model.Manager) (string, error) {
+	sessionId, err := generateSessionId()
+	if (err != nil) {
+		return "", err
+	}
+
+	if err := repository.SetManagerSessionId(manager, sessionId); (err != nil) {
+		return "", err
+	}
+
+	return sessionId, nil
+}
+
+func sessionClaims(managerId uint, sessionId string) *SessionClaims {
 	now := time.Now()
 	return &SessionClaims{
 		ManagerId: managerId,
+		SessionId: sessionId,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt: jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(sessionLifetime)),
@@ -50,7 +100,12 @@ func setCookie(w http.ResponseWriter, claims *SessionClaims) error {
 }
 
 func IssueSession(w http.ResponseWriter, manager *model.Manager) error {
-	return setCookie(w, sessionClaimsFromManagerId(manager.Id))
+	sessionId, err := ensureSessionId(manager)
+	if (err != nil) {
+		return err
+	}
+
+	return setCookie(w, sessionClaims(manager.Id, sessionId))
 }
 
 func ParseSessionCookie(r *http.Request) (*SessionClaims, error) {
@@ -100,5 +155,5 @@ func RenewIfNeeded(w http.ResponseWriter, claims *SessionClaims) {
 		return
 	}
 
-	setCookie(w, sessionClaimsFromManagerId(claims.ManagerId))
+	setCookie(w, sessionClaims(claims.ManagerId, claims.SessionId))
 }

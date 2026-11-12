@@ -30,6 +30,11 @@ const (
 	AuditActionSetSquadOverride    AuditAction = "set_squad_override"
 	AuditActionClearSquadOverride  AuditAction = "clear_squad_override"
 	AuditActionFreezePlayer        AuditAction = "freeze_player"
+	AuditActionCreatePlannedTarget AuditAction = "create_planned_target"
+	AuditActionUpdatePlannedTarget AuditAction = "update_planned_target"
+	AuditActionDeletePlannedTarget AuditAction = "delete_planned_target"
+	AuditActionApplyPlannedTarget       AuditAction = "apply_planned_target"
+	AuditActionApplyPlannedTargetFailed AuditAction = "apply_planned_target_failed"
 )
 
 // VkId is stored directly (not joined from Manager) so it survives the

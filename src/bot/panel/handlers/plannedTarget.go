@@ -1,0 +1,696 @@
+package handlers
+
+import (
+	"fmt"
+	"net/http"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
+	"jiqiren/bot/audit"
+	"jiqiren/bot/battletime"
+	"jiqiren/bot/database/model"
+	"jiqiren/bot/database/repository"
+	"jiqiren/bot/panel/auth"
+	"jiqiren/bot/panel/templates"
+	"jiqiren/bot/targetplan"
+
+	"github.com/go-chi/chi/v5"
+)
+
+type plannedTargetRowView struct {
+	Id          uint
+	TargetLabel string
+	Properties  []targetPlanPropertyView
+	Time        string
+	DateInfo    string
+	Completed   bool
+	EditHref    string
+	DeleteHref  string
+	HasError    bool
+	ErrorText   string
+	CanManage   bool
+
+	// sortMoment orders rows within their section (active vs. completed) —
+	// not rendered, see plannedTargetSortMoment.
+	sortMoment time.Time
+}
+
+type plannedTargetListData struct {
+	Title          string
+	AddHref        string
+	BackHref       string
+	CanManage      bool
+	Entries          []plannedTargetRowView
+	CompletedEntries []plannedTargetRowView
+}
+
+type plannedTargetFormData struct {
+	Action        string
+	IsEdit        bool
+	IsSquad       bool
+	TargetOptions []targetIconOption
+	TypeOnce      bool
+	TypeRecurring bool
+	StartDate     string
+	MinStartDate  string
+	EndDate       string
+	Time          string
+	Reserve       bool
+	Message       string
+	HasError      bool
+	ErrorText     string
+	DeleteHref    string
+	BackHref      string
+}
+
+const dateOnlyFormat = "2006-01-02"
+
+// ---- squad-scope wrappers ----
+
+func SquadPlannedTargetList(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanViewSquad(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	basePath := "/panel/squads/" + squad.Code + "/targets"
+	renderPlannedTargetList(w, r, squad.FractionId, &squad.Id, "план целей · "+squad.Code+" "+squad.Name,
+		basePath, "/panel/squads/"+squad.Code, permissions.CanSetSquadTarget(squad.Id))
+}
+
+func NewSquadPlannedTargetForm(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanSetSquadTarget(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	basePath := "/panel/squads/" + squad.Code + "/targets"
+	renderNewPlannedTargetForm(w, r, squad.FractionId, basePath, true, basePath)
+}
+
+func CreateSquadPlannedTarget(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		http.Error(w, "Отряд не найден", http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanSetSquadTarget(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	basePath := "/panel/squads/" + squad.Code + "/targets"
+	createPlannedTarget(w, r, permissions, squad.FractionId, &squad.Id, true, basePath,
+		fmt.Sprintf("отряд %s: добавлена цель в план", squad.Code))
+}
+
+func EditSquadPlannedTargetForm(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, target, resolveErr := findOwnSquadPlannedTarget(r, permissions)
+	if (resolveErr != nil) {
+		http.Error(w, resolveErr.Error(), http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanSetSquadTarget(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	basePath := "/panel/squads/" + squad.Code + "/targets"
+	renderEditPlannedTargetForm(w, r, target, basePath, true, basePath)
+}
+
+func EditSquadPlannedTarget(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, target, resolveErr := findOwnSquadPlannedTarget(r, permissions)
+	if (resolveErr != nil) {
+		http.Error(w, resolveErr.Error(), http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanSetSquadTarget(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	basePath := "/panel/squads/" + squad.Code + "/targets"
+	updatePlannedTarget(w, r, permissions, target, true, basePath,
+		fmt.Sprintf("отряд %s: обновлена цель в плане", squad.Code))
+}
+
+func DeleteSquadPlannedTarget(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+
+	squad, target, resolveErr := findOwnSquadPlannedTarget(r, permissions)
+	if (resolveErr != nil) {
+		http.Error(w, resolveErr.Error(), http.StatusNotFound)
+		return
+	}
+
+	if (!permissions.CanSetSquadTarget(squad.Id)) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	basePath := "/panel/squads/" + squad.Code + "/targets"
+	deletePlannedTarget(w, r, permissions, target, basePath,
+		fmt.Sprintf("отряд %s: удалена цель из плана", squad.Code))
+}
+
+func findOwnSquadPlannedTarget(r *http.Request, permissions *auth.Permissions) (*model.Team, *model.PlannedTarget, error) {
+	squad, squadErr := repository.FindOneTeamByCodeAndFraction(chi.URLParam(r, "code"), permissions.FractionId())
+	if (squadErr != nil) {
+		return nil, nil, fmt.Errorf("Отряд не найден")
+	}
+
+	id, idErr := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
+	if (idErr != nil) {
+		return nil, nil, fmt.Errorf("Некорректный id цели")
+	}
+
+	target, targetErr := repository.FindOnePlannedTargetById(uint(id))
+	if (targetErr != nil || target.SquadId == nil || *target.SquadId != squad.Id) {
+		return nil, nil, fmt.Errorf("Цель не найдена")
+	}
+
+	return squad, target, nil
+}
+
+// ---- fraction-scope wrappers ----
+
+func FractionPlannedTargetList(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+	if (!permissions.CanViewFraction()) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	renderPlannedTargetList(w, r, permissions.FractionId(), nil, "план целей команды",
+		"/panel/fraction/targets", "/panel/fraction", permissions.CanSetFractionTarget())
+}
+
+func NewFractionPlannedTargetForm(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+	if (!permissions.CanSetFractionTarget()) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	basePath := "/panel/fraction/targets"
+	renderNewPlannedTargetForm(w, r, permissions.FractionId(), basePath, false, basePath)
+}
+
+func CreateFractionPlannedTarget(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+	if (!permissions.CanSetFractionTarget()) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	basePath := "/panel/fraction/targets"
+	createPlannedTarget(w, r, permissions, permissions.FractionId(), nil, false, basePath,
+		"фракция: добавлена цель в план")
+}
+
+func EditFractionPlannedTargetForm(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+	if (!permissions.CanSetFractionTarget()) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	target, resolveErr := findOwnFractionPlannedTarget(r, permissions)
+	if (resolveErr != nil) {
+		http.Error(w, resolveErr.Error(), http.StatusNotFound)
+		return
+	}
+
+	basePath := "/panel/fraction/targets"
+	renderEditPlannedTargetForm(w, r, target, basePath, false, basePath)
+}
+
+func EditFractionPlannedTarget(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+	if (!permissions.CanSetFractionTarget()) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	target, resolveErr := findOwnFractionPlannedTarget(r, permissions)
+	if (resolveErr != nil) {
+		http.Error(w, resolveErr.Error(), http.StatusNotFound)
+		return
+	}
+
+	basePath := "/panel/fraction/targets"
+	updatePlannedTarget(w, r, permissions, target, false, basePath, "фракция: обновлена цель в плане")
+}
+
+func DeleteFractionPlannedTarget(w http.ResponseWriter, r *http.Request) {
+	permissions := auth.PermissionsFromRequest(r)
+	if (!permissions.CanSetFractionTarget()) {
+		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
+		return
+	}
+
+	target, resolveErr := findOwnFractionPlannedTarget(r, permissions)
+	if (resolveErr != nil) {
+		http.Error(w, resolveErr.Error(), http.StatusNotFound)
+		return
+	}
+
+	basePath := "/panel/fraction/targets"
+	deletePlannedTarget(w, r, permissions, target, basePath, "фракция: удалена цель из плана")
+}
+
+func findOwnFractionPlannedTarget(r *http.Request, permissions *auth.Permissions) (*model.PlannedTarget, error) {
+	id, idErr := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
+	if (idErr != nil) {
+		return nil, fmt.Errorf("Некорректный id цели")
+	}
+
+	target, targetErr := repository.FindOnePlannedTargetById(uint(id))
+	if (targetErr != nil || target.SquadId != nil || target.FractionId != permissions.FractionId()) {
+		return nil, fmt.Errorf("Цель не найдена")
+	}
+
+	return target, nil
+}
+
+// ---- shared core ----
+
+func renderPlannedTargetList(w http.ResponseWriter, r *http.Request, fractionId uint, squadId *uint, title string, basePath string, backPath string, canManage bool) {
+	var targets []model.PlannedTarget
+	var err error
+	if (squadId != nil) {
+		targets, err = repository.FindPlannedTargetsBySquadId(*squadId)
+	} else {
+		targets, err = repository.FindPlannedTargetsByFractionId(fractionId)
+	}
+	if (err != nil) {
+		http.Error(w, "Не удалось загрузить план целей", http.StatusInternalServerError)
+		return
+	}
+
+	allFractions, fractionsErr := repository.FindAllFractions()
+	if (fractionsErr != nil) {
+		http.Error(w, "Ошибка загрузки фракций", http.StatusInternalServerError)
+		return
+	}
+
+	now := time.Now()
+	rows := make([]plannedTargetRowView, 0, len(targets))
+	completedRows := make([]plannedTargetRowView, 0, len(targets))
+	for _, target := range targets {
+		row := buildPlannedTargetRowView(target, allFractions, basePath, canManage, now)
+		if (row.Completed) {
+			completedRows = append(completedRows, row)
+		} else {
+			rows = append(rows, row)
+		}
+	}
+
+	// Both sections read as one timeline, oldest to newest: completed
+	// entries ascending by when they last fired, then active ones ascending
+	// by when they're next due — so the page as a whole goes old → new.
+	sort.Slice(completedRows, func(i, j int) bool { return completedRows[i].sortMoment.Before(completedRows[j].sortMoment) })
+	sort.Slice(rows, func(i, j int) bool { return rows[i].sortMoment.Before(rows[j].sortMoment) })
+
+	templates.Render(w, r, "target_plan_list", plannedTargetListData{
+		Title:          title,
+		AddHref:        basePath + "/new",
+		BackHref:       backPath,
+		CanManage:      canManage,
+		Entries:          rows,
+		CompletedEntries: completedRows,
+	})
+}
+
+// buildPlannedTargetRowView classifies an entry as completed when it has
+// no next occurrence left (targetplan.NextOccurrence) — covers both a
+// one-time target that already fired and a recurring target past its end
+// date. Its sortMoment is the next due moment for an active entry, or
+// (for a completed one) the configured end date — the plan's own
+// StartDate for "once", EndDate for an expired "recurring" — paired with
+// the plan's time of day, since that's the moment it last actually fired.
+func buildPlannedTargetRowView(target model.PlannedTarget, allFractions []model.Fraction, basePath string, canManage bool, now time.Time) plannedTargetRowView {
+	targetValue := target.Target
+	moscow := battletime.Moscow
+
+	var dateInfo string
+	if (target.Type == model.PlannedTargetTypeOnce) {
+		dateInfo = target.StartDate.In(moscow).Format("02.01.2006")
+	} else {
+		dateInfo = "с " + target.StartDate.In(moscow).Format("02.01.2006")
+		if (target.EndDate != nil) {
+			dateInfo += " по " + target.EndDate.In(moscow).Format("02.01.2006")
+		}
+	}
+
+	id := strconv.FormatUint(uint64(target.Id), 10)
+
+	moment, hasNext := targetplan.NextOccurrence(target, now)
+	completed := !hasNext
+	if (!hasNext) {
+		moment = plannedTargetLastMoment(target)
+	}
+
+	return plannedTargetRowView{
+		Id:          target.Id,
+		TargetLabel: targetLabel(allFractions, &targetValue),
+		Properties:  targetPlanProperties(target),
+		Time:        fmt.Sprintf("%02d:%02d", target.Hour, target.Minute),
+		DateInfo:    dateInfo,
+		Completed:   completed,
+		EditHref:    basePath + "/" + id + "/edit",
+		DeleteHref:  basePath + "/" + id + "/delete",
+		HasError:    target.LastError != "",
+		ErrorText:   target.LastError,
+		CanManage:   canManage,
+		sortMoment:  moment,
+	}
+}
+
+// plannedTargetLastMoment is the moment a completed entry last fired,
+// going purely off its own configured fields rather than runtime
+// bookkeeping: for "once" that's its only StartDate, for an expired
+// "recurring" it's the EndDate — both paired with the plan's Hour:Minute.
+func plannedTargetLastMoment(target model.PlannedTarget) time.Time {
+	moscow := battletime.Moscow
+
+	dateComponent := target.StartDate
+	if (target.Type == model.PlannedTargetTypeRecurring && target.EndDate != nil) {
+		dateComponent = *target.EndDate
+	}
+
+	dateMsk := dateComponent.In(moscow)
+	return time.Date(dateMsk.Year(), dateMsk.Month(), dateMsk.Day(), int(target.Hour), int(target.Minute), 0, 0, moscow)
+}
+
+// targetPlanPropertyView.Kind names which inline SVG the "target_plan_icon" template
+// partial should draw ("repeat" / "message" / "reserve") — properties are
+// rendered as site-colored SVG rather than emoji, see target_plan_list.html.tmpl.
+type targetPlanPropertyView struct {
+	Kind  string
+	Label string
+}
+
+// targetPlanProperties lists the active badge-worthy properties of a planned
+// target, shared by both the compact card and the full-width row.
+func targetPlanProperties(target model.PlannedTarget) []targetPlanPropertyView {
+	properties := make([]targetPlanPropertyView, 0, 3)
+	if (target.Type == model.PlannedTargetTypeRecurring) {
+		properties = append(properties, targetPlanPropertyView{Kind: "repeat", Label: "повторяется"})
+	}
+	if (target.Message != "") {
+		properties = append(properties, targetPlanPropertyView{Kind: "message", Label: "с сообщением"})
+	}
+	if (target.Reserve) {
+		properties = append(properties, targetPlanPropertyView{Kind: "reserve", Label: "резервная"})
+	}
+
+	return properties
+}
+
+type targetPlanCardView struct {
+	Icon       string
+	Properties []targetPlanPropertyView
+	Time       string
+	Date       string
+	EditHref   string
+	HasError   bool
+	ErrorText  string
+}
+
+type targetPlanSectionData struct {
+	Cards     []targetPlanCardView
+	AddHref   string
+	MoreHref  string
+	MoreLabel string
+	HasAny    bool
+}
+
+// buildTargetPlanSection is the compact "план целей" block embedded on both
+// the squad and fraction pages: up to 3 nearest upcoming cards (reserve
+// entries included even though they might not actually fire — see
+// targetplan.NextOccurrence), plus a trailing link to the full list worded
+// depending on whether anything beyond those 3 exists.
+func buildTargetPlanSection(targets []model.PlannedTarget, now time.Time, allFractions []model.Fraction, basePath string, canManage bool) targetPlanSectionData {
+	const previewLimit = 3
+
+	upcoming := targetplan.BuildUpcoming(targets, now, previewLimit)
+	moscow := battletime.Moscow
+
+	cards := make([]targetPlanCardView, 0, len(upcoming))
+	for _, entry := range upcoming {
+		targetValue := entry.Target.Target
+		id := strconv.FormatUint(uint64(entry.Target.Id), 10)
+
+		date := ""
+		if (entry.Moment.Sub(now) > 24*time.Hour) {
+			date = entry.Moment.In(moscow).Format("02.01")
+		}
+
+		cards = append(cards, targetPlanCardView{
+			Icon:       targetIcon(allFractions, &targetValue),
+			Properties: targetPlanProperties(entry.Target),
+			Time:       entry.Moment.In(moscow).Format("15:04"),
+			Date:       date,
+			EditHref:   basePath + "/" + id + "/edit",
+			HasError:   entry.Target.LastError != "",
+			ErrorText:  entry.Target.LastError,
+		})
+	}
+
+	section := targetPlanSectionData{
+		Cards:  cards,
+		HasAny: len(targets) > 0,
+	}
+
+	if (canManage) {
+		section.AddHref = basePath + "/new"
+	}
+
+	if (len(targets) > 0) {
+		section.MoreHref = basePath
+		remainder := len(targets) - len(cards)
+		if (remainder > 0) {
+			section.MoreLabel = fmt.Sprintf("ещё %d целей", remainder)
+		} else {
+			section.MoreLabel = "все цели"
+		}
+	}
+
+	return section
+}
+
+func renderNewPlannedTargetForm(w http.ResponseWriter, r *http.Request, fractionId uint, action string, isSquad bool, backPath string) {
+	allFractions, err := repository.FindAllFractions()
+	if (err != nil) {
+		http.Error(w, "Ошибка загрузки фракций", http.StatusInternalServerError)
+		return
+	}
+
+	today := battletime.Today(time.Now()).Format(dateOnlyFormat)
+
+	templates.Render(w, r, "target_plan_form", plannedTargetFormData{
+		Action:        action,
+		IsSquad:       isSquad,
+		TargetOptions: buildTargetIconOptions(allFractions, fractionId, model.TargetNone),
+		TypeOnce:      true,
+		StartDate:     today,
+		MinStartDate:  today,
+		Time:          "18:00",
+		BackHref:      backPath,
+	})
+}
+
+func renderEditPlannedTargetForm(w http.ResponseWriter, r *http.Request, target *model.PlannedTarget, basePath string, isSquad bool, backPath string) {
+	allFractions, err := repository.FindAllFractions()
+	if (err != nil) {
+		http.Error(w, "Ошибка загрузки фракций", http.StatusInternalServerError)
+		return
+	}
+
+	moscow := battletime.Moscow
+	endDate := ""
+	if (target.EndDate != nil) {
+		endDate = target.EndDate.In(moscow).Format(dateOnlyFormat)
+	}
+
+	id := strconv.FormatUint(uint64(target.Id), 10)
+
+	templates.Render(w, r, "target_plan_form", plannedTargetFormData{
+		Action:        basePath + "/" + id + "/edit",
+		IsEdit:        true,
+		IsSquad:       isSquad,
+		TargetOptions: buildTargetIconOptions(allFractions, target.FractionId, target.Target),
+		TypeOnce:      target.Type == model.PlannedTargetTypeOnce,
+		TypeRecurring: target.Type == model.PlannedTargetTypeRecurring,
+		StartDate:     target.StartDate.In(moscow).Format(dateOnlyFormat),
+		EndDate:       endDate,
+		Time:          fmt.Sprintf("%02d:%02d", target.Hour, target.Minute),
+		Reserve:       target.Reserve,
+		Message:       target.Message,
+		HasError:      target.LastError != "",
+		ErrorText:     target.LastError,
+		DeleteHref:    basePath + "/" + id + "/delete",
+		BackHref:      backPath,
+	})
+}
+
+// parsePlannedTargetForm reads and validates the fields shared by create
+// and edit — the target, schedule (once vs. recurring, dates, time) and
+// the reserve/message flags, the latter gated to squad scope only.
+func parsePlannedTargetForm(r *http.Request, isSquad bool) (*model.PlannedTarget, error) {
+	targetValue, parseErr := strconv.ParseUint(r.FormValue("target"), 10, 64)
+	if (parseErr != nil || !model.IsValidTarget(uint(targetValue))) {
+		return nil, fmt.Errorf("Некорректная цель")
+	}
+
+	var targetType model.PlannedTargetType
+	switch (r.FormValue("type")) {
+	case string(model.PlannedTargetTypeOnce):
+		targetType = model.PlannedTargetTypeOnce
+	case string(model.PlannedTargetTypeRecurring):
+		targetType = model.PlannedTargetTypeRecurring
+	default:
+		return nil, fmt.Errorf("Некорректный тип цели")
+	}
+
+	hour, minute, timeErr := parseScheduleTime(r.FormValue("time"))
+	if (timeErr != nil) {
+		return nil, fmt.Errorf("Некорректное время")
+	}
+
+	startDate, startErr := time.Parse(dateOnlyFormat, r.FormValue("start_date"))
+	if (startErr != nil) {
+		return nil, fmt.Errorf("Некорректная дата")
+	}
+
+	var endDate *time.Time
+	if (targetType == model.PlannedTargetTypeRecurring) {
+		if endRaw := strings.TrimSpace(r.FormValue("end_date")); (endRaw != "") {
+			parsed, endErr := time.Parse(dateOnlyFormat, endRaw)
+			if (endErr != nil) {
+				return nil, fmt.Errorf("Некорректная дата окончания")
+			}
+			if (parsed.Before(startDate)) {
+				return nil, fmt.Errorf("Дата окончания раньше даты начала")
+			}
+			endDate = &parsed
+		}
+	}
+
+	message := ""
+	if (isSquad) {
+		message = strings.TrimSpace(r.FormValue("message"))
+	} else if (strings.TrimSpace(r.FormValue("message")) != "") {
+		return nil, fmt.Errorf("У цели фракции не может быть сообщения")
+	}
+
+	return &model.PlannedTarget{
+		Target:    uint(targetValue),
+		Type:      targetType,
+		StartDate: startDate,
+		EndDate:   endDate,
+		Hour:      hour,
+		Minute:    minute,
+		Reserve:   r.FormValue("reserve") == "on",
+		Message:   message,
+	}, nil
+}
+
+// rollPlannedTargetStartDate enforces "no start date in the past" at
+// creation time — a start date before today (MSK) is rejected outright; a
+// start date of today whose hour:minute (MSK) has already gone by rolls
+// forward to tomorrow instead of being accepted as-is, since "today at a
+// time that's already passed" isn't a sensible first occurrence to create.
+func rollPlannedTargetStartDate(startDate time.Time, hour uint, minute uint, now time.Time) (time.Time, error) {
+	today := battletime.Today(now)
+	if (startDate.Before(today)) {
+		return time.Time{}, fmt.Errorf("Дата начала не может быть в прошлом")
+	}
+
+	if (startDate.Equal(today) && battletime.IsPastToday(hour, minute, now)) {
+		return startDate.AddDate(0, 0, 1), nil
+	}
+
+	return startDate, nil
+}
+
+func createPlannedTarget(w http.ResponseWriter, r *http.Request, permissions *auth.Permissions, fractionId uint, squadId *uint, isSquad bool, basePath string, auditDetails string) {
+	parsed, parseErr := parsePlannedTargetForm(r, isSquad)
+	if (parseErr != nil) {
+		http.Error(w, parseErr.Error(), http.StatusBadRequest)
+		return
+	}
+
+	startDate, startErr := rollPlannedTargetStartDate(parsed.StartDate, parsed.Hour, parsed.Minute, time.Now())
+	if (startErr != nil) {
+		http.Error(w, startErr.Error(), http.StatusBadRequest)
+		return
+	}
+	parsed.StartDate = startDate
+
+	parsed.FractionId = fractionId
+	parsed.SquadId = squadId
+
+	if createErr := repository.CreatePlannedTarget(parsed); (createErr != nil) {
+		http.Error(w, "Не удалось добавить цель в план", http.StatusInternalServerError)
+		return
+	}
+
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionCreatePlannedTarget, auditDetails)
+	http.Redirect(w, r, basePath, http.StatusFound)
+}
+
+func updatePlannedTarget(w http.ResponseWriter, r *http.Request, permissions *auth.Permissions, target *model.PlannedTarget, isSquad bool, basePath string, auditDetails string) {
+	parsed, parseErr := parsePlannedTargetForm(r, isSquad)
+	if (parseErr != nil) {
+		http.Error(w, parseErr.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if updateErr := repository.UpdatePlannedTarget(target, *parsed); (updateErr != nil) {
+		http.Error(w, "Не удалось обновить цель", http.StatusInternalServerError)
+		return
+	}
+
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionUpdatePlannedTarget, auditDetails)
+	http.Redirect(w, r, basePath, http.StatusFound)
+}
+
+func deletePlannedTarget(w http.ResponseWriter, r *http.Request, permissions *auth.Permissions, target *model.PlannedTarget, basePath string, auditDetails string) {
+	if deleteErr := repository.DeletePlannedTarget(target.Id); (deleteErr != nil) {
+		http.Error(w, "Не удалось удалить цель", http.StatusInternalServerError)
+		return
+	}
+
+	audit.Record(permissions.FractionId(), permissions.ManagerId(), model.AuditActionDeletePlannedTarget, auditDetails)
+	http.Redirect(w, r, basePath, http.StatusFound)
+}

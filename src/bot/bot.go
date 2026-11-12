@@ -50,6 +50,14 @@ func main() {
         }
     })
 
+    cb.MessageEvent(func(_ context.Context, obj events.MessageEventObject) {
+        if (os.Getenv("ENV") == "dev") {
+            log.Printf("%+v\n", obj)
+        }
+
+        messageHandler.HandleMessageEvent(obj, vk)
+    })
+
     mux := http.NewServeMux()
     mux.Handle("/panel/", http.StripPrefix("/panel", panel.NewRouter()))
 

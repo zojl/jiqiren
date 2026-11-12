@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
@@ -23,6 +24,7 @@ type squadView struct {
 	CurrentTargetIcon string
 	TargetOptions []targetIconOption
 	CanSetTarget bool
+	TargetPlan targetPlanSectionData
 }
 
 type dashboardData struct {
@@ -33,6 +35,7 @@ type dashboardData struct {
 	CanSetFractionTarget bool
 	CanManageSquads bool
 	Squads []squadView
+	TargetPlan targetPlanSectionData
 }
 
 // Dashboard is the fraction-wide "Отряды" page — a plain squad lead has no
@@ -69,6 +72,13 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		fractionTarget = *fraction.Target
 	}
 
+	now := time.Now()
+
+	fractionPlannedTargets, fractionTargetsErr := repository.FindPlannedTargetsByFractionId(fraction.Id)
+	if (fractionTargetsErr != nil) {
+		fractionPlannedTargets = nil
+	}
+
 	data := dashboardData{
 		FractionName: fraction.Name,
 		FractionIcon: fraction.Icon,
@@ -76,6 +86,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		FractionTargetOptions: buildTargetIconOptions(allFractions, fraction.Id, fractionTarget),
 		CanSetFractionTarget: permissions.CanSetFractionTarget(),
 		CanManageSquads: permissions.CanManageSquads(),
+		TargetPlan: buildTargetPlanSection(fractionPlannedTargets, now, allFractions, "/panel/fraction/targets", permissions.CanSetFractionTarget()),
 	}
 
 	squads, squadsErr := repository.FindTeamsByFractionId(fraction.Id)
@@ -90,6 +101,11 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 				target = *squad.Target
 			}
 
+			squadPlannedTargets, squadTargetsErr := repository.FindPlannedTargetsBySquadId(squad.Id)
+			if (squadTargetsErr != nil) {
+				squadPlannedTargets = nil
+			}
+
 			data.Squads = append(data.Squads, squadView{
 				Id: squad.Id,
 				Name: squad.Name,
@@ -97,6 +113,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 				CurrentTargetIcon: targetIcon(allFractions, squad.Target),
 				TargetOptions: buildTargetIconOptions(allFractions, fraction.Id, target),
 				CanSetTarget: permissions.CanSetSquadTarget(squad.Id),
+				TargetPlan: buildTargetPlanSection(squadPlannedTargets, now, allFractions, "/panel/squads/"+squad.Code+"/targets", permissions.CanSetSquadTarget(squad.Id)),
 			})
 		}
 	}
