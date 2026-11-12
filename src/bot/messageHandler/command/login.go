@@ -63,7 +63,10 @@ func (params Login) Handle() {
 		audit.Record(manager.FractionId, manager.Id, model.AuditActionLoginRequest, "запрошена ссылка для входа")
 	}
 
-	replyParams.Reply(fmt.Sprintf("https://jiqiren.huoqiang.ltd/?login=%s", code))
+	replyParams.Reply(fmt.Sprintf(
+		"https://jiqiren.huoqiang.ltd/?login=%s\n\nСсылка одноразовая и действует %d мин.",
+		code, int(loginCodeLifetime.Minutes()),
+	))
 }
 
 func generateLoginCode() (string, error) {
