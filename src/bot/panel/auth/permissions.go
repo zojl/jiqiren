@@ -8,28 +8,51 @@ import (
 
 // Permissions is the single place permission logic lives — handlers call its
 // methods instead of re-deriving role checks. Zero-trust: every method
-// defaults to false unless explicitly granted below. It wraps the manager
-// row fetched fresh from the database for this request (see
-// RequireAuth/ManagerFromContext) rather than anything read out of the
+// defaults to false unless explicitly granted below. It wraps the user and
+// manager rows fetched fresh from the database for this request (see
+// RequireAuth/ViewerFromContext) rather than anything read out of the
 // session cookie, so a revoked or changed role takes effect immediately.
+// A plain player (nil manager) gets every role-gated permission denied.
 type Permissions struct {
 	manager *model.Manager
+	hasProfile bool
 }
 
-func NewPermissions(manager *model.Manager) *Permissions {
-	return &Permissions{manager: manager}
+func NewPermissions(viewer *Viewer) *Permissions {
+	if (viewer == nil) {
+		return &Permissions{}
+	}
+
+	return &Permissions{manager: viewer.Manager, hasProfile: viewer.HasProfile}
 }
 
 func PermissionsFromRequest(r *http.Request) *Permissions {
-	return NewPermissions(ManagerFromContext(r))
+	return NewPermissions(ViewerFromContext(r))
 }
 
+// ManagerId and FractionId are 0 for a plain player — only ever meaningful
+// after a role-gated Can* check has already passed.
 func (p *Permissions) ManagerId() uint {
+	if (p.manager == nil) {
+		return 0
+	}
+
 	return p.manager.Id
 }
 
 func (p *Permissions) FractionId() uint {
+	if (p.manager == nil) {
+		return 0
+	}
+
 	return p.manager.FractionId
+}
+
+// CanViewOwnProfile gates "Мой профиль" — open to anyone who has ever sent
+// a profile, regardless of role. It only ever shows the viewer's own
+// profile; other players stay behind CanViewPlayer.
+func (p *Permissions) CanViewOwnProfile() bool {
+	return p.hasProfile
 }
 
 func (p *Permissions) hasRole(accountType model.AccountType) bool {

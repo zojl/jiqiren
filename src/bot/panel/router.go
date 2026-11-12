@@ -60,6 +60,8 @@ func NewRouter() chi.Router {
 
 		r.Get("/players/{vk_id}", handlers.PlayerPage)
 
+		r.Get("/profile", handlers.MyProfile)
+
 		r.Get("/fraction", handlers.FractionPage)
 		r.Get("/fraction/token", handlers.FractionTokenForm)
 		r.Post("/fraction/token", handlers.SetFractionToken)
@@ -87,7 +89,7 @@ func NewRouter() chi.Router {
 		r.Get("/audit", handlers.AuditLog)
 
 		r.Get("/settings", handlers.SettingsIndex)
-		r.Post("/settings/theme", handlers.SetManagerTheme)
+		r.Post("/settings/theme", handlers.SetTheme)
 		r.Post("/settings/sessions/end-all", handlers.EndAllSessions)
 	})
 

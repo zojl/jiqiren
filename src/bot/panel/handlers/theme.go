@@ -14,12 +14,12 @@ func init() {
 }
 
 func buildTheme(r *http.Request) templates.Theme {
-	mode, scheme := theme.Resolve(auth.ManagerFromContext(r))
+	mode, scheme := theme.Resolve(auth.UserFromContext(r))
 	return templates.Theme{Mode: mode, Scheme: scheme}
 }
 
-func SetManagerTheme(w http.ResponseWriter, r *http.Request) {
-	manager := auth.ManagerFromContext(r)
+func SetTheme(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r)
 
 	mode := r.FormValue("mode")
 	scheme := r.FormValue("scheme")
@@ -28,7 +28,7 @@ func SetManagerTheme(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := repository.SetManagerTheme(manager, mode, scheme); (err != nil) {
+	if err := repository.SetUserTheme(user, mode, scheme); (err != nil) {
 		http.Error(w, "Не удалось сохранить настройки", http.StatusInternalServerError)
 		return
 	}

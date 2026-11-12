@@ -105,6 +105,13 @@ func PlayerPage(w http.ResponseWriter, r *http.Request) {
 	effectiveSquadId := profile.EffectiveSquadId(user.SquadOverrideId)
 
 	if (!permissions.CanViewPlayer(profile.FractionId, naturalSquadId, effectiveSquadId)) {
+		// Someone landing on their own player page without manager rights
+		// over it still gets to see it — just through "Мой профиль".
+		if viewer := auth.UserFromContext(r); (viewer != nil && viewer.Id == user.Id) {
+			http.Redirect(w, r, "/panel/profile", http.StatusFound)
+			return
+		}
+
 		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)
 		return
 	}

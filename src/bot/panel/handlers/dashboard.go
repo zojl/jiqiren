@@ -38,9 +38,10 @@ type dashboardData struct {
 	TargetPlan targetPlanSectionData
 }
 
-// Dashboard is the fraction-wide "Отряды" page — a plain squad lead has no
-// use for it, so a failed permission check falls back to redirecting them
-// to their own squad page instead of a flat 403.
+// Dashboard is the fraction-wide "Отряды" page and the panel's landing
+// route. Anyone without access to it is redirected to their own default
+// section instead of a flat 403: a plain squad lead to their own squad
+// page, and anyone else with a profile (a plain player) to "Мой профиль".
 func Dashboard(w http.ResponseWriter, r *http.Request) {
 	permissions := auth.PermissionsFromRequest(r)
 	if (!permissions.CanViewDashboard()) {
@@ -49,6 +50,11 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/panel/squads/"+squad.Code, http.StatusFound)
 				return
 			}
+		}
+
+		if (permissions.CanViewOwnProfile()) {
+			http.Redirect(w, r, "/panel/profile", http.StatusFound)
+			return
 		}
 
 		http.Error(w, "Access denied / 访问被拒绝", http.StatusForbidden)

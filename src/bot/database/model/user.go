@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type User struct {
 	Id uint `gorm:"primaryKey"`
 	VkId uint `gorm:"unique"`
@@ -13,4 +15,14 @@ type User struct {
 	// yet naturally stale — e.g. they announced an absence in advance.
 	// Cleared automatically the moment a fresh profile or report arrives.
 	Frozen bool
+
+	// Panel identity — anyone with a profile (or a manager row) can log
+	// in, so these live here rather than on Manager. SessionId must match
+	// the session cookie's sid (see auth.RequireAuth); rotating it ends
+	// every session at once.
+	LoginCode *string `gorm:"null;size:6"`
+	LoginCodeExpiresAt *time.Time `gorm:"null"`
+	SessionId *string `gorm:"null;size:64"`
+	ThemeMode *string `gorm:"null;size:8"`
+	ColorScheme *string `gorm:"null;size:16"`
 }

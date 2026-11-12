@@ -31,11 +31,20 @@ func (params Login) Handle() {
 		return
 	}
 
+	// The panel is open to every player who has ever sent a profile (for
+	// "Мой профиль"), plus managers — who may not have sent one yet.
 	vkId := uint(params.Message.Message.FromID)
 	manager, managerErr := repository.FindOneManagerByVkId(vkId)
-	if (managerErr != nil) {
-		replyParams.Reply("You are not registered as a manager / 您尚未注册为管理员")
+	isManager := managerErr == nil
+
+	user := repository.FindOneUserByVkId(int(vkId))
+	if (!isManager && (user == nil || !repository.UserHasProfiles(user.Id))) {
+		replyParams.Reply("Сначала отправьте боту свой профиль / 请先向机器人发送您的个人资料")
 		return
+	}
+
+	if (user == nil) {
+		user = repository.FindOrCreateUserByVkId(int(vkId))
 	}
 
 	code, codeErr := generateLoginCode()
@@ -45,12 +54,14 @@ func (params Login) Handle() {
 	}
 
 	expiresAt := time.Now().Add(loginCodeLifetime)
-	if err := repository.SetManagerLoginCode(manager, code, expiresAt); err != nil {
+	if err := repository.SetUserLoginCode(user, code, expiresAt); err != nil {
 		replyParams.Reply("Ошибка сохранения кода, попробуйте позже.")
 		return
 	}
 
-	audit.Record(manager.FractionId, manager.Id, model.AuditActionLoginRequest, "запрошена ссылка для входа")
+	if (isManager) {
+		audit.Record(manager.FractionId, manager.Id, model.AuditActionLoginRequest, "запрошена ссылка для входа")
+	}
 
 	replyParams.Reply(fmt.Sprintf("https://jiqiren.huoqiang.ltd/?login=%s", code))
 }
