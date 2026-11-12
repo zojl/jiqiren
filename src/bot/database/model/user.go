@@ -20,7 +20,7 @@ type User struct {
 	// in, so these live here rather than on Manager. SessionId must match
 	// the session cookie's sid (see auth.RequireAuth); rotating it ends
 	// every session at once.
-	LoginCode *string `gorm:"null;size:6"`
+	LoginCode *string `gorm:"null;size:8"`
 	LoginCodeExpiresAt *time.Time `gorm:"null"`
 	SessionId *string `gorm:"null;size:64"`
 	ThemeMode *string `gorm:"null;size:8"`

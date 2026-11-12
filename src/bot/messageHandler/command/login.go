@@ -15,7 +15,7 @@ import (
 )
 
 const loginCodeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-const loginCodeLength = 6
+const loginCodeLength = 8
 const loginCodeLifetime = 3 * time.Minute
 
 type Login struct {
