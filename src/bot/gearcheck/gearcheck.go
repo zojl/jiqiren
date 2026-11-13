@@ -100,19 +100,30 @@ func Check(profile model.Profile, squad *model.Team, now time.Time) Result {
 		return Result{}
 	}
 
-	current := profileStats(profile).score(role)
-	optimum := current
+	candidates := []int{}
 
 	scoreSql := repository.AttackScoreSql
 	if (role == RoleDefense) {
 		scoreSql = repository.DefenseScoreSql
 	}
 	if best, err := repository.FindBestProfileSince(profile.UserId, now.Add(-historyWindow), scoreSql); (err == nil) {
-		optimum = max(optimum, profileStats(*best).score(role))
+		candidates = append(candidates, profileStats(*best).score(role))
 	}
 
 	if inventoryOptimum, ok := inventoryOptimum(profile, role); (ok) {
-		optimum = max(optimum, inventoryOptimum)
+		candidates = append(candidates, inventoryOptimum)
+	}
+
+	return resultFor(profile, role, candidates)
+}
+
+// resultFor compares the profile against the best of the candidate
+// optimums; a profile above all of them is its own optimum (gain 0).
+func resultFor(profile model.Profile, role Role, candidates []int) Result {
+	current := profileStats(profile).score(role)
+	optimum := current
+	for _, candidate := range candidates {
+		optimum = max(optimum, candidate)
 	}
 
 	return Result{Role: role, Gain: optimum - current}
@@ -139,14 +150,20 @@ func inventoryOptimum(profile model.Profile, role Role) (int, bool) {
 		items = append(items, inventory.FromModel(item))
 	}
 
+	return inventoryOptimumFrom(*baseProfile, items, inventory.PlayerFrom(profile.Level, profile.Way), role), true
+}
+
+// inventoryOptimumFrom is the pure part of inventoryOptimum: base stats
+// are baseProfile minus what the analyzed backpack wears; on top of them
+// goes the best build player can wear from items.
+func inventoryOptimumFrom(baseProfile model.Profile, items []inventory.Item, player inventory.Player, role Role) int {
 	equipped := inventory.Equipped(items)
-	base := profileStats(*baseProfile)
+	base := profileStats(baseProfile)
 	base.practice -= equipped.Practice
 	base.theory -= equipped.Theory
 	base.cunning -= equipped.Cunning
 	base.wisdom -= equipped.Wisdom
 
-	player := inventory.PlayerFrom(profile.Level, profile.Way)
 	build := inventory.BestAttack(items, player)
 	if (role == RoleDefense) {
 		build = inventory.BestDefense(items, player)
@@ -158,5 +175,5 @@ func inventoryOptimum(profile model.Profile, role Role) (int, bool) {
 	optimum.cunning += build.Cunning
 	optimum.wisdom += build.Wisdom
 
-	return optimum.score(role), true
+	return optimum.score(role)
 }

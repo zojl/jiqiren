@@ -5,7 +5,10 @@ import "time"
 type Team struct {
 	Id uint `gorm:"primaryKey"`
 	Name string
-	Code string `gorm:"size:2`
+	// The size tag here was malformed (no closing quote), so gorm never
+	// applied it and the column is plain text; dropped rather than fixed to
+	// avoid an unplanned column type change on existing databases.
+	Code string
 	FractionId uint
 	Fraction Fraction `gorm:"foreignKey:FractionId"`
 	ChatId *int64 `gorm:"null"`
