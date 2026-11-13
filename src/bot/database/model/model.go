@@ -22,6 +22,10 @@ func GetAllModels() []interface{} {
 		ScheduledMessage{},
 		BudgetSnapshot{},
 		PlannedTarget{},
+		InventoryDraft{},
+		InventoryDraftMessage{},
+		InventoryItem{},
+		InventoryAnalysis{},
 	}
 }
 

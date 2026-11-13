@@ -316,6 +316,11 @@ tr.profile-hidden td:not(:last-child) { opacity: 0.45; text-decoration: line-thr
 
 .exp-chart-block { margin-top: 24px; }
 
+table.inventory td, table.inventory-build td { white-space: nowrap; }
+table.inventory td:first-child, table.inventory-build td:nth-child(2) { white-space: normal; }
+tr.inventory-unwearable td { opacity: 0.55; }
+table.inventory-build + .budget { margin-top: 8px; }
+
 .budget-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);

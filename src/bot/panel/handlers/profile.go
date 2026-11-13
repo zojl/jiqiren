@@ -35,10 +35,6 @@ type profileEmptyData struct {
 	Tabs profileTabsData
 }
 
-type profileInventoryData struct {
-	Tabs profileTabsData
-}
-
 // requireOwnProfile returns the logged-in user if they may use "Мой
 // профиль" at all, writing the error response itself otherwise.
 func requireOwnProfile(w http.ResponseWriter, r *http.Request) *model.User {
@@ -387,16 +383,6 @@ func setOwnProfileHidden(w http.ResponseWriter, r *http.Request, hidden bool) {
 	values, _ := url.ParseQuery(r.FormValue("query"))
 	query := parseProfileHistoryQuery(values)
 	http.Redirect(w, r, query.href(query.Page), http.StatusFound)
-}
-
-// ProfileInventory is a placeholder tab — inventory storage is still to be
-// designed.
-func ProfileInventory(w http.ResponseWriter, r *http.Request) {
-	if (requireOwnProfile(w, r) == nil) {
-		return
-	}
-
-	templates.Render(w, r, "profile_inventory", profileInventoryData{Tabs: profileTabsData{Active: "inventory"}})
 }
 
 // profileHeadline renders a profile's identity line the way the game

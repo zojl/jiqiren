@@ -14,7 +14,58 @@
 
 {{define "profile_inventory"}}
 {{template "profile_tabs" .Tabs}}
-<p class="hint">Раздел в разработке: здесь появятся все ваши вещи — надетые, дома, на складе и в серверной.</p>
+{{if not .Analyzed}}
+<p>Инвентарь ещё не анализировался.</p>
+<p class="hint">В личке боту нажмите «🎒 Анализировать инвентарь» и перешлите экраны инвентаря из игры: общий инвентарь или рюкзак, дом, склад и серверную.</p>
+{{else}}
+<p class="hint">анализ от {{.AnalyzedAt}} мск{{if not .HasBackpack}} · ⚠️ без рюкзака — прибавку к характеристикам посчитать нельзя{{end}}</p>
+
+{{range .Locations}}
+<h2>{{.Label}}{{if .Items}} ({{len .Items}}){{end}}</h2>
+{{if .Items}}
+<div class="table-scroll">
+<table class="list inventory">
+<tr><th>вещь</th><th>📡</th><th>💾</th><th>📱</th><th>🔎</th><th>🔰 прошивка</th><th>цена</th></tr>
+{{range .Items}}
+<tr{{if .Unwearable}} class="inventory-unwearable"{{end}}>
+  <td>{{.Title}}{{if .Way}} {{.Way}}{{end}}{{if .Unwearable}} <span class="hint">({{.Unwearable}})</span>{{end}}</td>
+  <td>{{.Practice}}</td>
+  <td>{{.Theory}}</td>
+  <td>{{.Cunning}}</td>
+  <td>{{.Wisdom}}</td>
+  <td>{{.Firmware}}</td>
+  <td>{{.Price}}</td>
+</tr>
+{{end}}
+</table>
+</div>
+{{else}}
+<p class="hint">пусто</p>
+{{end}}
+{{end}}
+
+<h2>билды</h2>
+<p class="hint">по одной вещи каждого класса (или без неё) — {{.PlayerNote}}. ⚔️ атака = 📡×2 + 📱×3, 🛡️ защита = 💾×2 + 🔎×3. Прошивки не учитываются: игра не показывает их прибавку.</p>
+{{range .Builds}}
+<h2>{{.Title}}</h2>
+<div class="table-scroll">
+<table class="list inventory-build">
+{{range .Slots}}
+<tr>
+  <td>{{.Class}}</td>
+  <td>{{.Item}}</td>
+  <td class="hint">{{if .Swap}}↪ {{.Location}}{{else if .Location}}надето{{end}}</td>
+</tr>
+{{end}}
+</table>
+</div>
+<dl class="budget">
+  <div class="budget-row"><dt>статы от вещей</dt><dd>{{.Stats}}</dd></div>
+  <div class="budget-row"><dt>{{.ScoreLabel}}</dt><dd>{{.Score}}</dd></div>
+  {{if .HasEquipped}}<div class="budget-row"><dt>сейчас надето</dt><dd>{{.EquippedScore}} ({{.Gain}})</dd></div>{{end}}
+</dl>
+{{end}}
+{{end}}
 {{end}}
 
 {{define "profile_history"}}
