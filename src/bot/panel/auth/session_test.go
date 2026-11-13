@@ -126,3 +126,41 @@ func TestClearSession(t *testing.T) {
 		t.Fatalf("cleared cookie: %+v", cookie)
 	}
 }
+
+func TestValidateConfig(t *testing.T) {
+	t.Setenv("JWT_SECRET", "")
+	if err := ValidateConfig(); (err == nil) {
+		t.Fatal("an empty secret must be refused — every cookie would be forgeable")
+	}
+
+	t.Setenv("JWT_SECRET", "short")
+	if err := ValidateConfig(); (err == nil) {
+		t.Fatal("a short secret must be refused")
+	}
+
+	t.Setenv("JWT_SECRET", strings.Repeat("x", minSecretLength))
+	if err := ValidateConfig(); (err != nil) {
+		t.Fatal(err)
+	}
+}
+
+func TestRejectsUnsignedToken(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret")
+
+	// alg: none — a token with no signature at all.
+	unsigned, err := jwt.NewWithClaims(jwt.SigningMethodNone, sessionClaims(42, "session-a")).SignedString(jwt.UnsafeAllowNoneSignatureType)
+	if (err != nil) {
+		t.Fatal(err)
+	}
+
+	if _, err := ParseSessionCookie(requestWith(&http.Cookie{Name: CookieName, Value: unsigned})); (err == nil) {
+		t.Fatal("an unsigned token must be rejected")
+	}
+
+	// A different HMAC algorithm, correctly signed with the right secret,
+	// is still refused: only HS256 is accepted.
+	otherAlg, _ := jwt.NewWithClaims(jwt.SigningMethodHS512, sessionClaims(42, "session-a")).SignedString(signingKey())
+	if _, err := ParseSessionCookie(requestWith(&http.Cookie{Name: CookieName, Value: otherAlg})); (err == nil) {
+		t.Fatal("only HS256 tokens are accepted")
+	}
+}
