@@ -31,6 +31,7 @@ func GetAllModels() []interface{} {
 
 func CreateInitialValues(db *gorm.DB) {
 	migrateManagerIdentityToUsers(db)
+	dropObsoleteIndexes(db)
 	fillFractions(db)
 	fillContestTypes(db)
 }
@@ -107,5 +108,14 @@ func migrateManagerIdentityToUsers(db *gorm.DB) {
 	})
 	if (err != nil) {
 		log.Printf("migrate manager identity to users: %v", err)
+	}
+}
+
+// dropObsoleteIndexes removes indexes that a newer one has replaced —
+// AutoMigrate creates missing indexes but never drops leftover ones.
+func dropObsoleteIndexes(db *gorm.DB) {
+	// Superseded by idx_profiles_team_user.
+	if err := db.Exec("DROP INDEX IF EXISTS idx_profiles_team_id").Error; (err != nil) {
+		log.Printf("drop obsolete index idx_profiles_team_id: %v", err)
 	}
 }

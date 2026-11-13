@@ -53,15 +53,24 @@ func FindLatestProfilesForTeam(teamId uint) ([]model.Profile, error) {
 	db := database.GetDb()
 	profiles := []model.Profile{}
 
+	// One LIMIT 1 lookup per member (LATERAL) walks idx_profiles_user_date
+	// backwards and stops at the first row, instead of sorting every
+	// member's entire history just to keep the newest — which made this
+	// query grow with the age of the squad.
 	err := db.Raw(`
-		SELECT DISTINCT ON (profiles.user_id) profiles.*
-		FROM profiles
-		WHERE profiles.user_id IN (
+		SELECT latest.*
+		FROM (
 			SELECT DISTINCT user_id FROM profiles WHERE team_id = ? AND NOT hidden
 			UNION
 			SELECT id FROM users WHERE squad_override_id = ?
-		) AND NOT profiles.hidden
-		ORDER BY profiles.user_id, profiles.message_date DESC
+		) members
+		CROSS JOIN LATERAL (
+			SELECT * FROM profiles
+			WHERE profiles.user_id = members.user_id AND NOT profiles.hidden
+			ORDER BY profiles.message_date DESC, profiles.id DESC
+			LIMIT 1
+		) latest
+		ORDER BY latest.user_id
 	`, teamId, teamId).Scan(&profiles).Error
 
 	if (err != nil) {

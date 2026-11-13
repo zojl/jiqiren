@@ -27,8 +27,13 @@ func Init() {
 		log.Fatal(err)
 	}
 
-	for _, entityName := range model.GetAllModels() {
-		db.AutoMigrate(entityName)
+	// A failed migration used to pass silently — and with it, missing
+	// indexes that turn every profile lookup into a full table scan. Keep
+	// starting (the schema is usually still workable), but say so loudly.
+	for _, entity := range model.GetAllModels() {
+		if err := db.AutoMigrate(entity); (err != nil) {
+			log.Printf("database: AutoMigrate %T failed: %v", entity, err)
+		}
 	}
 
 	model.CreateInitialValues(db)

@@ -6,8 +6,10 @@ type Profile struct {
 	Id uint `gorm:"primaryKey"`
 	Username string
 	Status string
-	// Indexed for squad membership (repository.FindLatestProfilesForTeam).
-	TeamId *uint `gorm:"null;index"`
+	// (team_id, user_id) for squad membership — "who has ever been in
+	// this squad" (repository.FindLatestProfilesForTeam) reads straight
+	// from the index, without touching the table.
+	TeamId *uint `gorm:"null;index:idx_profiles_team_user,priority:1,where:NOT hidden"`
 	Team Team `gorm:"foreignKey:TeamId"`
 	FractionId uint
 	Fraction Fraction `gorm:"foreignKey:FractionId"`
@@ -37,7 +39,7 @@ type Profile struct {
 	// (user_id, message_date) serves nearly every profile read: a user's
 	// latest profile, battle-date windows, history pages, the experience
 	// chart and best stats all filter by user and most by date range.
-	UserId uint `gorm:"index:idx_profiles_user_date,priority:1"`
+	UserId uint `gorm:"index:idx_profiles_user_date,priority:1;index:idx_profiles_team_user,priority:2"`
 	User User `gorm:"foreignKey:UserId"`
 	MessageDate time.Time `gorm:"index:idx_profiles_user_date,priority:2"`
 	SleepAt *time.Time `gorm:"null"`
