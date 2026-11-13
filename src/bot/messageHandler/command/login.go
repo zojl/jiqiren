@@ -3,6 +3,7 @@ package command
 import (
 	"crypto/rand"
 	"fmt"
+	"math/big"
 	"time"
 
 	"jiqiren/bot/audit"
@@ -69,15 +70,17 @@ func (params Login) Handle() {
 	))
 }
 
+// generateLoginCode draws each character uniformly — a plain `byte % 36`
+// would favor the first few letters of the alphabet.
 func generateLoginCode() (string, error) {
-	buf := make([]byte, loginCodeLength)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-
 	code := make([]byte, loginCodeLength)
-	for i, b := range buf {
-		code[i] = loginCodeAlphabet[int(b) % len(loginCodeAlphabet)]
+	for i := range code {
+		index, err := rand.Int(rand.Reader, big.NewInt(int64(len(loginCodeAlphabet))))
+		if (err != nil) {
+			return "", err
+		}
+
+		code[i] = loginCodeAlphabet[index.Int64()]
 	}
 
 	return string(code), nil

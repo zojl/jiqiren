@@ -25,6 +25,10 @@ func main() {
     panel.SetVK(vk)
     scheduler.SetVK(vk)
 
+    if err := auth.ValidateConfig(); err != nil {
+        log.Fatal(err)
+    }
+
     database.Init()
     scheduler.Start()
 

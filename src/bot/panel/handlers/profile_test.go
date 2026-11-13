@@ -170,7 +170,7 @@ func TestProfileTemplates(t *testing.T) {
 		Tabs: profileTabsData{Active: "history"},
 		Rows: []profileHistoryRow{{Id: 5, Headline: "🔸DD|🔲🈵💡Testoviy (39)", Hidden: true}, {Id: 6}},
 		Page: 2, TotalPages: 3, Total: 25, Query: "from=2026-01-02&page=2",
-		NewerHref: "/panel/profile/history", OlderHref: "/panel/profile/history?page=3",
+		NewerHref: "/panel/profile/history", OlderHref: "/panel/profile/history?page=3", CanHide: true,
 	})
 	for _, want := range []string{
 		`/panel/profile/history/5/restore`, `/panel/profile/history/6/hide`,
@@ -180,6 +180,22 @@ func TestProfileTemplates(t *testing.T) {
 		if (!strings.Contains(history, want)) {
 			t.Errorf("history page lacks %q", want)
 		}
+	}
+
+	if (!strings.Contains(history, "/panel/profile/history/6/hide")) {
+		t.Fatal("with several visible profiles each one can be hidden")
+	}
+
+	lastOne := render(t, "profile_history", profileHistoryData{
+		Tabs: profileTabsData{Active: "history"},
+		Rows: []profileHistoryRow{{Id: 5, Hidden: true}, {Id: 6}},
+		Page: 1, TotalPages: 1, Total: 2, CanHide: false,
+	})
+	if (strings.Contains(lastOne, "/panel/profile/history/6/hide") || !strings.Contains(lastOne, "последний активный")) {
+		t.Fatal("the last visible profile must have no hide button")
+	}
+	if (!strings.Contains(lastOne, "/panel/profile/history/5/restore")) {
+		t.Fatal("hidden ones can still be restored")
 	}
 
 	render(t, "profile_empty", profileEmptyData{Tabs: profileTabsData{Active: "summary"}})

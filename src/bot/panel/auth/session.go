@@ -3,6 +3,8 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -17,8 +19,28 @@ const CookieName = "jiqiren_session"
 const sessionLifetime = 7 * 24 * time.Hour
 const renewThreshold = 3 * 24 * time.Hour
 
+// minSecretLength is what a brute-force of the HS256 key must at least face;
+// anything shorter is a typo or a placeholder, not a secret.
+const minSecretLength = 32
+
 func signingKey() []byte {
 	return []byte(os.Getenv("JWT_SECRET"))
+}
+
+// ValidateConfig fails when sessions can't be signed safely — with no
+// JWT_SECRET every cookie would be signed with an empty key, i.e. forgeable
+// by anyone. Called at startup so a misconfigured deploy refuses to start
+// instead of running wide open.
+func ValidateConfig() error {
+	if (len(signingKey()) == 0) {
+		return errors.New("JWT_SECRET is not set — panel sessions would be forgeable")
+	}
+
+	if (len(signingKey()) < minSecretLength) {
+		return fmt.Errorf("JWT_SECRET is too short: %d bytes, need at least %d", len(signingKey()), minSecretLength)
+	}
+
+	return nil
 }
 
 func generateSessionId() (string, error) {
@@ -115,9 +137,11 @@ func ParseSessionCookie(r *http.Request) (*SessionClaims, error) {
 	}
 
 	claims := &SessionClaims{}
+	// Pinning the algorithm closes the "alg" confusion class of attacks
+	// outright, rather than relying on key-type mismatches to fail them.
 	_, err = jwt.ParseWithClaims(cookie.Value, claims, func(token *jwt.Token) (interface{}, error) {
 		return signingKey(), nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 	if (err != nil) {
 		return nil, err
 	}

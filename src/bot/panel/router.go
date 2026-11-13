@@ -15,8 +15,21 @@ func SetVK(client *api.VK) {
 	handlers.SetVK(client)
 }
 
+// securityHeaders: the panel is never meant to be framed (its target/
+// token forms would be clickjacking material) or sniffed into another
+// content type, and it shouldn't leak its URLs to third-party sites.
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Referrer-Policy", "same-origin")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func NewRouter() chi.Router {
 	r := chi.NewRouter()
+	r.Use(securityHeaders)
 
 	r.Handle("/static/*", http.StripPrefix("/static", http.FileServerFS(static.Files)))
 

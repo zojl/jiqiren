@@ -364,3 +364,44 @@ func TestBuilds(t *testing.T) {
 		t.Fatalf("equipped practice: %d", equipped.Practice)
 	}
 }
+
+func TestItemFormatting(t *testing.T) {
+	item := Item{Rarity: "🔹", IsServer: true, Class: "🔀", Name: "WireGuard сервер", Way: WayBlack, Practice: 27, Theory: 0, Cunning: -1, Wisdom: 4, FirmwareRarity: "🔸", FirmwareName: "Отличная"}
+
+	if got := item.Title(); (got != "🔹👨🏻‍💻🔀WireGuard сервер") {
+		t.Fatal(got)
+	}
+
+	// Zero stats are left out; negatives keep their sign.
+	if got := item.StatsLabel(); (got != "⬛, +27📡, -1📱, +4🔎") {
+		t.Fatal(got)
+	}
+
+	if got := item.Line(); (got != "🔹👨🏻‍💻🔀WireGuard сервер (⬛, +27📡, -1📱, +4🔎) 🔰🔸Отличная") {
+		t.Fatal(got)
+	}
+
+	if got := (Item{Class: "⌚", Name: "Часы", Theory: 3}).Line(); (got != "⌚Часы (+3💾)") {
+		t.Fatal(got)
+	}
+}
+
+func TestParseHeaderEdgeCases(t *testing.T) {
+	// Parentheses inside the name: the stats are the last group.
+	withParens := mustParse(t, "🏡Дом:\n\n1) 💻Ноут (прототип) (+41📡, +13💾)\n\nСтраница 1 из 1", KindHome)
+	if (len(withParens.Items) != 1 || withParens.Items[0].Name != "Ноут (прототип)" || withParens.Items[0].Practice != 41) {
+		t.Fatalf("parens in name: %+v", withParens.Items)
+	}
+
+	// Emoji variation selectors (⌚️ vs ⌚) must not break class detection.
+	withSelector := mustParse(t, "🏡Дом:\n\n1) ⌚️WatchPod (⬛, +22📡)\n\nСтраница 1 из 1", KindHome)
+	if (len(withSelector.Items) != 1 || withSelector.Items[0].Class != "⌚") {
+		t.Fatalf("variation selector: %+v", withSelector.Items)
+	}
+
+	// A line with a class but no stats isn't an item.
+	noStats := mustParse(t, "🏡Дом:\n\n1) ⌚Просто текст (без статов)\n\nСтраница 1 из 1", KindHome)
+	if (len(noStats.Items) != 0) {
+		t.Fatalf("no stats: %+v", noStats.Items)
+	}
+}

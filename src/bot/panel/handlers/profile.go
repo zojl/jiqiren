@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -256,6 +257,9 @@ type profileHistoryData struct {
 	// Query is the current view's query string, posted back by the
 	// hide/restore forms so the redirect lands on the same page.
 	Query string
+	// CanHide is false when only one visible profile is left — it can't be
+	// hidden (see repository.SetProfileHidden).
+	CanHide bool
 }
 
 // ProfileHistory lists the user's own profiles, newest first, a page at a
@@ -288,6 +292,12 @@ func ProfileHistory(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Не удалось загрузить историю", http.StatusInternalServerError)
 			return
 		}
+	}
+
+	visibleCount, countErr := repository.CountVisibleProfiles(user.Id)
+	if (countErr != nil) {
+		http.Error(w, "Не удалось загрузить историю", http.StatusInternalServerError)
+		return
 	}
 
 	allFractions, fractionsErr := repository.FindAllFractions()
@@ -335,6 +345,7 @@ func ProfileHistory(w http.ResponseWriter, r *http.Request) {
 		Page: query.Page,
 		TotalPages: totalPages,
 		Query: query.encode(query.Page),
+		CanHide: repository.CanHideAnotherProfile(visibleCount),
 	}
 
 	if (query.Page > 1) {
@@ -374,6 +385,11 @@ func setOwnProfileHidden(w http.ResponseWriter, r *http.Request, hidden bool) {
 	}
 
 	if err := repository.SetProfileHidden(profile, hidden); (err != nil) {
+		if (errors.Is(err, repository.ErrLastVisibleProfile)) {
+			http.Error(w, "Нельзя скрыть последний профиль: хотя бы один должен оставаться активным", http.StatusConflict)
+			return
+		}
+
 		http.Error(w, "Не удалось сохранить", http.StatusInternalServerError)
 		return
 	}
