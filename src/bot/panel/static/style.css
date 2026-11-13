@@ -296,6 +296,26 @@ table.members tr.report-row td { padding-top: 0; padding-left: 28px; }
 
 .audit-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
 
+.profile-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.profile-tabs a { color: var(--dim); }
+.profile-tabs a:hover { color: var(--accent); }
+.profile-tabs a.active { color: var(--accent); }
+
+table.profile-history td { white-space: nowrap; }
+table.profile-history td:nth-child(2) { white-space: normal; }
+tr.profile-hidden td:not(:last-child) { opacity: 0.45; text-decoration: line-through; }
+
+.pager { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+
+.exp-chart-block { margin-top: 24px; }
+
 .budget-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);

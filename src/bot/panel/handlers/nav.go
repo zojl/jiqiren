@@ -52,7 +52,7 @@ func buildNav(r *http.Request) []templates.NavItem {
 	}
 
 	if (permissions.CanViewOwnProfile()) {
-		items = append(items, templates.NavItem{Label: "Мой профиль", Href: "/panel/profile", Active: path == "/profile"})
+		items = append(items, templates.NavItem{Label: "Мой профиль", Href: "/panel/profile", Active: strings.HasPrefix(path, "/profile")})
 	}
 
 	items = append(items, templates.NavItem{Label: "Настройки", Href: "/panel/settings", Active: strings.HasPrefix(path, "/settings")})

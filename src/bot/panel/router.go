@@ -61,6 +61,11 @@ func NewRouter() chi.Router {
 		r.Get("/players/{vk_id}", handlers.PlayerPage)
 
 		r.Get("/profile", handlers.MyProfile)
+		r.Get("/profile/experience", handlers.ProfileExperienceChart)
+		r.Get("/profile/history", handlers.ProfileHistory)
+		r.Post("/profile/history/{id}/hide", handlers.HideProfile)
+		r.Post("/profile/history/{id}/restore", handlers.RestoreProfile)
+		r.Get("/profile/inventory", handlers.ProfileInventory)
 
 		r.Get("/fraction", handlers.FractionPage)
 		r.Get("/fraction/token", handlers.FractionTokenForm)

@@ -72,6 +72,10 @@ type playerPageData struct {
 	BestDefense *playerStatsSnapshotView
 	BackHref string
 	BackLabel string
+	// Tabs and ExperienceChartUrl are set only when this page is rendered
+	// as "Мой профиль" (see MyProfile), never on a manager's player view.
+	Tabs *profileTabsData
+	ExperienceChartUrl string
 }
 
 // PlayerPage shows one player's last reported profile in full, plus their

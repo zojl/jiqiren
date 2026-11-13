@@ -25,6 +25,20 @@ func CumulativeExperience(level uint) uint64 {
 	return new(big.Int).Div(rounded.Num(), rounded.Denom()).Uint64()
 }
 
+// TotalExperience flattens a profile's level-relative experience into one
+// ever-growing number, for charting growth across prestiges. Below
+// LevelMax a profile's experience is already cumulative since zero; at
+// LevelMax it restarts from zero toward each next prestige (see
+// ProgressFor), so every prestige earned — plus reaching LevelMax itself —
+// banks another full CumulativeExperience(LevelMax).
+func TotalExperience(level uint, prestige uint, experience uint64) uint64 {
+	if (level < LevelMax) {
+		return experience
+	}
+
+	return CumulativeExperience(LevelMax)*uint64(prestige+1) + experience
+}
+
 // Progress is the experience step a player is currently working through
 // — levelling up normally, or (at LevelMax) earning a prestige point.
 type Progress struct {

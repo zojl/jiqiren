@@ -78,13 +78,17 @@ func FindOneUserByLoginCode(code string) (*model.User, error) {
 }
 
 // UserHasProfiles reports whether the user has ever sent at least one
-// profile — the condition for the panel's "Мой профиль" section.
+// profile — the condition for the panel's "Мой профиль" section. Hidden
+// profiles deliberately count too: someone who hid their only profile
+// must still be able to reach their history to restore it.
 func UserHasProfiles(userId uint) bool {
 	db := database.GetDb()
-	var count int64
-	err := db.Model(&model.Profile{}).Where("user_id = ?", userId).Limit(1).Count(&count).Error
+	// EXISTS rather than COUNT: this runs on every panel request, and only
+	// needs the first matching row, not a tally of the user's whole history.
+	var exists bool
+	err := db.Raw("SELECT EXISTS (SELECT 1 FROM profiles WHERE user_id = ?)", userId).Scan(&exists).Error
 
-	return err == nil && count > 0
+	return err == nil && exists
 }
 
 func SetUserLoginCode(user *model.User, code string, expiresAt time.Time) error {

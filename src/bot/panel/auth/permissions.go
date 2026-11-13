@@ -14,6 +14,7 @@ import (
 // session cookie, so a revoked or changed role takes effect immediately.
 // A plain player (nil manager) gets every role-gated permission denied.
 type Permissions struct {
+	userId uint
 	manager *model.Manager
 	hasProfile bool
 }
@@ -23,7 +24,12 @@ func NewPermissions(viewer *Viewer) *Permissions {
 		return &Permissions{}
 	}
 
-	return &Permissions{manager: viewer.Manager, hasProfile: viewer.HasProfile}
+	permissions := &Permissions{manager: viewer.Manager, hasProfile: viewer.HasProfile}
+	if (viewer.User != nil) {
+		permissions.userId = viewer.User.Id
+	}
+
+	return permissions
 }
 
 func PermissionsFromRequest(r *http.Request) *Permissions {
@@ -53,6 +59,13 @@ func (p *Permissions) FractionId() uint {
 // profile; other players stay behind CanViewPlayer.
 func (p *Permissions) CanViewOwnProfile() bool {
 	return p.hasProfile
+}
+
+// CanHideProfile gates hiding/restoring a profile ("не мой профиль") — only
+// ever the sender's own, regardless of role; managers can't do it for
+// their players.
+func (p *Permissions) CanHideProfile(profileUserId uint) bool {
+	return p.userId != 0 && p.userId == profileUserId
 }
 
 func (p *Permissions) hasRole(accountType model.AccountType) bool {
