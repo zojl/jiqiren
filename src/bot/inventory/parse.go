@@ -227,7 +227,9 @@ var (
 	priceInlineRe = regexp.MustCompile(`^(\d+)💵$`)
 	firmwareRe = regexp.MustCompile(`^🔰:\s*(🔺|🔻|🔸|🔹)?\s*(.+)$`)
 	counterRe = regexp.MustCompile(`^-\s*(.+?):\s*(\d+)$`)
-	requiredLevelRe = regexp.MustCompile(`^Требуется\s+(\d+)`)
+	// The game marks an unmet requirement with ❌ ("❌Требуется 35 уровень"),
+	// so it must be checked before the bare ❌ of "❌Невозможно продать".
+	requiredLevelRe = regexp.MustCompile(`^(?:❌\s*)?Требуется\s+(\d+)`)
 	priceRe = regexp.MustCompile(`^Цена:\s*(\d+)💵`)
 )
 

@@ -240,6 +240,24 @@ func TestParseDetails(t *testing.T) {
 	}
 }
 
+func TestRequiredLevelWithCross(t *testing.T) {
+	storage := mustParse(t, "🏭Склад:\n\n1) ▫🖥NeoPC (+32📡, +20💾)\n - Открыто коробок: 0\n❌Невозможно продать\n\n2) 🖥AliProgress (+51📡, +37💾)\n❌Требуется 35 уровень\nЦена: 9941💵\n\nСтраница 1 из 1", KindStorage)
+
+	aliProgress := storage.Items[1]
+	if (aliProgress.RequiredLevel != 35 || aliProgress.Unsellable || aliProgress.Price != 9941) {
+		t.Fatalf("AliProgress: %+v", aliProgress)
+	}
+
+	if (!storage.Items[0].Unsellable || storage.Items[0].RequiredLevel != 0) {
+		t.Fatalf("NeoPC: %+v", storage.Items[0])
+	}
+
+	attack := BestAttack(storage.Items, Player{Known: true, Level: 34, Way: "⬜"})
+	if (attack.Slots[0].Item == nil || attack.Slots[0].Item.Name != "NeoPC") {
+		t.Fatalf("level 34 must not get AliProgress: %+v", attack.Slots[0].Item)
+	}
+}
+
 func TestMerge(t *testing.T) {
 	start := time.Date(2026, 11, 13, 12, 0, 0, 0, time.UTC)
 	summary := mustParse(t, sampleSummary, KindSummary)
