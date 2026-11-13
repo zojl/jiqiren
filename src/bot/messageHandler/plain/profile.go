@@ -280,7 +280,7 @@ func parseProfile(messageText string) *ProfileParseResult {
 		for key, _ := range groups {
 			field := reflection.Elem().FieldByName(groups[key])
 			if !field.IsValid() {
-				log.Printf("invalid field %s, %s, %s", key, groups[key], match[key])
+				log.Printf("invalid field %d, %s, %s", key, groups[key], match[key])
 			}
 
 			value := match[key]

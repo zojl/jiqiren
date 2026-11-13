@@ -12,7 +12,7 @@ func FindOneContestTypeById(id uint) (*model.ContestType, error) {
 	contestType := model.ContestType{}
 	err := db.Unscoped().Where("Id = ?", id).First(&contestType).Error
 	if (err != nil) {
-		return nil, fmt.Errorf("Erroneous contest id: %s", id)
+		return nil, fmt.Errorf("Erroneous contest id: %d", id)
 	}
 
 	return &contestType, nil

@@ -327,13 +327,26 @@ func progressText(forwards []inventory.Forward) string {
 // replyInChunks sends a possibly long text as several messages split on
 // line boundaries, with the keyboard on the last one.
 func replyInChunks(replyParams *reply.Params, text string, keyboard *object.MessagesKeyboard) {
+	chunks := splitIntoChunks(text, maxReplyRunes)
+	for i, chunk := range chunks {
+		if (i == len(chunks)-1) {
+			replyParams.ReplyWithKeyboard(chunk, keyboard)
+		} else {
+			replyParams.Reply(chunk)
+		}
+	}
+}
+
+// splitIntoChunks splits text on line boundaries into pieces of at most
+// maxRunes runes each (a single longer line stays whole).
+func splitIntoChunks(text string, maxRunes int) []string {
 	chunks := []string{}
 	var current strings.Builder
 	currentRunes := 0
 
 	for _, line := range strings.Split(text, "\n") {
 		lineRunes := len([]rune(line)) + 1
-		if (currentRunes > 0 && currentRunes+lineRunes > maxReplyRunes) {
+		if (currentRunes > 0 && currentRunes+lineRunes > maxRunes) {
 			chunks = append(chunks, strings.TrimRight(current.String(), "\n"))
 			current.Reset()
 			currentRunes = 0
@@ -348,13 +361,7 @@ func replyInChunks(replyParams *reply.Params, text string, keyboard *object.Mess
 		chunks = append(chunks, strings.TrimRight(current.String(), "\n"))
 	}
 
-	for i, chunk := range chunks {
-		if (i == len(chunks)-1) {
-			replyParams.ReplyWithKeyboard(chunk, keyboard)
-		} else {
-			replyParams.Reply(chunk)
-		}
-	}
+	return chunks
 }
 
 // itemsCount renders "1 вещь" / "2 вещи" / "5 вещей".
