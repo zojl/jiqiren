@@ -3,6 +3,7 @@ package messageHandler
 import (
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
+	"jiqiren/bot/messageHandler/reply"
 
 	"github.com/SevereCloud/vksdk/v2/object"
 )
@@ -14,6 +15,10 @@ const inventoryFinishButtonLabel = "🏁 Завершить анализ"
 const inventoryApplyButtonLabel = "✅ Провести анализ"
 const inventoryContinueButtonLabel = "↩️ Продолжить сбор"
 const inventoryCancelButtonLabel = "❌ Отменить анализ"
+
+func init() {
+	reply.PrivateKeyboard = mainKeyboard
+}
 
 // mainKeyboard is the private chat's input-area keyboard (not an inline
 // one under a message), always chosen by the sender's inventory analysis
