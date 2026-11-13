@@ -27,6 +27,7 @@ func HandlePlain(messageObject events.MessageNewObject, vk *api.VK) {
 	// several pages in one message gets a single reply rather than one per
 	// page.
 	inventoryForwards := []object.MessagesMessage{}
+	unrecognized := 0
 
 	for _, message := range messageObject.Message.FwdMessages {
 		if (strconv.Itoa(message.FromID) != os.Getenv("HW_ID")) {
@@ -38,11 +39,21 @@ func HandlePlain(messageObject events.MessageNewObject, vk *api.VK) {
 			continue
 		}
 
+		if (!isProfileMessage(message.Text) && !isBattleReport(message.Text) && !isTeamProjectResult(message.Text)) {
+			unrecognized++
+		}
+
 		handleHwForward(message, &messageObject.Message, vk)
 	}
 
-	if (len(inventoryForwards) > 0) {
-		handleInventoryForwards(inventoryForwards, &messageObject.Message, vk)
+	// An unrecognized game message is normally ignored, but during an
+	// inventory analysis silence would leave the player guessing whether
+	// it was taken — so it's reported alongside the analysis progress.
+	isPrivate := messageObject.Message.PeerID == messageObject.Message.FromID
+	duringAnalysis := unrecognized > 0 && isPrivate && currentInventoryDraft(messageObject.Message.FromID) != nil
+
+	if (len(inventoryForwards) > 0 || duringAnalysis) {
+		handleInventoryForwards(inventoryForwards, unrecognized, &messageObject.Message, vk)
 	}
 }
 

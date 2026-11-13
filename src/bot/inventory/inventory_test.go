@@ -143,6 +143,10 @@ func mustParse(t *testing.T, text string, kind Kind) Message {
 func TestDetectKind(t *testing.T) {
 	mustParse(t, sampleSummary, KindSummary)
 	mustParse(t, sampleSummaryInline, KindSummary)
+	titled := mustParse(t, "Инвентарь:\n\n"+sampleSummary, KindSummary)
+	if (len(titled.Items) != 6 || titled.ExpectedHome != 2) {
+		t.Fatalf("titled summary: %d items, home %d", len(titled.Items), titled.ExpectedHome)
+	}
 	mustParse(t, sampleBackpack, KindBackpack)
 	mustParse(t, sampleHome, KindHome)
 	mustParse(t, sampleStorage, KindStorage)

@@ -220,6 +220,9 @@ var (
 	summaryServerRe = regexp.MustCompile(`(?m)^🗄Серверная: (\d+)`)
 	pageRe = regexp.MustCompile(`(?m)^Страница (\d+) из (\d+)`)
 	positionRe = regexp.MustCompile(`^\d+\)\s*`)
+	// The general inventory screen opens with an "Инвентарь:" title line
+	// above "🎒Рюкзак:" — that's what tells it from the detailed backpack.
+	inventoryTitleRe = regexp.MustCompile(`^Инвентарь:`)
 	statRe = regexp.MustCompile(`^([+-]?\d+)(📡|💾|📱|🔎)$`)
 	priceInlineRe = regexp.MustCompile(`^(\d+)💵$`)
 	firmwareRe = regexp.MustCompile(`^🔰:\s*(🔺|🔻|🔸|🔹)?\s*(.+)$`)
@@ -238,6 +241,12 @@ func normalize(text string) string {
 // DetectKind tells whether text is one of the inventory screens.
 func DetectKind(text string) (Kind, bool) {
 	text = strings.TrimSpace(normalize(text))
+
+	// The general screen is titled "Инвентарь:"; the counts check below
+	// is a fallback for a copy without the title.
+	if (inventoryTitleRe.MatchString(text)) {
+		return KindSummary, true
+	}
 
 	switch {
 	case strings.HasPrefix(text, "🎒Рюкзак:"):

@@ -203,8 +203,10 @@ func cancelInventoryAnalysis(draft *model.InventoryDraft, replyParams *reply.Par
 }
 
 // handleInventoryForwards collects every inventory screen forwarded in one
-// chat message into the sender's draft and answers once for all of them.
-func handleInventoryForwards(forwards []object.MessagesMessage, parentMessage *object.MessagesMessage, vk *api.VK) {
+// chat message into the sender's draft and answers once for all of them;
+// unrecognized counts the game messages in it that weren't any known
+// screen, to say so in the same reply.
+func handleInventoryForwards(forwards []object.MessagesMessage, unrecognized int, parentMessage *object.MessagesMessage, vk *api.VK) {
 	if (parentMessage.PeerID != parentMessage.FromID) {
 		return
 	}
@@ -268,6 +270,10 @@ func handleInventoryForwards(forwards []object.MessagesMessage, parentMessage *o
 	}
 
 	lines := accepted
+	if (unrecognized > 0) {
+		lines = append(lines, "✖ Не распознано сообщений: "+strconv.Itoa(unrecognized)+" — это не экраны инвентаря. Пересылайте общий инвентарь, рюкзак, дом, склад или серверную.")
+	}
+
 	if (rejectedStale > 0) {
 		lines = append(lines, "✖ Не принято сообщений: "+strconv.Itoa(rejectedStale)+" — они получены до начала анализа. Откройте этот экран в игре заново и перешлите.")
 	}
