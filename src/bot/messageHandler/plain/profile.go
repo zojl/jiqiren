@@ -25,7 +25,7 @@ var regulars = [...]string {
 		`\S{0,2}` +
 		`(?P<Fraction>Huǒqiáng|Aegis|V-hack|Phantoms|NetKings|NHS)` +
 		`\)`,
-	`(?P<Status>[🔻⭕🔺💡🔹🔸])[a-zA-Z0-9а-яА-ЯёЁ ,_\-!?\$<>]{3,25}\s\(`,
+	`(?P<Status>[🔻⭕🔺💡🔹🔸⚡])[a-zA-Z0-9а-яА-ЯёЁ ,_\-!?\$<>]{3,25}\s\(`,
 	`💻: (?P<Level>\d+)(?:💎\d+)?;`,
 	`💻Уровень: (?P<Level>\d+)`,
 	`💻: \d+💎(?P<Prestige>\d+)`,

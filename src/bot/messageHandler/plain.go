@@ -20,7 +20,10 @@ const battleReportStart = "Результаты битвы за "
 const battleReportEnd = "защиту своей компании."
 const teamProjectResultPrefix1 = "Ты вложился в запил командного проекта."
 const teamProjectResultPrefix2 = "Ты помог команде пилить проект."
-var profileIcons = [...]string {"💻", "💡", "💵", "📈", "💿", "📄", "💽", "📑", "🔘", "💸", "🔥", "🔋", "📡", "💾", "📱", "🔎"}
+// profileIcons are the ones every profile has, whatever the player's
+// level: resource lines (💿 📄 💽 📑) only appear once a player has some,
+// so a low-level profile without them must still count as a profile.
+var profileIcons = [...]string {"💻", "💡", "💵", "🔋", "📡", "💾", "📱", "🔎"}
 
 func HandlePlain(messageObject events.MessageNewObject, vk *api.VK) {
 	// Inventory screens are set aside and handled together, so forwarding
