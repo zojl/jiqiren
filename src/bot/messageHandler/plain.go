@@ -28,6 +28,7 @@ func HandlePlain(messageObject events.MessageNewObject, vk *api.VK) {
 	// page.
 	inventoryForwards := []object.MessagesMessage{}
 	unrecognized := 0
+	recognized := 0
 
 	for _, message := range messageObject.Message.FwdMessages {
 		if (strconv.Itoa(message.FromID) != os.Getenv("HW_ID")) {
@@ -41,6 +42,8 @@ func HandlePlain(messageObject events.MessageNewObject, vk *api.VK) {
 
 		if (!isProfileMessage(message.Text) && !isBattleReport(message.Text) && !isTeamProjectResult(message.Text)) {
 			unrecognized++
+		} else {
+			recognized++
 		}
 
 		handleHwForward(message, &messageObject.Message, vk)
@@ -54,7 +57,29 @@ func HandlePlain(messageObject events.MessageNewObject, vk *api.VK) {
 
 	if (len(inventoryForwards) > 0 || duringAnalysis) {
 		handleInventoryForwards(inventoryForwards, unrecognized, &messageObject.Message, vk)
+		return
 	}
+
+	if (recognized == 0) {
+		replyUnrecognizedInPrivate(&messageObject.Message, vk)
+	}
+}
+
+// replyUnrecognizedInPrivate answers a private message the bot couldn't
+// make sense of — plain text (VK's "Начать" included), an unknown command,
+// a forward that isn't from the game or isn't a known game screen. Beyond
+// the hint itself, the reply carries the current menu keyboard (see
+// reply.PrivateKeyboard), so writing anything at all refreshes the
+// buttons. Group chats stay silent, as before.
+func replyUnrecognizedInPrivate(message *object.MessagesMessage, vk *api.VK) {
+	if (message.PeerID != message.FromID) {
+		return
+	}
+
+	reply.MakeParams(message, vk).Reply(
+		"Не понял сообщение. Пересылайте мне из игры профиль, отчёт о битве или — во время анализа — экраны инвентаря.\n" +
+			"Кнопки ниже: сводка профиля, вход в веб-панель и анализ инвентаря.",
+	)
 }
 
 func handleHwForward(message object.MessagesMessage, parentMessage *object.MessagesMessage, vk *api.VK) {
