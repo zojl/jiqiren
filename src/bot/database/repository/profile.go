@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -169,9 +170,50 @@ func FindOneProfileById(id uint) (*model.Profile, error) {
 	return &profile, nil
 }
 
+// ErrLastVisibleProfile — hiding would leave the user with no visible
+// profile at all; at least one must always stay active.
+var ErrLastVisibleProfile = errors.New("cannot hide the last visible profile")
+
+// SetProfileHidden hides or restores a profile. Hiding refuses to take the
+// user's last visible profile (ErrLastVisibleProfile). The user row is
+// locked for the check, so two concurrent hides (two open tabs) can't both
+// see "two left" and leave none.
 func SetProfileHidden(profile *model.Profile, hidden bool) error {
 	db := database.GetDb()
-	return db.Model(profile).Update("hidden", hidden).Error
+	if (!hidden) {
+		return db.Model(profile).Update("hidden", false).Error
+	}
+
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT id FROM users WHERE id = ? FOR UPDATE", profile.UserId).Error; (err != nil) {
+			return err
+		}
+
+		var visible int64
+		if err := tx.Model(&model.Profile{}).Where("user_id = ? AND NOT hidden", profile.UserId).Count(&visible).Error; (err != nil) {
+			return err
+		}
+
+		if (!CanHideAnotherProfile(visible)) {
+			return ErrLastVisibleProfile
+		}
+
+		return tx.Model(profile).Update("hidden", true).Error
+	})
+}
+
+// CanHideAnotherProfile: hiding is allowed only while more than one profile
+// is still visible.
+func CanHideAnotherProfile(visibleCount int64) bool {
+	return visibleCount > 1
+}
+
+func CountVisibleProfiles(userId uint) (int64, error) {
+	db := database.GetDb()
+	var count int64
+	err := db.Model(&model.Profile{}).Where("user_id = ? AND NOT hidden", userId).Count(&count).Error
+
+	return count, err
 }
 
 // ProfileHistoryFilter narrows a user's own profile history. From is
