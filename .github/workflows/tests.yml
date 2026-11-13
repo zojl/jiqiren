@@ -1,0 +1,33 @@
+name: tests
+
+# Only as a pull request check — not on pushes to branches.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+# A new push to the same PR cancels the run still going for the old one.
+concurrency:
+  group: tests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/bot
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/bot/go.mod
+          cache-dependency-path: src/bot/go.sum
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
