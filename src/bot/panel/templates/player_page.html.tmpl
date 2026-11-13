@@ -1,4 +1,5 @@
 {{define "player_page"}}
+{{if .Tabs}}{{template "profile_tabs" .Tabs}}{{end}}
 <h1>{{.Profile.LeadIcon}}{{.Profile.StatusIcon}}{{.Profile.Username}} ({{.Profile.Level}} ур.{{if .Profile.Prestige}} 💎{{.Profile.Prestige}}{{end}})</h1>
 
 <dl class="budget">
@@ -30,6 +31,16 @@
   <div class="budget-row"><dt>🔎 мудрость</dt><dd>{{.Profile.Wisdom}}</dd></div>
 </dl>
 
+{{if .ExperienceChartUrl}}
+<section class="exp-chart-block" data-chart-url="{{.ExperienceChartUrl}}">
+  <h2>рост опыта за год</h2>
+  <div class="budget-chart-canvas">
+    <svg class="budget-chart-svg" viewBox="0 0 760 280" preserveAspectRatio="none"><text x="380" y="140" text-anchor="middle" fill="currentColor" opacity="0.6">загрузка…</text></svg>
+    <div class="budget-chart-tooltip" hidden></div>
+  </div>
+</section>
+{{end}}
+
 {{if .BestAttack}}
 <h2>лучшие показатели атаки</h2>
 <dl class="budget">
@@ -52,5 +63,5 @@
 </dl>
 {{end}}
 
-<a class="back" href="{{.BackHref}}">{{.BackLabel}}</a>
+{{if .BackHref}}<a class="back" href="{{.BackHref}}">{{.BackLabel}}</a>{{end}}
 {{end}}

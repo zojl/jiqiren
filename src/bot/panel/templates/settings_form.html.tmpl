@@ -21,6 +21,16 @@
     </div>
   </div>
 
+  <div class="settings-group">
+    <h2>набор вещей</h2>
+    <p class="hint">насколько ⚔️ атака или 🛡️ защита (по цели на битву) ниже оптимальной — лучшей из «база + лучший билд из инвентаря» и лучшего профиля за 30 дней. От первого порога — очень неоптимальный набор, от второго — неоптимальный, от третьего — рекомендация переодеться. В очках.</p>
+    <div class="threshold-row">
+      <label class="threshold-field" title="очень неоптимальный набор"><span class="threshold-icon">‼️</span><input type="number" name="gear_very_severe" value="{{.GearVerySevere}}" placeholder="{{.DefaultGearVerySevere}}" min="1"></label>
+      <label class="threshold-field" title="неоптимальный набор"><span class="threshold-icon">❗</span><input type="number" name="gear_severe" value="{{.GearSevere}}" placeholder="{{.DefaultGearSevere}}" min="1"></label>
+      <label class="threshold-field" title="можно лучше"><span class="threshold-icon">⚠️</span><input type="number" name="gear_warn" value="{{.GearWarn}}" placeholder="{{.DefaultGearWarn}}" min="1"></label>
+    </div>
+  </div>
+
   <button type="submit">сохранить</button>
 </form>
 <p class="hint">пустое поле — использовать значение по умолчанию</p>

@@ -8,6 +8,7 @@ import (
 	"jiqiren/bot/battletime"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
+	"jiqiren/bot/gearcheck"
 	"jiqiren/bot/readiness"
 )
 
@@ -32,7 +33,14 @@ func generateMissingProfilesText(squad *model.Team, now time.Time) string {
 
 	lines := make([]string, 0, len(profiles))
 	for _, profile := range profiles {
-		line := missingProfileLine(profile, squad, lastBattle, vkIdByUserId[profile.UserId], thresholds)
+		// The gear check costs a few queries — skip it where the line is
+		// already settled by a stale profile or a missing target.
+		gear := gearcheck.Result{}
+		if (!profile.MessageDate.Before(lastBattle) && profile.TargetId != nil) {
+			gear = gearcheck.Check(profile, squad, now)
+		}
+
+		line := missingProfileLine(profile, squad, lastBattle, vkIdByUserId[profile.UserId], thresholds, gear)
 		if (line != "") {
 			lines = append(lines, line)
 		}
@@ -44,7 +52,7 @@ func generateMissingProfilesText(squad *model.Team, now time.Time) string {
 // missingProfileLine treats a profile older than the last battle the same
 // as having none: it was prepped for a battle that's already happened and
 // says nothing about readiness for the next one.
-func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle time.Time, vkId uint, thresholds readiness.Thresholds) string {
+func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle time.Time, vkId uint, thresholds readiness.Thresholds, gear gearcheck.Result) string {
 	who := mention(vkId, profile.Username)
 
 	if (profile.MessageDate.Before(lastBattle)) {
@@ -73,6 +81,14 @@ func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle tim
 		severe = append(severe, "мало выносливости")
 	}
 
+	gearLine := "неоптимальный набор вещей (" + gear.Label() + ")"
+	if (gear.Gain >= int(thresholds.GearVerySevere)) {
+		severe = append(severe, gearLine)
+		severePrefix = "‼️"
+	} else if (gear.Gain >= int(thresholds.GearSevere)) {
+		severe = append(severe, gearLine)
+	}
+
 	if (len(severe) > 0) {
 		return fmt.Sprintf("%s %s %s", severePrefix, who, strings.Join(severe, " и "))
 	}
@@ -83,6 +99,9 @@ func missingProfileLine(profile model.Profile, squad *model.Team, lastBattle tim
 	}
 	if (profile.Stamina < thresholds.StaminaRecommended) {
 		mild = append(mild, fmt.Sprintf("рекомендуется пополнить выносливость до %d", thresholds.StaminaIdeal))
+	}
+	if (gear.Gain >= int(thresholds.GearWarn)) {
+		mild = append(mild, gearLine)
 	}
 
 	if (len(mild) > 0) {

@@ -17,7 +17,7 @@ type messageEventPayload struct {
 }
 
 // HandleMessageEvent answers a tap on a callback-type keyboard button (see
-// buildProfileAckKeyboard in plain.go) and runs the command it stands for —
+// mainKeyboard in keyboard.go) and runs the command it stands for —
 // the button's visible label is purely cosmetic, routing goes through the
 // payload instead, so it can't be spoofed by someone just typing the label.
 func HandleMessageEvent(eventObject events.MessageEventObject, vk *api.VK) {
@@ -40,6 +40,11 @@ func HandleMessageEvent(eventObject events.MessageEventObject, vk *api.VK) {
 			PeerID: eventObject.PeerID,
 			ConversationMessageID: eventObject.ConversationMessageID,
 		},
+	}
+
+	if (isInventoryCommand(payload.Cmd)) {
+		handleInventoryCommand(payload.Cmd, &syntheticMessage.Message, vk)
+		return
 	}
 
 	switch (payload.Cmd) {

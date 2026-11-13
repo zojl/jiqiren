@@ -454,3 +454,220 @@ function mskTimeLabel(ms) {
   buildLegend();
   load();
 })();
+
+// "Мой профиль" — experience growth chart: one series (total experience,
+// already flattened across prestiges server-side), drawn as an inline SVG
+// the same way as the budget chart. The y-axis spans the data's own
+// min..max rather than starting at zero — growth over a year is small
+// next to the absolute total, and would otherwise look flat.
+(function () {
+  var block = document.querySelector(".exp-chart-block");
+  if (!block) {
+    return;
+  }
+
+  var svg = block.querySelector(".budget-chart-svg");
+  var tooltip = block.querySelector(".budget-chart-tooltip");
+  var canvas = block.querySelector(".budget-chart-canvas");
+
+  var themeStyle = getComputedStyle(document.documentElement);
+  var themeBg = (themeStyle.getPropertyValue("--bg") || "#0a0d0a").trim();
+  var themeAccent = (themeStyle.getPropertyValue("--accent") || "#39ff8f").trim();
+  var themeDanger = (themeStyle.getPropertyValue("--danger") || "#ff5f5f").trim();
+
+  var width = 760;
+  var height = 280;
+  var padding = { top: 10, right: 10, bottom: 28, left: 64 };
+  var plotWidth = width - padding.left - padding.right;
+  var plotHeight = height - padding.bottom - padding.top;
+  var mskOffsetMs = 3 * 60 * 60 * 1000;
+  var dayMs = 24 * 60 * 60 * 1000;
+
+  var points = [];
+  var from = 0;
+  var to = 0;
+  var scaleX = null;
+  var scaleY = null;
+
+  function message(text, color) {
+    svg.innerHTML = '<text x="' + (width / 2) + '" y="' + (height / 2) + '" text-anchor="middle" fill="' + color + '" opacity="0.8">' + text + "</text>";
+  }
+
+  // Same MSK-as-UTC+3 treatment as the rest of the panel.
+  function mskDate(ms) {
+    return new Date(ms + mskOffsetMs);
+  }
+
+  function dateLabel(ms, withYear) {
+    var d = mskDate(ms);
+    var label = pad2(d.getUTCDate()) + "." + pad2(d.getUTCMonth() + 1);
+    return withYear ? label + "." + String(d.getUTCFullYear()).slice(2) : label;
+  }
+
+  function fullDateLabel(ms) {
+    var d = mskDate(ms);
+    return pad2(d.getUTCDate()) + "." + pad2(d.getUTCMonth() + 1) + "." + d.getUTCFullYear() + " " + mskTimeLabel(ms);
+  }
+
+  function grouped(n) {
+    return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  }
+
+  function compact(n) {
+    var abs = Math.abs(n);
+    if (abs >= 1e9) {
+      return (n / 1e9).toFixed(abs >= 1e10 ? 0 : 1) + "B";
+    }
+    if (abs >= 1e6) {
+      return (n / 1e6).toFixed(abs >= 1e7 ? 0 : 1) + "M";
+    }
+    if (abs >= 1e3) {
+      return (n / 1e3).toFixed(abs >= 1e4 ? 0 : 1) + "k";
+    }
+    return String(Math.round(n));
+  }
+
+  function levelLabel(point) {
+    return point.level + (point.prestige ? "💎" + point.prestige : "") + " ур.";
+  }
+
+  function render() {
+    if (!points.length) {
+      message("пока нет данных", "currentColor");
+      return;
+    }
+
+    // A single point (or several within moments of each other) would
+    // collapse the axis to zero width — pad it to at least a day.
+    var spanFrom = from;
+    var spanTo = to;
+    if (spanTo - spanFrom < dayMs) {
+      spanFrom = spanTo - dayMs;
+    }
+
+    var values = points.map(function (point) { return point.total; });
+    var minValue = Math.min.apply(null, values);
+    var maxValue = Math.max.apply(null, values);
+    var margin = (maxValue - minValue) * 0.05 || Math.max(1, maxValue * 0.01);
+    minValue = Math.max(0, minValue - margin);
+    maxValue = maxValue + margin;
+
+    scaleX = function (t) {
+      return padding.left + (t - spanFrom) / (spanTo - spanFrom) * plotWidth;
+    };
+    scaleY = function (value) {
+      return height - padding.bottom - (value - minValue) / (maxValue - minValue) * plotHeight;
+    };
+
+    var parts = [];
+    parts.push('<line x1="' + padding.left + '" y1="' + (height - padding.bottom) + '" x2="' + (width - padding.right) + '" y2="' + (height - padding.bottom) + '" stroke="currentColor" opacity="0.3" />');
+
+    var yTicks = 4;
+    for (var i = 0; i <= yTicks; i++) {
+      var value = minValue + (maxValue - minValue) * i / yTicks;
+      var yy = scaleY(value);
+      parts.push('<line x1="' + padding.left + '" y1="' + yy + '" x2="' + (width - padding.right) + '" y2="' + yy + '" stroke="currentColor" opacity="0.2" stroke-dasharray="2,3" />');
+      parts.push('<text x="' + (padding.left - 8) + '" y="' + yy + '" text-anchor="end" dominant-baseline="middle" font-size="11" fill="currentColor" opacity="0.6">' + compact(value) + "</text>");
+    }
+
+    var withYear = spanTo - spanFrom > 180 * dayMs;
+    var xTicks = 6;
+    for (var j = 0; j <= xTicks; j++) {
+      var t = spanFrom + (spanTo - spanFrom) * j / xTicks;
+      var anchor = j === 0 ? "start" : (j === xTicks ? "end" : "middle");
+      parts.push('<text x="' + scaleX(t) + '" y="' + (height - padding.bottom + 16) + '" text-anchor="' + anchor + '" font-size="11" fill="currentColor" opacity="0.6">' + dateLabel(t, withYear) + "</text>");
+    }
+
+    var coords = points.map(function (point) {
+      return scaleX(point.t) + "," + scaleY(point.total);
+    });
+    parts.push('<polyline points="' + coords.join(" ") + '" fill="none" stroke="' + themeAccent + '" stroke-width="2" />');
+
+    if (points.length <= 60) {
+      points.forEach(function (point) {
+        parts.push('<circle cx="' + scaleX(point.t) + '" cy="' + scaleY(point.total) + '" r="2.5" fill="' + themeAccent + '" />');
+      });
+    }
+
+    parts.push('<g class="hover-guide" style="display:none"><line class="hover-line" x1="0" y1="' + padding.top + '" x2="0" y2="' + (height - padding.bottom) + '" stroke="currentColor" opacity="0.5" stroke-dasharray="3,3" />' +
+      '<circle class="hover-dot" r="4" fill="' + themeAccent + '" stroke="' + themeBg + '" stroke-width="1.5" /></g>');
+    parts.push('<rect class="hover-capture" x="' + padding.left + '" y="' + padding.top + '" width="' + plotWidth + '" height="' + plotHeight + '" fill="transparent" />');
+
+    svg.innerHTML = parts.join("");
+
+    var capture = svg.querySelector(".hover-capture");
+    capture.addEventListener("mousemove", function (event) { onHover(event, spanFrom, spanTo); });
+    capture.addEventListener("mouseleave", onLeave);
+  }
+
+  function onHover(event, spanFrom, spanTo) {
+    var svgPoint = svg.createSVGPoint();
+    svgPoint.x = event.clientX;
+    svgPoint.y = event.clientY;
+
+    var ctm = svg.getScreenCTM();
+    if (!ctm) {
+      return;
+    }
+
+    var local = svgPoint.matrixTransform(ctm.inverse());
+    var targetT = spanFrom + (local.x - padding.left) / plotWidth * (spanTo - spanFrom);
+
+    var nearest = points[0];
+    for (var i = 1; i < points.length; i++) {
+      if (Math.abs(points[i].t - targetT) < Math.abs(nearest.t - targetT)) {
+        nearest = points[i];
+      }
+    }
+
+    var guide = svg.querySelector(".hover-guide");
+    guide.style.display = "";
+    var line = guide.querySelector(".hover-line");
+    line.setAttribute("x1", scaleX(nearest.t));
+    line.setAttribute("x2", scaleX(nearest.t));
+    var dot = guide.querySelector(".hover-dot");
+    dot.setAttribute("cx", scaleX(nearest.t));
+    dot.setAttribute("cy", scaleY(nearest.total));
+
+    tooltip.innerHTML = '<div class="budget-chart-tooltip-time">' + fullDateLabel(nearest.t) + " МСК</div>" +
+      '<div class="budget-chart-tooltip-row">' + levelLabel(nearest) + "</div>" +
+      '<div class="budget-chart-tooltip-row">💡 ' + grouped(nearest.total) + "</div>";
+    tooltip.hidden = false;
+
+    var canvasRect = canvas.getBoundingClientRect();
+    var left = event.clientX - canvasRect.left + 12;
+    var top = event.clientY - canvasRect.top - 10;
+    if (left + tooltip.offsetWidth > canvasRect.width) {
+      left = event.clientX - canvasRect.left - tooltip.offsetWidth - 12;
+    }
+    tooltip.style.left = left + "px";
+    tooltip.style.top = top + "px";
+  }
+
+  function onLeave() {
+    var guide = svg.querySelector(".hover-guide");
+    if (guide) {
+      guide.style.display = "none";
+    }
+    tooltip.hidden = true;
+  }
+
+  fetch(block.getAttribute("data-chart-url"), { credentials: "same-origin" })
+    .then(function (response) { return response.json(); })
+    .then(function (json) {
+      if (json.error) {
+        message(json.error, themeDanger);
+        return;
+      }
+
+      from = new Date(json.from).getTime();
+      to = new Date(json.to).getTime();
+      points = (json.points || []).map(function (point) {
+        return { t: new Date(point.at).getTime(), level: point.level, prestige: point.prestige, total: point.total };
+      });
+      render();
+    })
+    .catch(function () {
+      message("не удалось загрузить график", themeDanger);
+    });
+})();

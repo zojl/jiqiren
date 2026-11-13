@@ -21,6 +21,9 @@ type settingsFormData struct {
 	MoneyRecommended   string
 	MoneySevere        string
 	MoneyVerySevere    string
+	GearWarn           string
+	GearSevere         string
+	GearVerySevere     string
 
 	DefaultStaminaVerySevere  uint
 	DefaultStaminaSevere      uint
@@ -28,6 +31,9 @@ type settingsFormData struct {
 	DefaultMoneyRecommended   uint
 	DefaultMoneySevere        uint
 	DefaultMoneyVerySevere    uint
+	DefaultGearWarn           uint
+	DefaultGearSevere         uint
+	DefaultGearVerySevere     uint
 }
 
 func uintLabel(value *uint) string {
@@ -59,6 +65,9 @@ func FractionSettingsForm(w http.ResponseWriter, r *http.Request) {
 		MoneyRecommended:   uintLabel(fraction.MoneyRecommendedThreshold),
 		MoneySevere:        uintLabel(fraction.MoneySevereThreshold),
 		MoneyVerySevere:    uintLabel(fraction.MoneyVerySevereThreshold),
+		GearWarn:           uintLabel(fraction.GearWarnThreshold),
+		GearSevere:         uintLabel(fraction.GearSevereThreshold),
+		GearVerySevere:     uintLabel(fraction.GearVerySevereThreshold),
 
 		DefaultStaminaVerySevere:  readiness.DefaultStaminaVerySevereThreshold,
 		DefaultStaminaSevere:      readiness.DefaultStaminaSevereThreshold,
@@ -66,6 +75,9 @@ func FractionSettingsForm(w http.ResponseWriter, r *http.Request) {
 		DefaultMoneyRecommended:   readiness.DefaultMoneyRecommendedThreshold,
 		DefaultMoneySevere:        readiness.DefaultMoneySevereThreshold,
 		DefaultMoneyVerySevere:    readiness.DefaultMoneyVerySevereThreshold,
+		DefaultGearWarn:           readiness.DefaultGearWarnThreshold,
+		DefaultGearSevere:         readiness.DefaultGearSevereThreshold,
+		DefaultGearVerySevere:     readiness.DefaultGearVerySevereThreshold,
 	})
 }
 
@@ -112,7 +124,10 @@ func SetFractionReadinessSettings(w http.ResponseWriter, r *http.Request) {
 	moneyRecommended, err4 := parseOptionalThreshold(r.FormValue("money_recommended"))
 	moneySevere, err5 := parseOptionalThreshold(r.FormValue("money_severe"))
 	moneyVerySevere, err6 := parseOptionalThreshold(r.FormValue("money_very_severe"))
-	if (err1 != nil || err2 != nil || err3 != nil || err4 != nil || err5 != nil || err6 != nil) {
+	gearWarn, err7 := parseOptionalThreshold(r.FormValue("gear_warn"))
+	gearSevere, err8 := parseOptionalThreshold(r.FormValue("gear_severe"))
+	gearVerySevere, err9 := parseOptionalThreshold(r.FormValue("gear_very_severe"))
+	if (err1 != nil || err2 != nil || err3 != nil || err4 != nil || err5 != nil || err6 != nil || err7 != nil || err8 != nil || err9 != nil) {
 		http.Error(w, "Некорректное значение порога", http.StatusBadRequest)
 		return
 	}
@@ -133,7 +148,15 @@ func SetFractionReadinessSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if setErr := repository.SetFractionReadinessSettings(fraction, staminaVerySevere, staminaSevere, staminaRecommended, moneyRecommended, moneySevere, moneyVerySevere); (setErr != nil) {
+	effGearWarn := effectiveOrDefault(gearWarn, readiness.DefaultGearWarnThreshold)
+	effGearSevere := effectiveOrDefault(gearSevere, readiness.DefaultGearSevereThreshold)
+	effGearVerySevere := effectiveOrDefault(gearVerySevere, readiness.DefaultGearVerySevereThreshold)
+	if (!(0 < effGearWarn && effGearWarn < effGearSevere && effGearSevere < effGearVerySevere)) {
+		http.Error(w, "Пороги набора вещей должны идти по возрастанию: 0 < можно лучше < неоптимально < очень неоптимально", http.StatusBadRequest)
+		return
+	}
+
+	if setErr := repository.SetFractionReadinessSettings(fraction, staminaVerySevere, staminaSevere, staminaRecommended, moneyRecommended, moneySevere, moneyVerySevere, gearWarn, gearSevere, gearVerySevere); (setErr != nil) {
 		http.Error(w, "Не удалось сохранить настройки", http.StatusInternalServerError)
 		return
 	}

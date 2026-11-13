@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"jiqiren/bot/database/repository"
+	"jiqiren/bot/inventory"
 	"jiqiren/bot/messageHandler/plain"
 	"jiqiren/bot/messageHandler/reply"
 
@@ -20,16 +20,69 @@ const battleReportStart = "Результаты битвы за "
 const battleReportEnd = "защиту своей компании."
 const teamProjectResultPrefix1 = "Ты вложился в запил командного проекта."
 const teamProjectResultPrefix2 = "Ты помог команде пилить проект."
-var profileIcons = [...]string {"💻", "💡", "💵", "📈", "💿", "📄", "💽", "📑", "🔘", "💸", "🔥", "🔋", "📡", "💾", "📱", "🔎"}
+// profileIcons are the ones every profile has, whatever the player's
+// level: resource lines (💿 📄 💽 📑) only appear once a player has some,
+// so a low-level profile without them must still count as a profile.
+var profileIcons = [...]string {"💻", "💡", "💵", "🔋", "📡", "💾", "📱", "🔎"}
 
 func HandlePlain(messageObject events.MessageNewObject, vk *api.VK) {
-	if (len(messageObject.Message.FwdMessages) > 0) {
-		for _, message := range messageObject.Message.FwdMessages {
-			if strconv.Itoa(message.FromID) == os.Getenv("HW_ID") {
-				handleHwForward(message, &messageObject.Message, vk)
-			}
+	// Inventory screens are set aside and handled together, so forwarding
+	// several pages in one message gets a single reply rather than one per
+	// page.
+	inventoryForwards := []object.MessagesMessage{}
+	unrecognized := 0
+	recognized := 0
+
+	for _, message := range messageObject.Message.FwdMessages {
+		if (strconv.Itoa(message.FromID) != os.Getenv("HW_ID")) {
+			continue
 		}
+
+		if _, isInventory := inventory.DetectKind(message.Text); (isInventory) {
+			inventoryForwards = append(inventoryForwards, message)
+			continue
+		}
+
+		if (!isProfileMessage(message.Text) && !isBattleReport(message.Text) && !isTeamProjectResult(message.Text)) {
+			unrecognized++
+		} else {
+			recognized++
+		}
+
+		handleHwForward(message, &messageObject.Message, vk)
 	}
+
+	// An unrecognized game message is normally ignored, but during an
+	// inventory analysis silence would leave the player guessing whether
+	// it was taken — so it's reported alongside the analysis progress.
+	isPrivate := messageObject.Message.PeerID == messageObject.Message.FromID
+	duringAnalysis := unrecognized > 0 && isPrivate && currentInventoryDraft(messageObject.Message.FromID) != nil
+
+	if (len(inventoryForwards) > 0 || duringAnalysis) {
+		handleInventoryForwards(inventoryForwards, unrecognized, &messageObject.Message, vk)
+		return
+	}
+
+	if (recognized == 0) {
+		replyUnrecognizedInPrivate(&messageObject.Message, vk)
+	}
+}
+
+// replyUnrecognizedInPrivate answers a private message the bot couldn't
+// make sense of — plain text (VK's "Начать" included), an unknown command,
+// a forward that isn't from the game or isn't a known game screen. Beyond
+// the hint itself, the reply carries the current menu keyboard (see
+// reply.PrivateKeyboard), so writing anything at all refreshes the
+// buttons. Group chats stay silent, as before.
+func replyUnrecognizedInPrivate(message *object.MessagesMessage, vk *api.VK) {
+	if (message.PeerID != message.FromID) {
+		return
+	}
+
+	reply.MakeParams(message, vk).Reply(
+		"Не понял сообщение. Пересылайте мне из игры профиль, отчёт о битве или — во время анализа — экраны инвентаря.\n" +
+			"Кнопки ниже: сводка профиля, вход в веб-панель и анализ инвентаря.",
+	)
 }
 
 func handleHwForward(message object.MessagesMessage, parentMessage *object.MessagesMessage, vk *api.VK) {
@@ -52,7 +105,7 @@ func handleHwForward(message object.MessagesMessage, parentMessage *object.Messa
 
 			isPrivate := parentMessage.PeerID == parentMessage.FromID
 			if (isPrivate) {
-				replyParams.ReplyWithKeyboard(message, buildProfileAckKeyboard(senderId))
+				replyParams.ReplyWithKeyboard(message, mainKeyboard(senderId))
 				return
 			}
 
@@ -122,27 +175,6 @@ func handleHwForward(message object.MessagesMessage, parentMessage *object.Messa
 	}
 
 	log.Println("bad message " + message.Text)
-}
-
-const profileButtonLabel = "🥷 Профиль"
-const webPanelButtonLabel = "🌐 Веб-панель"
-
-// buildProfileAckKeyboard replaces the chat's input-area keyboard (not an
-// inline keyboard under the message) with a "Профиль" button, equivalent to
-// /profile, plus a "Веб-панель" button equivalent to /login for users with a
-// managers table record. Buttons are callback-type: the tap is routed by
-// HandleMessageEvent through the button's payload, not by resending the
-// visible label as a chat message.
-func buildProfileAckKeyboard(vkId int) *object.MessagesKeyboard {
-	keyboard := object.NewMessagesKeyboard(false)
-	keyboard.AddRow()
-	keyboard.AddCallbackButton(profileButtonLabel, map[string]string{"cmd": "profile"}, object.Primary)
-
-	if _, err := repository.FindOneManagerByVkId(uint(vkId)); (err == nil) {
-		keyboard.AddCallbackButton(webPanelButtonLabel, map[string]string{"cmd": "login"}, object.Primary)
-	}
-
-	return keyboard
 }
 
 func isProfileMessage(messageText string) bool {

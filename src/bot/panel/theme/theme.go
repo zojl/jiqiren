@@ -92,21 +92,21 @@ func IsValidScheme(id string) bool {
 	return false
 }
 
-// Resolve returns the effective mode/scheme for manager, falling back to the
-// defaults for a nil manager (e.g. a pre-auth page) or unset preferences.
-func Resolve(manager *model.Manager) (mode string, scheme string) {
+// Resolve returns the effective mode/scheme for user, falling back to the
+// defaults for a nil user (e.g. a pre-auth page) or unset preferences.
+func Resolve(user *model.User) (mode string, scheme string) {
 	mode, scheme = DefaultMode, DefaultScheme
 
-	if (manager == nil) {
+	if (user == nil) {
 		return
 	}
 
-	if (manager.ThemeMode != nil && IsValidMode(*manager.ThemeMode)) {
-		mode = *manager.ThemeMode
+	if (user.ThemeMode != nil && IsValidMode(*user.ThemeMode)) {
+		mode = *user.ThemeMode
 	}
 
-	if (manager.ColorScheme != nil && IsValidScheme(*manager.ColorScheme)) {
-		scheme = *manager.ColorScheme
+	if (user.ColorScheme != nil && IsValidScheme(*user.ColorScheme)) {
+		scheme = *user.ColorScheme
 	}
 
 	return

@@ -30,12 +30,12 @@ func generateSessionId() (string, error) {
 	return hex.EncodeToString(buf), nil
 }
 
-// ensureSessionId returns manager's current session id, lazily generating
+// ensureSessionId returns user's current session id, lazily generating
 // and persisting one on first use (e.g. the very first login after this
 // field was introduced) rather than requiring a separate backfill.
-func ensureSessionId(manager *model.Manager) (string, error) {
-	if (manager.SessionId != nil) {
-		return *manager.SessionId, nil
+func ensureSessionId(user *model.User) (string, error) {
+	if (user.SessionId != nil) {
+		return *user.SessionId, nil
 	}
 
 	sessionId, err := generateSessionId()
@@ -43,34 +43,34 @@ func ensureSessionId(manager *model.Manager) (string, error) {
 		return "", err
 	}
 
-	if err := repository.SetManagerSessionId(manager, sessionId); (err != nil) {
+	if err := repository.SetUserSessionId(user, sessionId); (err != nil) {
 		return "", err
 	}
 
 	return sessionId, nil
 }
 
-// RotateSessionId replaces manager's session id with a freshly generated
+// RotateSessionId replaces user's session id with a freshly generated
 // one, invalidating every cookie issued against the old value — the
 // "завершить все сессии" action. Callers still need IssueSession
 // afterwards to keep the current device logged in under the new id.
-func RotateSessionId(manager *model.Manager) (string, error) {
+func RotateSessionId(user *model.User) (string, error) {
 	sessionId, err := generateSessionId()
 	if (err != nil) {
 		return "", err
 	}
 
-	if err := repository.SetManagerSessionId(manager, sessionId); (err != nil) {
+	if err := repository.SetUserSessionId(user, sessionId); (err != nil) {
 		return "", err
 	}
 
 	return sessionId, nil
 }
 
-func sessionClaims(managerId uint, sessionId string) *SessionClaims {
+func sessionClaims(userId uint, sessionId string) *SessionClaims {
 	now := time.Now()
 	return &SessionClaims{
-		ManagerId: managerId,
+		UserId: userId,
 		SessionId: sessionId,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt: jwt.NewNumericDate(now),
@@ -99,13 +99,13 @@ func setCookie(w http.ResponseWriter, claims *SessionClaims) error {
 	return nil
 }
 
-func IssueSession(w http.ResponseWriter, manager *model.Manager) error {
-	sessionId, err := ensureSessionId(manager)
+func IssueSession(w http.ResponseWriter, user *model.User) error {
+	sessionId, err := ensureSessionId(user)
 	if (err != nil) {
 		return err
 	}
 
-	return setCookie(w, sessionClaims(manager.Id, sessionId))
+	return setCookie(w, sessionClaims(user.Id, sessionId))
 }
 
 func ParseSessionCookie(r *http.Request) (*SessionClaims, error) {
@@ -144,7 +144,7 @@ func HasValidSession(r *http.Request) bool {
 
 // RenewIfNeeded extends the session cookie when it's close to expiring —
 // just a fresh expiry for the same identity. It carries no permission data
-// to refresh: RequireAuth already re-fetches the manager row on every
+// to refresh: RequireAuth already re-fetches the user/manager rows on every
 // request regardless of how close the cookie is to expiring.
 func RenewIfNeeded(w http.ResponseWriter, claims *SessionClaims) {
 	if (claims.ExpiresAt == nil) {
@@ -155,5 +155,5 @@ func RenewIfNeeded(w http.ResponseWriter, claims *SessionClaims) {
 		return
 	}
 
-	setCookie(w, sessionClaims(claims.ManagerId, claims.SessionId))
+	setCookie(w, sessionClaims(claims.UserId, claims.SessionId))
 }

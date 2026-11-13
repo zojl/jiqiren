@@ -22,6 +22,9 @@ const (
 	DefaultMoneyRecommendedThreshold   = 9
 	DefaultMoneySevereThreshold        = 100
 	DefaultMoneyVerySevereThreshold    = 500
+	DefaultGearWarnThreshold           = 5
+	DefaultGearSevereThreshold         = 20
+	DefaultGearVerySevereThreshold     = 50
 )
 
 // Thresholds is the single set of readiness cutoffs shared by the
@@ -36,6 +39,11 @@ type Thresholds struct {
 	MoneyRecommended   uint
 	MoneySevere        uint
 	MoneyVerySevere    uint
+	// Gear* are ⚔️/🛡️ points short of the optimal item set (gearcheck):
+	// from Warn on — ⚠️, from Severe — ❗, from VerySevere — ‼️.
+	GearWarn       uint
+	GearSevere     uint
+	GearVerySevere uint
 }
 
 func ThresholdsFor(fraction *model.Fraction) Thresholds {
@@ -47,6 +55,9 @@ func ThresholdsFor(fraction *model.Fraction) Thresholds {
 		MoneyRecommended:   uintOr(fraction.MoneyRecommendedThreshold, DefaultMoneyRecommendedThreshold),
 		MoneySevere:        uintOr(fraction.MoneySevereThreshold, DefaultMoneySevereThreshold),
 		MoneyVerySevere:    uintOr(fraction.MoneyVerySevereThreshold, DefaultMoneyVerySevereThreshold),
+		GearWarn:           uintOr(fraction.GearWarnThreshold, DefaultGearWarnThreshold),
+		GearSevere:         uintOr(fraction.GearSevereThreshold, DefaultGearSevereThreshold),
+		GearVerySevere:     uintOr(fraction.GearVerySevereThreshold, DefaultGearVerySevereThreshold),
 	}
 }
 

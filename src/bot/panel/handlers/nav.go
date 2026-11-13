@@ -22,7 +22,7 @@ func buildNav(r *http.Request) []templates.NavItem {
 	permissions := auth.PermissionsFromRequest(r)
 	path := r.URL.Path
 
-	items := make([]templates.NavItem, 0, 6)
+	items := make([]templates.NavItem, 0, 8)
 
 	if (permissions.CanViewDashboard()) {
 		items = append(items, templates.NavItem{Label: "Отряды", Href: "/panel/", Active: path == "/"})
@@ -49,6 +49,10 @@ func buildNav(r *http.Request) []templates.NavItem {
 
 	if (permissions.CanViewAuditLog()) {
 		items = append(items, templates.NavItem{Label: "Логи", Href: "/panel/audit", Active: path == "/audit"})
+	}
+
+	if (permissions.CanViewOwnProfile()) {
+		items = append(items, templates.NavItem{Label: "Мой профиль", Href: "/panel/profile", Active: strings.HasPrefix(path, "/profile")})
 	}
 
 	items = append(items, templates.NavItem{Label: "Настройки", Href: "/panel/settings", Active: strings.HasPrefix(path, "/settings")})

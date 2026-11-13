@@ -18,4 +18,9 @@ type Fraction struct {
 	MoneyRecommendedThreshold   *uint `gorm:"null"`
 	MoneySevereThreshold        *uint `gorm:"null"`
 	MoneyVerySevereThreshold    *uint `gorm:"null"`
+	// Gear thresholds are in absolute ⚔️/🛡️ points the player falls short
+	// of their optimal item set (see the gearcheck package).
+	GearWarnThreshold       *uint `gorm:"null"`
+	GearSevereThreshold     *uint `gorm:"null"`
+	GearVerySevereThreshold *uint `gorm:"null"`
 }

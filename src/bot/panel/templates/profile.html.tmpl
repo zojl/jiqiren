@@ -1,0 +1,121 @@
+{{define "profile_tabs"}}
+<nav class="profile-tabs">
+  <a href="/panel/profile"{{if eq .Active "summary"}} class="active"{{end}}>сводка</a>
+  <a href="/panel/profile/history"{{if eq .Active "history"}} class="active"{{end}}>история</a>
+  <a href="/panel/profile/inventory"{{if eq .Active "inventory"}} class="active"{{end}}>инвентарь</a>
+</nav>
+{{end}}
+
+{{define "profile_empty"}}
+{{template "profile_tabs" .Tabs}}
+<p>Нет актуальных профилей: все ваши профили скрыты.</p>
+<p class="hint">Вернуть нужный можно во вкладке <a href="/panel/profile/history?hidden=1">история</a> — включите «показать скрытые».</p>
+{{end}}
+
+{{define "profile_inventory"}}
+{{template "profile_tabs" .Tabs}}
+{{if not .Analyzed}}
+<p>Инвентарь ещё не анализировался.</p>
+<p class="hint">В личке боту нажмите «🎒 Анализировать инвентарь» и перешлите экраны инвентаря из игры: общий инвентарь или рюкзак, дом, склад и серверную.</p>
+{{else}}
+<p class="hint">анализ от {{.AnalyzedAt}} мск{{if not .HasBackpack}} · ⚠️ без рюкзака — прибавку к характеристикам посчитать нельзя{{end}}</p>
+
+{{range .Locations}}
+<h2>{{.Label}}{{if .Items}} ({{len .Items}}){{end}}</h2>
+{{if .Items}}
+<div class="table-scroll">
+<table class="list inventory">
+<tr><th>вещь</th><th>📡</th><th>💾</th><th>📱</th><th>🔎</th><th>🔰 прошивка</th><th>цена</th></tr>
+{{range .Items}}
+<tr{{if .Unwearable}} class="inventory-unwearable"{{end}}>
+  <td>{{.Title}}{{if .Way}} {{.Way}}{{end}}{{if .Unwearable}} <span class="hint">({{.Unwearable}})</span>{{end}}</td>
+  <td>{{.Practice}}</td>
+  <td>{{.Theory}}</td>
+  <td>{{.Cunning}}</td>
+  <td>{{.Wisdom}}</td>
+  <td>{{.Firmware}}</td>
+  <td>{{.Price}}</td>
+</tr>
+{{end}}
+</table>
+</div>
+{{else}}
+<p class="hint">пусто</p>
+{{end}}
+{{end}}
+
+<h2>билды</h2>
+<p class="hint">по одной вещи каждого класса (или без неё) — {{.PlayerNote}}. ⚔️ атака = 📡×2 + 📱×3, 🛡️ защита = 💾×2 + 🔎×3.</p>
+{{range .Builds}}
+<h2>{{.Title}}</h2>
+<div class="table-scroll">
+<table class="list inventory-build">
+{{range .Slots}}
+<tr>
+  <td>{{.Class}}</td>
+  <td>{{.Item}}</td>
+  <td class="hint">{{if .Swap}}↪ {{.Location}}{{else if .Location}}надето{{end}}</td>
+</tr>
+{{end}}
+</table>
+</div>
+<dl class="budget">
+  <div class="budget-row"><dt>статы от вещей</dt><dd>{{.Stats}}</dd></div>
+  <div class="budget-row"><dt>{{.ScoreLabel}}</dt><dd>{{.Score}}</dd></div>
+  {{if .HasEquipped}}<div class="budget-row"><dt>сейчас надето</dt><dd>{{.EquippedScore}} ({{.Gain}})</dd></div>{{end}}
+</dl>
+{{end}}
+{{end}}
+{{end}}
+
+{{define "profile_history"}}
+{{template "profile_tabs" .Tabs}}
+
+<form method="get" action="/panel/profile/history" class="audit-filters">
+  <label class="hint">с <input type="date" name="from" value="{{.From}}"></label>
+  <label class="hint">по <input type="date" name="to" value="{{.To}}"></label>
+  <label class="hint"><input type="checkbox" name="hidden" value="1"{{if .ShowHidden}} checked{{end}}> показать скрытые</label>
+  <button type="submit">показать</button>
+  {{if or .From .To .ShowHidden}}<a class="hint" href="/panel/profile/history">сбросить</a>{{end}}
+</form>
+
+{{if .Rows}}
+<div class="table-scroll">
+<table class="list profile-history">
+<tr><th>дата (мск)</th><th>профиль</th><th>💡 опыт</th><th></th></tr>
+{{range .Rows}}
+<tr{{if .Hidden}} class="profile-hidden"{{end}}>
+  <td>{{.Date}}</td>
+  <td>{{.Headline}}</td>
+  <td>{{.Experience}}</td>
+  <td>
+    {{if .Hidden}}
+    <form method="post" action="/panel/profile/history/{{.Id}}/restore" class="inline">
+      <input type="hidden" name="query" value="{{$.Query}}">
+      <button type="submit" class="btn">вернуть</button>
+    </form>
+    {{else}}
+    <form method="post" action="/panel/profile/history/{{.Id}}/hide" class="inline" onsubmit="return confirm('Скрыть профиль? Он перестанет учитываться везде — в отряде, бою и статистике. Вернуть можно через «показать скрытые».');">
+      <input type="hidden" name="query" value="{{$.Query}}">
+      <button type="submit" class="btn">скрыть</button>
+    </form>
+    {{end}}
+  </td>
+</tr>
+{{end}}
+</table>
+</div>
+
+{{if gt .TotalPages 1}}
+<div class="pager">
+  {{if .NewerHref}}<a class="btn" href="{{.NewerHref}}">← новее</a>{{end}}
+  <span class="hint">стр. {{.Page}} из {{.TotalPages}} · всего {{.Total}}</span>
+  {{if .OlderHref}}<a class="btn" href="{{.OlderHref}}">старее →</a>{{end}}
+</div>
+{{end}}
+{{else}}
+<p class="hint">Нет профилей{{if or .From .To}} за выбранные даты{{end}}.</p>
+{{end}}
+
+<p class="hint">Скрывайте профили, которые не ваши — например, если случайно переслали боту чужой. Скрытый профиль не учитывается нигде: ни в отряде, ни в бою, ни в статистике.</p>
+{{end}}

@@ -16,7 +16,7 @@ type settingsIndexData struct {
 }
 
 func SettingsIndex(w http.ResponseWriter, r *http.Request) {
-	mode, scheme := theme.Resolve(auth.ManagerFromContext(r))
+	mode, scheme := theme.Resolve(auth.UserFromContext(r))
 
 	templates.Render(w, r, "settings_index", settingsIndexData{
 		ThemeMode:   mode,

@@ -16,7 +16,10 @@ func HandleCommand(messageObject *events.MessageNewObject, vk *api.VK) {
 	log.Printf("%+v\n", command)
 	if (command != nil) {
 		command.Handle()
+		return
 	}
+
+	replyUnrecognizedInPrivate(&messageObject.Message, vk)
 }
 
 func getCommand(messageObject *events.MessageNewObject, vk *api.VK) Command {

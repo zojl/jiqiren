@@ -1,7 +1,5 @@
 package model
 
-import "time"
-
 type AccountType string
 
 const (
@@ -10,6 +8,9 @@ const (
 	AccountTypeSquadLead AccountType = "squad_lead"
 )
 
+// Manager only grants a panel role on top of a User — the panel identity
+// itself (login code, session id, theme) lives on User, so a manager row
+// being deleted just demotes that person to a plain player's view.
 type Manager struct {
 	Id uint `gorm:"primaryKey"`
 	VkId uint `gorm:"uniqueIndex"`
@@ -18,9 +19,4 @@ type Manager struct {
 	SquadId *uint `gorm:"null"`
 	Squad Team `gorm:"foreignKey:SquadId"`
 	AccountType *AccountType `gorm:"null;size:16"`
-	LoginCode *string `gorm:"null;size:6"`
-	LoginCodeExpiresAt *time.Time `gorm:"null"`
-	ThemeMode *string `gorm:"null;size:8"`
-	ColorScheme *string `gorm:"null;size:16"`
-	SessionId *string `gorm:"null;size:64"`
 }

@@ -12,7 +12,7 @@ import (
 // query param is present. It consumes the PIN (one-time use) and issues a
 // session cookie before redirecting into the panel.
 func HandleLoginRedirect(w http.ResponseWriter, r *http.Request, code string) {
-	manager, err := repository.FindOneManagerByLoginCode(code)
+	user, err := repository.FindOneUserByLoginCode(code)
 	if (err != nil) {
 		// A stale/already-used login link is not an error for someone who's
 		// already logged in — just let them through on their existing session.
@@ -25,13 +25,18 @@ func HandleLoginRedirect(w http.ResponseWriter, r *http.Request, code string) {
 		return
 	}
 
-	if err := IssueSession(w, manager); err != nil {
+	if err := IssueSession(w, user); err != nil {
 		http.Error(w, "Ошибка создания сессии", http.StatusInternalServerError)
 		return
 	}
 
-	repository.ClearManagerLoginCode(manager)
-	audit.Record(manager.FractionId, manager.Id, model.AuditActionLogin, "вход в панель")
+	repository.ClearUserLoginCode(user)
+
+	// The audit log is a per-fraction record of manager actions — a plain
+	// player's login has no place in it.
+	if manager, managerErr := repository.FindOneManagerByVkId(user.VkId); (managerErr == nil) {
+		audit.Record(manager.FractionId, manager.Id, model.AuditActionLogin, "вход в панель")
+	}
 
 	http.Redirect(w, r, "/panel", http.StatusFound)
 }
