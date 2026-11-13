@@ -231,3 +231,42 @@ func FindExperienceSeries(userId uint, since time.Time) ([]model.Profile, error)
 
 	return profiles, nil
 }
+
+// AttackScoreSql and DefenseScoreSql are ⚔️/🛡️ power in SQL — the same
+// formulas as inventory.Item.AttackScore/DefenseScore.
+const AttackScoreSql = "(practice * 2 + cunning * 3)"
+const DefenseScoreSql = "(theory * 2 + wisdom * 3)"
+
+// FindBestProfileSince returns the user's visible profile sent since the
+// given moment with the highest score (AttackScoreSql or DefenseScoreSql).
+// The date bound keeps this a short range scan of idx_profiles_user_date
+// rather than a sort over the user's whole history.
+func FindBestProfileSince(userId uint, since time.Time, scoreSql string) (*model.Profile, error) {
+	db := database.GetDb()
+	profile := model.Profile{}
+
+	err := db.Where("user_id = ? AND NOT hidden AND message_date >= ?", userId, since).
+		Order(scoreSql + " DESC, message_date DESC").
+		First(&profile).Error
+	if (err != nil) {
+		return nil, fmt.Errorf("No profiles for user id %d since %v", userId, since)
+	}
+
+	return &profile, nil
+}
+
+// FindLastProfileBetween returns the user's latest visible profile sent
+// within [from, to].
+func FindLastProfileBetween(userId uint, from time.Time, to time.Time) (*model.Profile, error) {
+	db := database.GetDb()
+	profile := model.Profile{}
+
+	err := db.Where("user_id = ? AND NOT hidden AND message_date >= ? AND message_date <= ?", userId, from, to).
+		Order("message_date DESC, id DESC").
+		First(&profile).Error
+	if (err != nil) {
+		return nil, fmt.Errorf("No profiles for user id %d between %v and %v", userId, from, to)
+	}
+
+	return &profile, nil
+}

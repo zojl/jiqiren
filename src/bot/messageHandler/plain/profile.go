@@ -11,6 +11,7 @@ import (
 	"jiqiren/bot/database"
 	"jiqiren/bot/database/model"
 	"jiqiren/bot/database/repository"
+	"jiqiren/bot/gearcheck"
 	"jiqiren/bot/readiness"
 )
 
@@ -88,7 +89,17 @@ func storeParsedProfile(parsedProfile *ProfileParseResult, senderId int, message
 	team := getTeam(parsedProfile, fraction)
 	target := getTarget(parsedProfile, fraction)
 	profile, isProfileInserted := insertProfile(parsedProfile, user, fraction, team, target, messageTime)
-	return validateInsertedProfile(isProfileInserted, parsedProfile, profile, team, fraction)
+
+	// The gear check falls back to the squad's target — the squad the
+	// player actually counts in, i.e. a manual override wins.
+	effectiveSquad := team
+	if (user.SquadOverrideId != nil) {
+		if overrideSquad, err := repository.FindOneTeamById(*user.SquadOverrideId); (err == nil) {
+			effectiveSquad = overrideSquad
+		}
+	}
+
+	return validateInsertedProfile(isProfileInserted, parsedProfile, profile, team, effectiveSquad, fraction)
 }
 
 func getFraction(parsedProfile *ProfileParseResult) *model.Fraction {
@@ -284,7 +295,7 @@ func parseProfile(messageText string) *ProfileParseResult {
 	return &parsedProfile
 }
 
-func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParseResult, profile model.Profile, team *model.Team, fraction *model.Fraction) *ProfileResponse {
+func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParseResult, profile model.Profile, team *model.Team, effectiveSquad *model.Team, fraction *model.Fraction) *ProfileResponse {
 	response := ProfileResponse{
 		IsInserted: isProfileInserted,
 		Messages: make([]string, 0, 5),
@@ -317,6 +328,18 @@ func validateInsertedProfile(isProfileInserted bool, parsedProfile *ProfileParse
 			response.Messages = append(response.Messages, "❗Мало выносливости! Не забудьте пополнить выносливость перед битвой.")
 		} else if (stamina < uint64(thresholds.StaminaRecommended)) {
 			response.Messages = append(response.Messages, fmt.Sprintf("⚠️Рекомендуется пополнить выносливость до %d перед битвой.", thresholds.StaminaIdeal))
+		}
+	}
+
+	if (isProfileInserted) {
+		if gear := gearcheck.Check(profile, effectiveSquad, time.Now()); (gear.Gain >= int(thresholds.GearWarn)) {
+			icon := "⚠️"
+			if (gear.Gain >= int(thresholds.GearVerySevere)) {
+				icon = "‼️"
+			} else if (gear.Gain >= int(thresholds.GearSevere)) {
+				icon = "❗"
+			}
+			response.Messages = append(response.Messages, icon+"Неоптимальный набор вещей ("+gear.Label()+")")
 		}
 	}
 

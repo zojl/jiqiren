@@ -130,3 +130,11 @@ func (build *Build) add(item Item) {
 	build.Cunning += item.Cunning
 	build.Wisdom += item.Wisdom
 }
+
+var wayIcons = map[uint]string{1: WayBlack, 2: WayWhite, 3: "🔲", 4: "🔳"}
+
+// PlayerFrom builds a Player from a profile's level and way (the stored
+// way code, see getWayType in messageHandler/plain/profile.go).
+func PlayerFrom(level uint, way uint) Player {
+	return Player{Known: true, Level: level, Way: wayIcons[way]}
+}
